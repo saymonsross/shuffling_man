@@ -1,0 +1,24 @@
+{
+    "$schema": "https://www.schemastore.org/claude-code-settings.json",
+    "plansDirectory": "./.claude/plans",
+    "enableAllProjectMcpServers": true,
+    "permissions": {
+        "allow": [
+            "Bash(git:*)",
+            "Edit(src/**)"
+        ],
+        "deny": [
+            "Read(.env*)"
+        ]
+    },
+    "env": {
+        "ENABLE_TOOL_SEARCH": "auto:5"
+    },
+    "language": "russian",
+    "fastModePerSessionOptIn": true,
+    "viewMode": "focus",
+    "feedbackSurveyRate": 0,
+    "advisorModel": "fable",
+    "alwaysThinkingEnabled": true,
+    "spinnerTipsEnabled": false
+}
