@@ -1,27 +1,37 @@
 ################################################################################
 ## Пролог — Сцена 1
 ##
-## Тёмная комната → записка → затылок ГГ → записка (интерактив: выровнять
-## листы и карандаш, анимация по слоям) → записка ровно.
+## Тёмная комната → записка → затылок ГГ → записка (интерактив: наведи и клинкни
+## по бумаге или карандашу, сцена перетекает в состояние порядка) → записка ровно.
 ##
-## Кликами игрок постепенно перемещает предметы из положения как на
-## prologue_note.jpg в положение как на prologue_note center.jpg, после чего
-## сцена кросфейдом переходит в сам prologue_note center.jpg.
+## Интерактив упрощён до одного клика: игрок наводит курсор на любой из двух
+## предметов (объект чуть светлеет + рука «тянется»), клик — и весь кадр
+## кросфейдом переходит в prologue_note_center.
 ################################################################################
 
 ## Изображения ##################################################################
 
 image prologue_dark_room = "images/0_prologue/prologue dark_room.jpg"
-image prologue_note_messy = "images/0_prologue/prologue_note.jpg"
-image prologue_note_center = "images/0_prologue/prologue_note center.jpg"
 image prologue_head = "images/0_prologue/prologue head.jpg"
 
-## Слои записки для интерактива. Кропы центрированы на центр масс предмета,
-## чтобы вращение через anchor (0.5, 0.5) шло вокруг центра предмета.
-## Поля кропов дают запас под обводку контура при наведении.
-image note2_bg = "images/0_prologue/prologue_note 2_bg.jpg"
-image note2_paper = Crop((435, 4, 700, 820), "images/0_prologue/prologue_note 2_papaer.png")
-image note2_pencil = Crop((581, 164, 550, 100), "images/0_prologue/prologue_note 2_pencil.png")
+## Готовый композит записки в порядке — конечная точка кросфейда.
+image prologue_note_center = "images/0_prologue/prologue_note center.jpg"
+
+## Фон записки без бумаги и карандаша — они отдельные объекты (см. ниже), чтобы
+## подсветка при наведении точно совпадала с их формой.
+image prologue_note_bg = "images/0_prologue/prologue_note bg.jpg"
+
+## Бумага и карандаш — отдельные вырезанные объекты, видимые слои поверх фона.
+## Хит-зона для клика — попиксельно по этим же изображениям (focus_mask).
+image prologue_note_paper = "images/0_prologue/prologue_note_paper.png"
+image prologue_note_pencil = "images/0_prologue/prologue_note_pencil.png"
+
+## Руки Марины на столе. Правая рука «тянется» к предмету при наведении —
+## перетекание между позами покоя и движения (см. hand_reach ниже; без
+## слежения за курсором).
+image prologue_hand_left = "images/0_prologue/prologue_hand_left.png"
+image prologue_hand_right = "images/0_prologue/prologue_hand_right rest.png"
+image prologue_hand_right_move = "images/0_prologue/prologue_hand_right move.png"
 
 ## Настройки эффектов ###########################################################
 ##
@@ -32,16 +42,40 @@ image note2_pencil = Crop((581, 164, 550, 100), "images/0_prologue/prologue_note
 define PROLOGUE_SWAY_DRIFT = 12.0    # амплитуда дрейфа, px
 define PROLOGUE_SWAY_TILT = 0.6     # амплитуда наклона, градусы
 
-## Сцена записки: параллакс за мышкой + дрожь и помехи от напряжения.
-define NOTE2_PARALLAX = 10.0        # сдвиг камеры за мышкой, px
-define NOTE2_PARALLAX_SMOOTH = 0.06 # сглаживание параллакса за кадр (0..1)
-define NOTE2_SHAKE_AMP = 1.5        # дрожь при полном напряжении, px
-define NOTE2_NOISE = 0.10           # сила помех при полном напряжении (0..1)
-define NOTE2_RELAX = 0.04           # скорость спадания напряжения за кадр
+## Сцена записки: лёгкий параллакс за мышкой и постоянное зерно-помехи от
+## напряжения. Без тряски и без нарастания/спадания — уровень фиксирован.
+define NOTE_PARALLAX = 10.0        # сдвиг камеры за мышкой, px
+define NOTE_PARALLAX_SMOOTH = 0.06 # сглаживание параллакса за кадр (0..1)
+define NOTE_NOISE = 0.10           # сила помех (0..1)
 
-## Напряжение Марины: 1.0 — беспорядок на столе, 0.0 — всё выровнено.
-## Управляет дрожью камеры и помехами; спадает с каждым кликом.
-default note2_tension = 1.0
+## Плейсхолдеры положения предметов и рук на prologue_note_messy — подобраны на
+## глаз, финально подгоняются по месту в игре (см. верификацию в плане задачи).
+define NOTE_PAPER_POS = (790, 415)   # (x, y) центра бумаги, px
+define NOTE_PAPER_ANGLE = -8.0        # поворот бумаги, градусы
+define NOTE_PENCIL_POS = (845, 180)  # (x, y) центра карандаша, px
+define NOTE_PENCIL_ANGLE = 80.0       # поворот карандаша, градусы
+
+define NOTE_HAND_LEFT_POS = (500, 820)   # левая рука, статична
+define NOTE_HAND_RIGHT_POS = (1340, 820) # правая рука, поза покоя
+## Правая рука, поза «тянется» (на экране). Y подобран так, чтобы нижний край
+## картинки (жёсткий обрез рукава, без сглаживания) уходил за нижнюю границу
+## экрана (1080px) — иначе виден шов обреза посреди предплечья.
+define NOTE_HAND_MOVE_POS = (950, 700)
+
+define NOTE_HOVER_BRIGHTNESS = 0.35 # насколько светлеет предмет при наведении
+
+## Предметы на столе — единственная видимая копия каждого (кнопки в экране
+## невидимы, см. ниже). При наведении тот же объект показывается светлее
+## (7dots brightness); флаги ставит экран интерактива.
+image note_paper = ConditionSwitch(
+    "note_hover_paper", At("prologue_note_paper", brightness(NOTE_HOVER_BRIGHTNESS)),
+    True, "prologue_note_paper",
+    predict_all=True)
+
+image note_pencil = ConditionSwitch(
+    "note_hover_pencil", At("prologue_note_pencil", brightness(NOTE_HOVER_BRIGHTNESS)),
+    True, "prologue_note_pencil",
+    predict_all=True)
 
 ## Трансформы и переходы ########################################################
 
@@ -53,71 +87,72 @@ transform prologue_slow_zoom:
 define prologue_fade_in = Dissolve(4.0)
 define prologue_dissolve = Dissolve(1.2)
 
-## Предмет на столе: плавный переход из старого состояния в новое.
-transform note2_move(ox, oy, oa, oz, nx, ny, na, nz):
+## Статичная постановка бумаги/карандаша в положении беспорядка.
+transform note_paper_messy:
     anchor (0.5, 0.5)
-    transform_anchor True
-    pos (ox, oy) rotate oa zoom oz
-    ease 0.5 pos (nx, ny) rotate na zoom nz
+    pos NOTE_PAPER_POS
+    rotate NOTE_PAPER_ANGLE
 
-## Статичная постановка предмета в состояние st = (x, y, angle, zoom).
-transform note2_place(st):
+transform note_pencil_messy:
     anchor (0.5, 0.5)
-    transform_anchor True
-    pos (st[0], st[1])
-    rotate st[2]
-    zoom st[3]
+    pos NOTE_PENCIL_POS
+    rotate NOTE_PENCIL_ANGLE
 
-## Хайлайты: только контур (шейдер sm.outline и трансформы — common/shaders.rpy).
-image note2_paper_hl = At("note2_paper", outline_hover(), hover_pulse())
-image note2_pencil_hl = At("note2_pencil", outline_hover(), hover_pulse())
+## Статичное положение руки на слое master (без слежения за курсором).
+transform note_hand_pos(pos_xy):
+    anchor (0.5, 0.5)
+    pos pos_xy
 
-## Интерактив: выравнивание листов и карандаша #################################
+## Правая рука «тянется» к предмету при наведении: обе позы (покоя и
+## движения) показаны на слое master один раз и никогда не прячутся — alpha
+## каждой плавно идёт к 0/1 по текущему hover, отчего одна поза кросфейдом
+## перетекает в другую. 7dots show_hide тут не годится: он лишь показывает
+## или прячет один спрайт, а не сменяет один на другой.
+init -10 python:
+
+    def _hand_reach_alpha_f(visible_when_reaching, relax, trans, st, at):
+        reaching = note_hover_paper or note_hover_pencil
+        target = 1.0 if reaching == visible_when_reaching else 0.0
+        a = getattr(trans, "fx_a", target)
+        a += (target - a) * relax
+        trans.fx_a = a
+        trans.alpha = a
+        return 1.0 / 60.0
+
+transform hand_reach(pos_xy, visible_when_reaching=True, relax=0.15):
+    anchor (0.5, 0.5)
+    pos pos_xy
+    function renpy.curry(_hand_reach_alpha_f)(visible_when_reaching, relax)
+
+## Интерактив: наведи и клинкни ##################################################
 ##
-## Диалоговое окно скрыто, игрок кликает по предметам на столе.
-## Каждый предмет требует нескольких кликов — Марине непросто начать,
-## тревожность и ОКР заставляют «готовиться».
-##
-## Параметры измерены по prologue_note.jpg (from) и prologue_note center.jpg
-## (to): центр предмета, итоговый поворот (градусы) и масштаб.
+## Диалоговое окно скрыто. Сами предметы лежат на слое master (note_paper и
+## note_pencil), кнопки здесь только ловят курсор: они полностью прозрачны, а
+## хит-зона задана попиксельно по альфе предмета (focus_mask). Наведение
+## поднимает флаг — предмет на master светлеет, правая рука «тянется».
+## Клик по любому из двух завершает мини-игру.
 
-define NOTE2_PAPER = {"from": (785, 414), "to": (967, 438), "angle": 15.0, "zoom": 0.95, "clicks": 3}
-define NOTE2_PENCIL = {"from": (856, 214), "to": (1318, 415), "angle": -94.0, "zoom": 0.98, "clicks": 2}
+default note_hover_paper = False
+default note_hover_pencil = False
 
-init python:
-    def note2_state(item, clicks):
-        """(x, y, angle, zoom) предмета после указанного числа кликов."""
-        f = min(max(clicks, 0), item["clicks"]) / float(item["clicks"])
-        fx, fy = item["from"]
-        tx, ty = item["to"]
-        ## Координаты — только int: float в pos Ren'Py трактует как долю экрана.
-        return (int(round(fx + (tx - fx) * f)),
-                int(round(fy + (ty - fy) * f)),
-                item["angle"] * f,
-                1.0 + (item["zoom"] - 1.0) * f)
-
-## Кнопки повторяют текущее положение предметов; хит-зона — попиксельно по
-## альфа-каналу (focus_mask), при наведении — пульсирующий контур по объекту.
-screen prologue_note_align(paper_st, pencil_st, sheets_done, pencil_done):
+screen prologue_note_align():
     modal True
 
-    ## Стопка листов.
-    if not sheets_done:
-        imagebutton:
-            at note2_place(paper_st)
-            idle Transform("note2_paper", alpha=0.0)
-            hover "note2_paper_hl"
-            focus_mask "note2_paper"
-            action Return("sheets")
+    imagebutton:
+        at note_paper_messy
+        idle Transform("prologue_note_paper", alpha=0.0)
+        focus_mask "prologue_note_paper"
+        hovered SetVariable("note_hover_paper", True)
+        unhovered SetVariable("note_hover_paper", False)
+        action Return("done")
 
-    ## Карандаш поверх листов (объявлен позже — приоритет при наложении).
-    if not pencil_done:
-        imagebutton:
-            at note2_place(pencil_st)
-            idle Transform("note2_pencil", alpha=0.0)
-            hover "note2_pencil_hl"
-            focus_mask "note2_pencil"
-            action Return("pencil")
+    imagebutton:
+        at note_pencil_messy
+        idle Transform("prologue_note_pencil", alpha=0.0)
+        focus_mask "prologue_note_pencil"
+        hovered SetVariable("note_hover_pencil", True)
+        unhovered SetVariable("note_hover_pencil", False)
+        action Return("done")
 
 ## Сцена ########################################################################
 
@@ -145,15 +180,19 @@ label prologue_s1:
 
     "Кажется, осталось позади всё, что было мне ценно."
 
-    ## Записка из слоёв — предметы лежат как на prologue_note.jpg.
-    ## Камера чуть следует за мышкой и мелко дрожит от напряжения, поверх —
-    ## зерно-помехи. Оба эффекта спадают по мере наведения порядка на столе.
-    $ note2_tension = 1.0
-    camera at mouse_parallax(NOTE2_PARALLAX, NOTE2_PARALLAX_SMOOTH, NOTE2_SHAKE_AMP, NOTE2_RELAX, "note2_tension")
-    scene note2_bg
-    show note2_paper at note2_move(*(note2_state(NOTE2_PAPER, 0) * 2))
-    show note2_pencil at note2_move(*(note2_state(NOTE2_PENCIL, 0) * 2))
-    show fx_noise at noise_overlay(NOTE2_NOISE, NOTE2_RELAX, "note2_tension")
+    ## Записка в беспорядке: фон + бумага и карандаш отдельными слоями (карандаш
+    ## поверх листов — объявлен позже, приоритет при наложении). Камера чуть
+    ## следует за мышкой, поверх — постоянное зерно-помехи от напряжения.
+    $ note_hover_paper = False
+    $ note_hover_pencil = False
+    camera at mouse_parallax(NOTE_PARALLAX, NOTE_PARALLAX_SMOOTH)
+    scene prologue_note_bg
+    show note_paper at note_paper_messy
+    show note_pencil at note_pencil_messy
+    show prologue_hand_left at note_hand_pos(NOTE_HAND_LEFT_POS)
+    show prologue_hand_right at hand_reach(NOTE_HAND_RIGHT_POS, visible_when_reaching=False)
+    show prologue_hand_right_move at hand_reach(NOTE_HAND_MOVE_POS, visible_when_reaching=True)
+    show fx_noise at noise_overlay(NOTE_NOISE)
     with prologue_dissolve
 
     "Пора начинать. Но не так. Не с такого стола."
@@ -162,45 +201,18 @@ label prologue_s1:
 
     window hide
 
-    $ _sheets = 0
-    $ _pencil = 0
+    call screen prologue_note_align
 
-    while _sheets < NOTE2_PAPER["clicks"] or _pencil < NOTE2_PENCIL["clicks"]:
+    ## Экран закрылся — unhovered кнопки уже не сработает, гасим подсветку сами.
+    $ note_hover_paper = False
+    $ note_hover_pencil = False
+    window auto
 
-        call screen prologue_note_align(note2_state(NOTE2_PAPER, _sheets), note2_state(NOTE2_PENCIL, _pencil), _sheets >= NOTE2_PAPER["clicks"], _pencil >= NOTE2_PENCIL["clicks"])
-
-        ## Каждый клик снимает часть напряжения — дрожь и помехи слабеют.
-        if _return in ("sheets", "pencil"):
-            $ note2_tension = 1.0 - (_sheets + _pencil + 1) / float(NOTE2_PAPER["clicks"] + NOTE2_PENCIL["clicks"])
-
-        if _return == "sheets":
-            $ _sheets += 1
-            ## Стопка сдвигается и доворачивается к положению с финальной картинки.
-            show note2_paper at note2_move(*(note2_state(NOTE2_PAPER, _sheets - 1) + note2_state(NOTE2_PAPER, _sheets)))
-            $ renpy.pause(0.55, hard=True)
-            if _sheets == 1:
-                "Я подравняла стопку. Ближе к центру. Но верхний лист всё ещё выступает. Совсем чуть-чуть."
-            elif _sheets == 2:
-                "Это «чуть-чуть» невыносимо. Ещё раз."
-            elif _sheets == 3:
-                "Вот. Края совпали. Кажется... Да. Совпали."
-        elif _return == "pencil":
-            $ _pencil += 1
-            show note2_pencil at note2_move(*(note2_state(NOTE2_PENCIL, _pencil - 1) + note2_state(NOTE2_PENCIL, _pencil)))
-            $ renpy.pause(0.55, hard=True)
-            if _pencil == 1:
-                "Карандаш лежал поперёк листа. Косо. Так нельзя."
-            elif _pencil == 2:
-                "Вдоль правого края. Идеально параллельно. Только так."
-
-        window hide
-
-    ## Теперь листы бумаги и карандаш лежат ровно — слои совпадают с финальной
-    ## картинкой, кросфейд лишь сглаживает разницу в тенях. Параллакс, дрожь
-    ## и помехи выключаются: порядок наведён, камера успокаивается.
+    ## Порядок наведён — кросфейд всей картинки в готовый композит. Параллакс,
+    ## руки и помехи уходят вместе со сменой сцены.
     camera
     scene prologue_note_center
-    with prologue_dissolve
+    with Dissolve(0.6)
 
     "Теперь всё ровно. Можно начинать."
 

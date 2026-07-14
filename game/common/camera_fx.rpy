@@ -79,6 +79,29 @@ init -10 python:
         trans.yoffset = py + jy
         return 1.0 / 60.0
 
+    def mouse_follow_f(rx, ry, smooth, trans, st, at):
+        """function-трансформ: слой смещается так, чтобы его опорная точка
+        (rx, ry в координатах изображения) плавно следовала за курсором.
+
+        rx, ry — опорная точка изображения (px);
+        smooth — доля пути к цели за кадр (0..1).
+        """
+        rx = _fx_num(rx, 0.0)
+        ry = _fx_num(ry, 0.0)
+        smooth = _fx_num(smooth, 0.12, 0.001, 1.0)
+
+        mx, my = renpy.get_mouse_pos()
+        fx = getattr(trans, "fx_fx", 0.0)
+        fy = getattr(trans, "fx_fy", 0.0)
+        fx += ((mx - rx) - fx) * smooth
+        fy += ((my - ry) - fy) * smooth
+        trans.fx_fx = fx
+        trans.fx_fy = fy
+
+        trans.xoffset = fx
+        trans.yoffset = fy
+        return 1.0 / 60.0
+
     def noise_overlay_f(strength, relax, tension_var, trans, st, at):
         """function-трансформ зерна: сила = strength × напряжение (0..1)."""
         strength = _fx_num(strength, 0.1, 0.0, 1.0)
@@ -96,6 +119,14 @@ transform mouse_parallax(strength=10.0, smooth=0.06, shake_amp=0.0, relax=0.04, 
     xoffset 0.0 yoffset 0.0
     function renpy.curry(mouse_parallax_f)(strength, smooth, shake_amp, relax, tension_var)
 
+## Слой следует за курсором: опорная точка изображения (rx, ry) плавно
+## тянется к позиции мыши. Начальное смещение нулевое — слой «поднимается»
+## со своего исходного места и догоняет курсор.
+transform mouse_follow(rx, ry, smooth=0.12):
+    subpixel True
+    xoffset 0.0 yoffset 0.0
+    function renpy.curry(mouse_follow_f)(rx, ry, smooth)
+
 ## Полноэкранные зерно-помехи поверх сцены:
 ##     show fx_noise at noise_overlay(strength, relax, "имя_переменной")
 ## Без tension_var сила постоянна и равна strength.
@@ -108,6 +139,7 @@ transform noise_overlay(strength=0.1, relax=0.04, tension_var=None):
     function renpy.curry(noise_overlay_f)(strength, relax, tension_var)
 
 ## Тревожное покачивание камеры: непрерывный дрейф позиции и лёгкий наклон.
+##
 ## drift — амплитуда сдвига (px), tilt — наклон (градусы), speed — множитель
 ## скорости (>0), zoom_pad — запас по краям. Периоды осей некратны друг
 ## другу — движение не выглядит зацикленным.
