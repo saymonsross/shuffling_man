@@ -186,6 +186,9 @@ init python:
     build.classify('**/#**', None)
     build.classify('**/thumbs.db', None)
 
+    ## Dev-инструменты (позиционирование спрайтов и т.п.) — не в дистрибутив.
+    build.classify('game/dev/**', None)
+
     ## Чтобы архивировать файлы, классифицируйте их, например, как 'archive'.
 
     # build.classify('game/**.png', 'archive')

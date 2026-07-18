@@ -3,8 +3,9 @@
 ##
 ## Переиспользуемые трансформы: покачивание камеры, параллакс за мышкой с
 ## дрожью напряжения, полноэкранные зерно-помехи (шейдер sm.noise —
-## common/shaders.rpy). Все параметры имеют дефолты, числовые аргументы
-## проверяются и приводятся к безопасным диапазонам.
+## common/shaders.rpy), дрожь произвольного объекта (object_jitter_f). Все
+## параметры имеют дефолты, числовые аргументы проверяются и приводятся к
+## безопасным диапазонам.
 ##
 ## Правило проекта: перед добавлением сюда новых эффектов — проверить,
 ## нет ли готового решения в libs/7dots.rpy.
@@ -22,21 +23,46 @@ init -10 python:
             v = min(v, hi)
         return float(v)
 
-    def _fx_tension(trans, tension_var, relax):
+    ## Накопители сглаживания для function-трансформов ниже (offset, дрожь,
+    ## напряжение) — хранятся здесь, в module-level словаре, а НЕ на объекте
+    ## трансформа (как раньше — trans.fx_px = ...).
+    ##
+    ## Причина: "camera"-слой (см. transform_layer в движке) и постоянные
+    ## оверлей-экраны (config.always_shown_screens, см. fx_noise_screen ниже)
+    ## пересобирают обёртку трансформа заново при каждом restart_interaction —
+    ## а это ЛЮБОЙ клик и ЛЮБОЕ наведение на кнопку/хотспот, не только смена
+    ## сцены. Ren'Py при пересборке переносит в новый объект только
+    ## официальные ATL-свойства (xoffset, zoom, alpha, u_-юниформы шейдеров) —
+    ## обычные python-атрибуты вроде trans.fx_px копированию не подлежат и
+    ## обнуляются, отчего сглаженное значение резко прыгает к 0 и заново
+    ## подъезжает к цели: видимый рывок камеры на каждом клике/наведении.
+    _fx_state = {}
+
+    def _fx_step(key, target, relax, st, start):
+        """Один шаг сглаживания _fx_state[key] к target на relax за кадр.
+
+        st (shown time трансформа) отличает настоящий новый старт эффекта
+        (st около 0 — старое значение неактуально, начинаем с start) от
+        пересборки обёртки после клика/наведения (st продолжает расти —
+        подхватываем накопленное в _fx_state значение).
+        """
+        cur = start if st < 0.001 else _fx_state.get(key, start)
+        cur += (target - cur) * relax
+        _fx_state[key] = cur
+        return cur
+
+    def _fx_tension(tension_var, relax, st, key):
         """Сглаженное значение переменной напряжения store[tension_var] (0..1).
 
-        Состояние хранится на объекте трансформа (fx_t), поэтому после смены
-        переменной значение тянется к цели плавно, со скоростью relax за кадр.
         tension_var не задана или не строка → эффект на полную силу (1.0).
+        key — идентификатор вызывающего эффекта (у разных эффектов свои
+        независимые накопители, даже если tension_var совпадает).
         """
         if isinstance(tension_var, str) and tension_var:
             target = _fx_num(getattr(store, tension_var, 0.0), 0.0, 0.0, 1.0)
         else:
             target = 1.0
-        t = getattr(trans, "fx_t", None)
-        t = target if t is None else t + (target - t) * relax
-        trans.fx_t = t
-        return t
+        return _fx_step(key, target, relax, st, start=target)
 
     def mouse_parallax_f(strength, smooth, shake_amp, relax, tension_var, trans, st, at):
         """function-трансформ (по образцу xy_at_f из 7dots): камера чуть
@@ -57,23 +83,15 @@ init -10 python:
         mx, my = renpy.get_mouse_pos()
         tx = -(mx / float(config.screen_width) - 0.5) * 2.0 * strength
         ty = -(my / float(config.screen_height) - 0.5) * 2.0 * strength
-        px = getattr(trans, "fx_px", 0.0)
-        py = getattr(trans, "fx_py", 0.0)
-        px += (tx - px) * smooth
-        py += (ty - py) * smooth
-        trans.fx_px = px
-        trans.fx_py = py
+        px = _fx_step("cam_px", tx, smooth, st, start=0.0)
+        py = _fx_step("cam_py", ty, smooth, st, start=0.0)
 
         ## Мелкая дрожь: не тряска, а зуд-раздражение. Короткий диапазон,
         ## лёгкое сглаживание рывков между кадрами.
-        t = _fx_tension(trans, tension_var, relax)
+        t = _fx_tension(tension_var, relax, st, "cam_tension")
         amp = shake_amp * t
-        jx = getattr(trans, "fx_jx", 0.0)
-        jy = getattr(trans, "fx_jy", 0.0)
-        jx += (renpy.random.uniform(-amp, amp) - jx) * 0.5
-        jy += (renpy.random.uniform(-amp, amp) - jy) * 0.5
-        trans.fx_jx = jx
-        trans.fx_jy = jy
+        jx = _fx_step("cam_jx", renpy.random.uniform(-amp, amp), 0.5, st, start=0.0)
+        jy = _fx_step("cam_jy", renpy.random.uniform(-amp, amp), 0.5, st, start=0.0)
 
         trans.xoffset = px + jx
         trans.yoffset = py + jy
@@ -106,7 +124,28 @@ init -10 python:
         """function-трансформ зерна: сила = strength × напряжение (0..1)."""
         strength = _fx_num(strength, 0.1, 0.0, 1.0)
         relax = _fx_num(relax, 0.04, 0.001, 1.0)
-        trans.u_strength = strength * _fx_tension(trans, tension_var, relax)
+        trans.u_strength = strength * _fx_tension(tension_var, relax, st, "noise_tension")
+        return 1.0 / 60.0
+
+    def object_jitter_f(amp, relax, key, trans, st, at):
+        """function-трансформ: лёгкая дрожь объекта — добавочный xoffset/
+        yoffset поверх уже заданной pos/anchor. Годится для сцен напряжения
+        (дрожащие руки и т.п.); использовать как ещё один parallel-трек внутри
+        трансформа сцены, рядом с ease по pos/alpha — тогда дрожь складывается
+        с движением аддитивно, не заменяя его.
+
+        amp   — амплитуда дрожи, px;
+        relax — сглаживание рывков между кадрами (0..1), выше — резче;
+        key   — идентификатор состояния в _fx_state; разным одновременно
+                дрожащим объектам нужны разные key, иначе делят один накопитель.
+        """
+        amp = _fx_num(amp, 3.0, 0.0)
+        relax = _fx_num(relax, 0.5, 0.001, 1.0)
+
+        jx = _fx_step(key + "_jx", renpy.random.uniform(-amp, amp), relax, st, start=0.0)
+        jy = _fx_step(key + "_jy", renpy.random.uniform(-amp, amp), relax, st, start=0.0)
+        trans.xoffset = jx
+        trans.yoffset = jy
         return 1.0 / 60.0
 
 ## Камера следует за мышкой (сдвиг против движения, до strength px), сверху —
@@ -127,7 +166,9 @@ transform mouse_follow(rx, ry, smooth=0.12):
     xoffset 0.0 yoffset 0.0
     function renpy.curry(mouse_follow_f)(rx, ry, smooth)
 
-## Полноэкранные зерно-помехи поверх сцены:
+## Полноэкранные зерно-помехи. Показываются всегда поверх всей игры (см.
+## fx_noise_screen ниже) — руками через `show fx_noise at noise_overlay(...)`
+## включать не нужно, эффект уже глобальный.
 ##     show fx_noise at noise_overlay(strength, relax, "имя_переменной")
 ## Без tension_var сила постоянна и равна strength.
 image fx_noise = Solid("#FFF")
@@ -137,6 +178,20 @@ transform noise_overlay(strength=0.1, relax=0.04, tension_var=None):
     shader "sm.noise"
     u_strength 0.0
     function renpy.curry(noise_overlay_f)(strength, relax, tension_var)
+
+## Сила фонового зерна-помех (0..1) — общая на всю игру. Сцены могут временно
+## поднимать/опускать значение через `$ fx_noise_strength = ...`; переход
+## плавный (см. relax в noise_overlay_f выше).
+default fx_noise_strength = 0.10
+
+## Постоянный оверлей зерна: зарегистрирован в config.always_shown_screens,
+## поэтому виден всегда — от главного меню до любой сцены — и не пропадает при
+## `scene` (тот очищает только слой master, не слой screens).
+screen fx_noise_screen():
+    add "fx_noise" at noise_overlay(1.0, tension_var="fx_noise_strength")
+
+init python:
+    config.always_shown_screens.append("fx_noise_screen")
 
 ## Тревожное покачивание камеры: непрерывный дрейф позиции и лёгкий наклон.
 ##
