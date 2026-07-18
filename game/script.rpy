@@ -2,4 +2,4 @@
 
 label start:
 
-    jump prologue_s1
+    jump prologue_scene_1
