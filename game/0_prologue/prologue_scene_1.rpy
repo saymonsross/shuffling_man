@@ -15,6 +15,8 @@ image prologue_note_bg = "images/0_prologue/prologue_note bg.jpg"
 image prologue_note_paper = "images/0_prologue/prologue_note_paper.png"
 image prologue_note_pencil = "images/0_prologue/prologue_note_pencil.png"
 
+image prologue_pencil_close = "images/0_prologue/prologue pencil_close.jpg"
+
 image prologue_hand_left = "images/0_prologue/prologue_hand_left.png"
 image prologue_hand_right = "images/0_prologue/prologue_hand_right rest.png"
 image prologue_hand_right_move = "images/0_prologue/prologue_hand_right move.png"
@@ -60,7 +62,10 @@ define NOTE_HAND_LINE_START_POS = (767, 158)
 define NOTE_HAND_TO_LINE_T = 1.1
 
 define NOTE_HAND_JITTER_AMP = 3.0      # дрожь руки при взятии, px
-define NOTE_WRITE_TENSION_NOISE = 0.3  # шум-помехи на время взятия
+define NOTE_WRITE_TENSION_NOISE = 0.2  # шум-помехи с момента взятия
+
+## Крупный план руки с карандашом: лёгкий тремор фона поверх параллакса, px.
+define PENCIL_CLOSE_SHAKE_AMP = 1.5
 
 ## Образы и трансформы ##########################################################
 
@@ -177,7 +182,8 @@ label prologue_scene_1:
     "Но я должна излить наружу то, что пожирает меня изнутри."
 
     ## Взятие карандаша (автопроигрыш): рука с дрожью тянется, медлит и на том
-    ## же месте перетекает в позу письма; шум-помехи на это время усилены.
+    ## же месте перетекает в позу письма. Лёгкий шум-помехи включается здесь и
+    ## держится до конца сцены; дрожь руки (общий jitter_key) не прерывается.
     $ dismiss_off()
     $ fx_noise_strength = NOTE_WRITE_TENSION_NOISE
     $ pause(0.5)
@@ -186,16 +192,28 @@ label prologue_scene_1:
     $ pause(NOTE_HAND_REACH_T)
     $ pause(NOTE_HAND_HOVER_T)
 
-    $ fx_noise_strength = FX_NOISE_DEFAULT
-    show prologue_hand_right_write at placed(NOTE_HAND_WRITE_GRIP_POS)
+    show prologue_hand_right_write at placed_jitter(NOTE_HAND_WRITE_GRIP_POS, jitter_amp=NOTE_HAND_JITTER_AMP, jitter_key="note_hand")
     hide prologue_hand_right_move
     hide prologue_note_pencil
     with Dissolve(0.4)
     $ pause(0.7)
 
-    ## Рука с карандашом едет к началу первой строки.
-    show prologue_hand_right_write at move_between(NOTE_HAND_WRITE_GRIP_POS, NOTE_HAND_LINE_START_POS, t=NOTE_HAND_TO_LINE_T)
+    ## Рука с карандашом едет к началу первой строки, дрожь сохраняется.
+    show prologue_hand_right_write at move_between(NOTE_HAND_WRITE_GRIP_POS, NOTE_HAND_LINE_START_POS, t=NOTE_HAND_TO_LINE_T, jitter_amp=NOTE_HAND_JITTER_AMP, jitter_key="note_hand")
     $ pause(NOTE_HAND_TO_LINE_T)
     $ dismiss_on()
+
+    ## Крупный план руки с карандашом: тот же параллакс, что и на записке,
+    ## шум остаётся лёгким, фон чуть дрожит — тремор / нервное напряжение.
+    camera at mouse_parallax(NOTE_PARALLAX, NOTE_PARALLAX_SMOOTH, shake_amp=PENCIL_CLOSE_SHAKE_AMP)
+    scene prologue_pencil_close
+    with prologue_dissolve
+
+    "Я не осмелюсь вернуться к карандашу и бумаге позже. Это будет моя последняя попытка. Спринтерский забег."
+
+    "Я расскажу всё на одном дыхании. Здесь и сейчас."
+
+    ## Возврат фоновых значений при выходе из сцены.
+    $ fx_noise_strength = FX_NOISE_DEFAULT
 
     return

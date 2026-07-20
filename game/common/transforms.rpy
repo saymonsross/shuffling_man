@@ -23,11 +23,23 @@ transform slide_in(from_xy, to_xy, t=0.9, jitter_amp=0.0, jitter_key="slide_in")
     parallel:
         function renpy.curry(object_jitter_f)(jitter_amp, 0.5, jitter_key)
 
-## Перемещение уже видимого объекта from_xy → to_xy за t.
-transform move_between(from_xy, to_xy, t=0.8):
+## Статичное размещение с дрожью (object_jitter_f). jitter_key уникален на
+## объект; тем же ключом дрожь бесшовно продолжается между трансформами.
+transform placed_jitter(pos_xy, anchor_xy=(0.0, 0.0), jitter_amp=3.0, jitter_key="placed_jitter"):
+    anchor anchor_xy
+    pos pos_xy
+    xoffset 0.0 yoffset 0.0
+    function renpy.curry(object_jitter_f)(jitter_amp, 0.5, jitter_key)
+
+## Перемещение уже видимого объекта from_xy → to_xy за t с опциональной дрожью.
+transform move_between(from_xy, to_xy, t=0.8, jitter_amp=0.0, jitter_key="move_between"):
     anchor (0.0, 0.0)
     pos from_xy
-    ease t pos to_xy
+    xoffset 0.0 yoffset 0.0
+    parallel:
+        ease t pos to_xy
+    parallel:
+        function renpy.curry(object_jitter_f)(jitter_amp, 0.5, jitter_key)
 
 init -10 python:
 
