@@ -74,21 +74,15 @@ image note_paper = hover_lit("prologue_note_paper", "note_hover_paper", NOTE_HOV
 image note_pencil = hover_lit("prologue_note_pencil", "note_hover_pencil", NOTE_HOVER_BRIGHTNESS)
 
 transform prologue_slow_zoom:
+    subpixel True
     xalign 0.5 yalign 0.45 zoom 1.0
     ease 22.0 zoom 1.25
 
 define prologue_fade_in = Dissolve(4.0)
 define prologue_dissolve = Dissolve(1.2)
 
-transform note_paper_messy:
-    anchor (0.5, 0.5)
-    pos NOTE_PAPER_POS
-    rotate NOTE_PAPER_ANGLE
-
-transform note_pencil_messy:
-    anchor (0.5, 0.5)
-    pos NOTE_PENCIL_POS
-    rotate NOTE_PENCIL_ANGLE
+define 1 note_paper_messy = placed(NOTE_PAPER_POS, (0.5, 0.5), NOTE_PAPER_ANGLE)
+define 1 note_pencil_messy = placed(NOTE_PENCIL_POS, (0.5, 0.5), NOTE_PENCIL_ANGLE)
 
 default note_hover_paper = False
 default note_hover_pencil = False
@@ -172,10 +166,9 @@ label prologue_scene_1:
     scene prologue_note_bg
     show prologue_note_paper at placed(NOTE_PAPER_NEAT_POS, (0.5, 0.5))
     show prologue_note_pencil at placed(NOTE_PENCIL_NEAT_POS, (0.5, 0.5))
-    with prologue_dissolve
-
     show prologue_hand_left at placed(NOTE_HAND_LEFT_POS)
     show prologue_hand_right at flag_fade(NOTE_HAND_RIGHT_POS, NOTE_HOVER_FLAGS, visible_when=False)
+    with prologue_dissolve
 
     "Обо всём случившемся невыносимо думать."
 
