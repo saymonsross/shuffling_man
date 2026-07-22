@@ -45,12 +45,14 @@ transform move_between(from_xy, to_xy, t=0.8, jitter_amp=0.0, jitter_key="move_b
 init -10 python:
 
     def _flag_alpha_f(flags, visible_when, relax, trans, st, at):
+        """Состояние — в _fx_state (common/camera_fx.rpy), не в атрибутах
+        trans: атрибуты теряются при пересборке обёртки трансформа, альфа
+        скакала бы к цели. Ключ — из flags и visible_when: у пары спрайтов
+        кроссфейда поз ключи разные."""
         active = any(getattr(store, f, False) for f in flags)
         target = 1.0 if active == visible_when else 0.0
-        a = getattr(trans, "fx_a", target)
-        a += (target - a) * relax
-        trans.fx_a = a
-        trans.alpha = a
+        key = "flagfade_" + "|".join(flags) + ("_on" if visible_when else "_off")
+        trans.alpha = _fx_step(key, target, relax, start=target)
         return 1.0 / 60.0
 
 ## Альфа объекта плавно следует за флагами: при visible_when=True объект виден,
