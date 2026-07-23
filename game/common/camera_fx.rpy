@@ -177,19 +177,28 @@ init python:
 
 ## Тревожное покачивание камеры: дрейф (drift, px) + наклон (tilt, градусы).
 ## Периоды осей некратны — движение не выглядит зацикленным.
-transform uneasy_sway(drift=12.0, tilt=0.6, speed=1.0, zoom_pad=1.06):
+## base — базовый завал горизонта (градусы): за base_in_t камера заваливается
+## до base (и доводит зум zoom0 → zoom_pad, если задан zoom0 — плавный вход
+## из другого камера-трансформа), дальше качается вокруг base. Дефолты
+## (base=0, base_in_t=0, zoom0=None) дают прежнее поведение без завала.
+## zoom_pad должен покрывать поворот: для угла θ нужен зум ≥ cos θ + (16/9)·sin θ.
+transform uneasy_sway(drift=12.0, tilt=0.6, speed=1.0, zoom_pad=1.06, base=0.0, base_in_t=0.0, zoom0=None):
     subpixel True
     align (0.5, 0.5)
-    zoom zoom_pad
+    zoom (zoom_pad if zoom0 is None else zoom0)
+    parallel:
+        easein base_in_t zoom zoom_pad
     parallel:
         ease 3.4 / max(speed, 0.05) xoffset drift
         ease 4.1 / max(speed, 0.05) xoffset -drift * 0.85
         repeat
     parallel:
+        easein base_in_t rotate base
+        block:
+            ease 5.3 / max(speed, 0.05) rotate base + tilt
+            ease 4.7 / max(speed, 0.05) rotate base - tilt * 0.85
+            repeat
+    parallel:
         ease 2.9 / max(speed, 0.05) yoffset -drift * 0.7
         ease 3.7 / max(speed, 0.05) yoffset drift * 0.75
-        repeat
-    parallel:
-        ease 5.3 / max(speed, 0.05) rotate tilt
-        ease 4.7 / max(speed, 0.05) rotate -tilt * 0.85
         repeat

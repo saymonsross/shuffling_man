@@ -99,6 +99,32 @@ define C1S1_GG_PARALLAX = 3.0    # очень слабый объектный п
 define C1S1_HANDS_LEFT_POS = (330, 284)
 define C1S1_HANDS_RIGHT_POS = (1113, 276)
 
+## Стук в дверь (визуализация звука — knock_at, common/knock_fx.rpy).
+## Звук бьёт отовсюду: каждый удар вспыхивает в новой части экрана, экран
+## вздрагивает в такт (punch-транзишены). Две серии по три удара с паузой.
+## Камера с первым ударом начинает заваливаться набок (uneasy_sway с base):
+## завал тянется через обе серии — тревога нарастает всю концовку сцены.
+## Точки ударов: серия 1 — [0..2], серия 2 — [3..5]; в пределах видимой
+## при зуме C1S1_KNOCK_PAD области кадра.
+define C1S1_KNOCK_POSES = ((320, 260), (1500, 700), (980, 190), (430, 800), (1460, 250), (900, 560))
+define C1S1_KNOCK_HOLD_T = 1.5      # тишина после остановки рук до первого удара
+define C1S1_KNOCK_GAP_T = 0.3       # пауза между ударами (сверх punch-тряски)
+define C1S1_KNOCK_GAP2_T = 0.18     # вторая серия — настойчивее
+define C1S1_KNOCK_SERIES_GAP_T = 1.7  # тишина между сериями
+define C1S1_KNOCK_TILT = -5.5       # базовый завал горизонта, градусы
+define C1S1_KNOCK_TILT_T = 7.0      # время завала — накрывает обе серии
+define C1S1_KNOCK_SWAY = 1.2        # амплитуда покачивания вокруг завала
+## Запас зума под поворот: |TILT| + SWAY ≈ 6.7° требует ≥ cos + (16/9)·sin ≈ 1.20.
+define C1S1_KNOCK_PAD = 1.22
+define C1S1_KNOCK_DRIFT = 10.0      # дрейф покачивания, px
+define C1S1_KNOCK_SWAY_SPEED = 1.4
+define C1S1_HANDS_TREMBLE = 1.5     # дрожь замерших рук, px
+
+## Вздрагивание экрана в такт удару (по образцу штатного vpunch, амплитуда
+## своя). Вторая серия бьёт сильнее и резче.
+define c1s1_knock_punch = Move((0, 12), (0, -12), 0.09, bounce=True, repeat=True, delay=0.26)
+define c1s1_knock_punch_hard = Move((0, 20), (0, -20), 0.08, bounce=True, repeat=True, delay=0.24)
+
 define chapter_1_fade_in = Dissolve(2.0)
 define chapter_1_dissolve = Dissolve(1.2)
 
@@ -273,7 +299,48 @@ label chapter_1_scene_1:
 
     $ pause(C1S1_HANDS_T)
 
+    ## Руки замерли над клавишами — и в тишине раздаётся стук в дверь.
+    $ pause(C1S1_KNOCK_HOLD_T)
+
+    ## С первым ударом камера начинает медленно заваливаться набок и тревожно
+    ## покачиваться; завал (и доводка зума из C1S1_CAM_Z_REST) растянуты на обе
+    ## серии стука. Параллакс при этом гаснет — мир перестаёт слушаться.
+    ## TODO(звук): стук в дверь (добавим позже).
+    camera at uneasy_sway(C1S1_KNOCK_DRIFT, C1S1_KNOCK_SWAY, speed=C1S1_KNOCK_SWAY_SPEED, zoom_pad=C1S1_KNOCK_PAD, base=C1S1_KNOCK_TILT, base_in_t=C1S1_KNOCK_TILT_T, zoom0=C1S1_CAM_Z_REST)
+
+    ## Первая серия: три удара в разных частях экрана, экран вздрагивает
+    ## в такт каждому (punch — блокирующий транзишен, даёт и часть паузы).
+    $ knock_at(C1S1_KNOCK_POSES[0], zoom=0.9)
+    with c1s1_knock_punch
+    $ pause(C1S1_KNOCK_GAP_T)
+    $ knock_at(C1S1_KNOCK_POSES[1])
+    with c1s1_knock_punch
+    $ pause(C1S1_KNOCK_GAP_T)
+    $ knock_at(C1S1_KNOCK_POSES[2], zoom=1.1)
+    with c1s1_knock_punch
+
+    ## Тишина. Стук не повторяется — но замершие руки начинают мелко дрожать.
+    $ pause(C1S1_KNOCK_SERIES_GAP_T)
+    show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE, jitter_key="c1s1_hand_l")
+    show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE, jitter_key="c1s1_hand_r")
+
+    ## Вторая серия: три удара громче и настойчивее — кольца крупнее, паузы
+    ## короче, тряска сильнее; точки снова новые.
+    $ knock_at(C1S1_KNOCK_POSES[3], zoom=1.3)
+    with c1s1_knock_punch_hard
+    $ pause(C1S1_KNOCK_GAP2_T)
+    $ knock_at(C1S1_KNOCK_POSES[4], zoom=1.45)
+    with c1s1_knock_punch_hard
+    $ pause(C1S1_KNOCK_GAP2_T)
+    $ knock_at(C1S1_KNOCK_POSES[5], zoom=1.6)
+    with c1s1_knock_punch_hard
+
+    ## Камера доваливается до предельного угла; сцена замирает в наклонном
+    ## тревожном покачивании над дрожащими руками.
+    $ pause(2.0)
+    $ knock_clear()
+
     $ dismiss_on()
 
-    ## Руки замерли над клавишами; продолжение сцены — следующим шагом.
+    ## Продолжение (реакция ГГ на стук) — следующим шагом.
     return
