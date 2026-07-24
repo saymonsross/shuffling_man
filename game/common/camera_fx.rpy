@@ -3,6 +3,11 @@
 ## Перед добавлением новых — проверить, нет ли готового в libs/7dots.rpy.
 ################################################################################
 
+## Параллакс за мышкой. Полоса плитки внизу была не из-за него, а из-за
+## дробных anchor/pos на камере (см. _focus_offset) — после фикса параллакс
+## снова включён глобально.
+define FX_MOUSE_PARALLAX_ON = True
+
 init -10 python:
 
     def _fx_num(v, default, lo=None, hi=None):
@@ -55,6 +60,11 @@ init -10 python:
         накопителей _fx_state: уникален на каждого одновременного пользователя
         (камера — "cam", объектный параллакс — свой ключ на объект)."""
         strength = _fx_num(strength, 10.0, 0.0)
+        ## Глобальный выключатель (FX_MOUSE_PARALLAX_ON): при False слои за
+        ## курсором не следят — сила гасится в 0, накопители плавно доводят
+        ## текущий сдвиг до нуля, без скачка. Дрожь shake_amp сохраняется.
+        if not FX_MOUSE_PARALLAX_ON:
+            strength = 0.0
         smooth = _fx_num(smooth, 0.06, 0.001, 1.0)
         shake_amp = _fx_num(shake_amp, 0.0, 0.0)
         relax = _fx_num(relax, 0.04, 0.001, 1.0)
@@ -72,6 +82,41 @@ init -10 python:
 
         trans.xoffset = px + jx
         trans.yoffset = py + jy
+        return 1.0 / 60.0
+
+    def _focus_offset(focus_align, screen_align, z):
+        """Пиксельные оффсеты, дающие при align (0.5, 0.5) тот же кадр, что
+        anchor focus_align / pos screen_align: точка изображения focus_align
+        (доли) встаёт в точку экрана screen_align при зуме z. Дробные
+        anchor/pos на камере неверно масштабируются на части рендеров
+        (Windows/ANGLE: слой уезжает вверх на ~100+ px, снизу оголяется
+        полоса) — поэтому камера якорится центром, а фокус доводится
+        оффсетами. Оффсеты — float px: xoffset/yoffset всегда абсолютные
+        пиксели, дробной семантики не имеют, int-приведение не требуется."""
+        fx, fy = focus_align
+        sx, sy = (screen_align or focus_align)
+        ox = config.screen_width * (sx - 0.5 - (fx - 0.5) * z)
+        oy = config.screen_height * (sy - 0.5 - (fy - 0.5) * z)
+        return ox, oy
+
+    def focus_parallax_f(focus_align, screen_align, strength, smooth, key, trans, st, at):
+        """База кадра (от текущего trans.zoom — зум-трек идёт параллельно)
+        + параллакс за мышкой поверх. Оффсеты базы линейны по зуму, поэтому
+        кадр точен в каждый момент анимации зума."""
+        bx, by = _focus_offset(focus_align, screen_align, trans.zoom or 1.0)
+
+        strength = _fx_num(strength, 10.0, 0.0)
+        if not FX_MOUSE_PARALLAX_ON:
+            strength = 0.0
+        smooth = _fx_num(smooth, 0.06, 0.001, 1.0)
+        mx, my = renpy.get_mouse_pos()
+        tx = -(mx / float(config.screen_width) - 0.5) * 2.0 * strength
+        ty = -(my / float(config.screen_height) - 0.5) * 2.0 * strength
+        px = _fx_step(key + "_px", tx, smooth, start=0.0)
+        py = _fx_step(key + "_py", ty, smooth, start=0.0)
+
+        trans.xoffset = bx + px
+        trans.yoffset = by + py
         return 1.0 / 60.0
 
     def mouse_follow_f(rx, ry, smooth, key, trans, st, at):
@@ -111,9 +156,13 @@ init -10 python:
 
 ## Параллакс за мышкой + опциональная дрожь. Применять через `camera`.
 ## zoom_pad — запас по краям, чтобы при сдвигах не проступал фон.
+## rotate 0.0 — явный сброс: состояние камеры переживает смену `camera at`,
+## и завал rotate от предыдущего трансформа (uneasy_sway) иначе наследуется
+## молча — сцена оставалась бы повернутой.
 transform mouse_parallax(strength=10.0, smooth=0.06, shake_amp=0.0, relax=0.04, tension_var=None, zoom_pad=1.02, key="cam"):
     subpixel True
     align (0.5, 0.5) zoom zoom_pad
+    rotate 0.0
     xoffset 0.0 yoffset 0.0
     function renpy.curry(mouse_parallax_f)(strength, smooth, shake_amp, relax, tension_var, key)
 
@@ -123,29 +172,28 @@ transform mouse_parallax(strength=10.0, smooth=0.06, shake_amp=0.0, relax=0.04, 
 ## Разные значения позволяют, например, держать объект не в «родной» точке
 ## композиции, а строго по центру экрана весь зум. Оба зума > 1.0 — запас
 ## краёв под сдвиги параллакса. Применять через `camera`.
+## Реализация: align (0.5, 0.5) + пиксельные оффсеты из focus_parallax_f
+## (дробные anchor/pos на камере сдвигают слой на части рендеров — см.
+## _focus_offset). Зум-трек первым: function читает trans.zoom того же кадра.
 transform parallax_push(focus_align, z0, z1, t, strength=10.0, smooth=0.06, key="cam", screen_align=None):
     subpixel True
-    anchor focus_align
-    pos (screen_align or focus_align)
+    align (0.5, 0.5)
     zoom z0
-    xoffset 0.0 yoffset 0.0
     parallel:
         ease t zoom z1
     parallel:
-        function renpy.curry(mouse_parallax_f)(strength, smooth, 0.0, 0.04, None, key)
+        function renpy.curry(focus_parallax_f)(focus_align, screen_align, strength, smooth, key)
 
 ## То же, но зум затухающий (easein — быстрый старт, плавная остановка):
 ## подхватывает и завершает движение камеры, начатое в предыдущей сцене.
 transform parallax_settle(focus_align, z0, z1, t, strength=10.0, smooth=0.06, key="cam", screen_align=None):
     subpixel True
-    anchor focus_align
-    pos (screen_align or focus_align)
+    align (0.5, 0.5)
     zoom z0
-    xoffset 0.0 yoffset 0.0
     parallel:
         easein t zoom z1
     parallel:
-        function renpy.curry(mouse_parallax_f)(strength, smooth, 0.0, 0.04, None, key)
+        function renpy.curry(focus_parallax_f)(focus_align, screen_align, strength, smooth, key)
 
 ## Слой следует за курсором опорной точкой (rx, ry). key уникален на объект.
 transform mouse_follow(rx, ry, smooth=0.12, key="follow"):

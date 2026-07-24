@@ -29,6 +29,27 @@ image chapter_1_piano_gg = "images/1_chapter/chapter_1_piano_gg.png"
 image chapter_1_piano_hand_left = "images/1_chapter/chapter_1_piano_hand_left.png"
 image chapter_1_piano_hand_right = "images/1_chapter/chapter_1_piano_hand_right.png"
 
+## Холл: фон и слои-предметы (композиция сверена с hall_all.png попиксельно,
+## позиции — из bbox слоёв PSD Ch_1_Hall).
+image chapter_1 hall = "images/1_chapter/chapter_1 hall.jpg"
+image chapter_1_hall_door = "images/1_chapter/chapter_1_hall_door.png"
+image chapter_1_hall_mirror = "images/1_chapter/chapter_1_hall_mirror.png"
+image chapter_1_hall_paper = "images/1_chapter/chapter_1_hall_paper.png"
+image chapter_1_hall_bag = "images/1_chapter/chapter_1_hall_bag.png"
+image chapter_1_hall_bottles = "images/1_chapter/chapter_1_hall_bottles.png"
+image chapter_1_hall_umbrella_1 = "images/1_chapter/chapter_1_hall_umbrella_1.png"
+image chapter_1_hall_umbrella_2 = "images/1_chapter/chapter_1_hall_umbrella_2.png"
+image chapter_1_hall_boots = "images/1_chapter/chapter_1_hall_boots.png"
+image chapter_1_hall_packet = "images/1_chapter/chapter_1_hall_packet.png"
+image chapter_1_hall_toy = "images/1_chapter/chapter_1_hall_toy.png"
+image chapter_1_hall_mop = "images/1_chapter/chapter_1_hall_mop.png"
+
+## Дверь крупным планом: фон + рука (замах/удар), позиции — из bbox PSD
+## Ch_1_Door knock.
+image chapter_1 door = "images/1_chapter/chapter_1 door.jpg"
+image chapter_1_door_hand wind = "images/1_chapter/chapter_1_door_hand wind.png"
+image chapter_1_door_hand hit = "images/1_chapter/chapter_1_door_hand hit.png"
+
 ## Константы сцены ##############################################################
 
 ## Порядок слоёв: стрелка за всем, рука под абажуром, абажур, рука поверх.
@@ -128,6 +149,55 @@ define C1S1_HANDS_TREMBLE_STEPS = (0.8, 1.4, 2.0, 2.8, 3.6, 4.5)
 ## своя). Вторая серия бьёт сильнее и резче.
 define c1s1_knock_punch = Move((0, 12), (0, -12), 0.09, bounce=True, repeat=True, delay=0.26)
 define c1s1_knock_punch_hard = Move((0, 20), (0, -20), 0.08, bounce=True, repeat=True, delay=0.24)
+
+## Холл: размещение слоёв (px, из bbox PSD Ch_1_Hall). Имена зонтов в PSD
+## и в ассетах расходятся (зонт_2 ↔ umbrella_1) — сверено по размерам.
+define C1S1_HALL_DOOR_POS = (634, 128)
+define C1S1_HALL_MIRROR_POS = (328, 86)
+define C1S1_HALL_PAPER_POS = (343, 521)
+define C1S1_HALL_BAG_POS = (431, 413)
+define C1S1_HALL_BOTTLES_POS = (334, 463)
+define C1S1_HALL_UMBRELLA_1_POS = (267, 562)
+define C1S1_HALL_UMBRELLA_2_POS = (374, 655)
+define C1S1_HALL_BOOTS_POS = (1077, 564)
+define C1S1_HALL_PACKET_POS = (1075, 594)
+define C1S1_HALL_TOY_POS = (1102, 618)
+define C1S1_HALL_MOP_POS = (924, 302)
+
+## Порядок слоёв холла: внутри групп предметы перекрываются по возрастанию
+## (номера групп — из имён исходных ассетов 0_*…4_*), швабра поверх всех.
+define C1S1_Z_HALL_DOOR = 3
+define C1S1_Z_HALL_GROUP_0 = 10   # тумба справа: сапоги < пакет < игрушка
+define C1S1_Z_HALL_GROUP_1 = 20   # комод слева: бумаги < сумка < бутылки
+define C1S1_Z_HALL_GROUP_2 = 30   # зонты у комода
+define C1S1_Z_HALL_MIRROR = 35
+define C1S1_Z_HALL_MOP = 40
+
+## Стук в холле: те же кольца (knock_at), но уменьшенные и по центру двери
+## (634+319/2, 128+690/2). Три удара; на каждый предметы у стен мелко дрожат
+## и экран едва вздрагивает.
+define C1S1_HALL_KNOCK_POS = (793, 473)
+define C1S1_HALL_KNOCK_ZOOM = 0.5    # кольца мельче — примерно по ширине двери
+define C1S1_HALL_KNOCK_HOLD_T = 1.0  # тишина после появления холла до стука
+define C1S1_HALL_KNOCK_GAP_T = 0.45  # пауза между ударами
+define C1S1_HALL_OBJ_TREMBLE = 2.0   # амплитуда дрожи предметов, px (несильно)
+
+## Мягкое вздрагивание экрана на удар (тише, чем у пианино).
+define c1s1_hall_knock_punch = Move((0, 6), (0, -6), 0.09, bounce=True, repeat=True, delay=0.22)
+
+## Дверь крупным планом. На третьем ударе резкий (без перехода) переход сюда,
+## склеенный с моментом удара руки. Позиции руки — из bbox PSD Ch_1_Door knock:
+## замах — кулак у двери, удар — кулак отведён вправо.
+define C1S1_DOOR_HAND_WIND_POS = (769, 131)
+define C1S1_DOOR_HAND_HIT_POS = (1158, 147)
+define C1S1_HALL_CUT_T = 0.08        # ринг-удар мигает и сразу рез — «резко»
+define C1S1_DOOR_OPEN_HOLD_T = 0.6   # пауза после перехода до повторных ударов
+define C1S1_DOOR_WIND_T = 0.28       # замах держится перед ударом
+define C1S1_DOOR_KNOCK_GAP_T = 0.5   # пауза между ударами в дверь
+define C1S1_DOOR_HIT_HOLD_T = 1.4    # последний удар держится
+
+## Вздрагивание экрана на удар в дверь крупным планом (тверже холла).
+define c1s1_door_hit_punch = Move((0, 14), (0, -14), 0.08, bounce=True, repeat=True, delay=0.24)
 
 define chapter_1_fade_in = Dissolve(2.0)
 define chapter_1_dissolve = Dissolve(1.2)
@@ -378,7 +448,74 @@ label chapter_1_scene_1:
     $ pause(2.0)
     $ knock_clear()
 
+    ## Холл: простая смена сцены (эффектный переход — отдельной задачей).
+    ## Камера сбрасывается к спокойному параллаксу.
+    camera at mouse_parallax(strength=C1S1_SCENE_PARALLAX, zoom_pad=C1S1_CAM_Z_REST)
+    scene chapter_1 hall
+    show chapter_1_hall_door zorder C1S1_Z_HALL_DOOR at placed(C1S1_HALL_DOOR_POS)
+    show chapter_1_hall_boots zorder C1S1_Z_HALL_GROUP_0 at placed(C1S1_HALL_BOOTS_POS)
+    show chapter_1_hall_packet zorder C1S1_Z_HALL_GROUP_0 + 1 at placed(C1S1_HALL_PACKET_POS)
+    show chapter_1_hall_toy zorder C1S1_Z_HALL_GROUP_0 + 2 at placed(C1S1_HALL_TOY_POS)
+    show chapter_1_hall_paper zorder C1S1_Z_HALL_GROUP_1 at placed(C1S1_HALL_PAPER_POS)
+    show chapter_1_hall_bag zorder C1S1_Z_HALL_GROUP_1 + 1 at placed(C1S1_HALL_BAG_POS)
+    show chapter_1_hall_bottles zorder C1S1_Z_HALL_GROUP_1 + 2 at placed(C1S1_HALL_BOTTLES_POS)
+    show chapter_1_hall_umbrella_1 zorder C1S1_Z_HALL_GROUP_2 at placed(C1S1_HALL_UMBRELLA_1_POS)
+    show chapter_1_hall_umbrella_2 zorder C1S1_Z_HALL_GROUP_2 + 1 at placed(C1S1_HALL_UMBRELLA_2_POS)
+    show chapter_1_hall_mirror zorder C1S1_Z_HALL_MIRROR at placed(C1S1_HALL_MIRROR_POS)
+    show chapter_1_hall_mop zorder C1S1_Z_HALL_MOP at placed(C1S1_HALL_MOP_POS)
+
+    $ pause(0.5)
+
+    ## Тишина — и стук настигает уже здесь, в прихожей. Кольца вспыхивают
+    ## поверх двери (мельче, чем у пианино), предметы у стен начинают мелко
+    ## дрожать — реагируют на удары.
+    $ pause(C1S1_HALL_KNOCK_HOLD_T)
+    show chapter_1_hall_mop zorder C1S1_Z_HALL_MOP at placed_jitter(C1S1_HALL_MOP_POS, jitter_amp=C1S1_HALL_OBJ_TREMBLE, jitter_key="hall_mop")
+    show chapter_1_hall_umbrella_1 zorder C1S1_Z_HALL_GROUP_2 at placed_jitter(C1S1_HALL_UMBRELLA_1_POS, jitter_amp=C1S1_HALL_OBJ_TREMBLE, jitter_key="hall_umb1")
+    show chapter_1_hall_umbrella_2 zorder C1S1_Z_HALL_GROUP_2 + 1 at placed_jitter(C1S1_HALL_UMBRELLA_2_POS, jitter_amp=C1S1_HALL_OBJ_TREMBLE, jitter_key="hall_umb2")
+    show chapter_1_hall_bottles zorder C1S1_Z_HALL_GROUP_1 + 2 at placed_jitter(C1S1_HALL_BOTTLES_POS, jitter_amp=C1S1_HALL_OBJ_TREMBLE, jitter_key="hall_bottles")
+
+    ## Три удара по центру двери.
+    ## TODO(звук): стук в дверь (добавим позже).
+    $ knock_at(C1S1_HALL_KNOCK_POS, zoom=C1S1_HALL_KNOCK_ZOOM)
+    with c1s1_hall_knock_punch
+    $ pause(C1S1_HALL_KNOCK_GAP_T)
+    $ knock_at(C1S1_HALL_KNOCK_POS, zoom=C1S1_HALL_KNOCK_ZOOM)
+    with c1s1_hall_knock_punch
+    $ pause(C1S1_HALL_KNOCK_GAP_T)
+
+    ## Третий удар — кольца вспыхивают, и на этом же ударе резкий переход:
+    ## кадр склеивается с моментом удара рукой (дверь крупным планом).
+    $ knock_at(C1S1_HALL_KNOCK_POS, zoom=C1S1_HALL_KNOCK_ZOOM)
+    with c1s1_hall_knock_punch
+    $ pause(C1S1_HALL_CUT_T)
+
+    ## Резкая смена сцены (без перехода): дверь крупным планом, кулак уже
+    ## в позе удара — синхронно с третьим стуком, первый из трёх ударов
+    ## (scene очищает слой, предметы холла и кольца гасятся сами).
+    scene chapter_1 door
+    show chapter_1_door_hand hit at placed(C1S1_DOOR_HAND_HIT_POS)
+    with c1s1_door_hit_punch
+
+    ## Небольшая пауза — и рука добивает ещё два раза: замах → удар.
+    ## TODO(звук): стук в дверь крупным планом (добавим позже).
+    $ pause(C1S1_DOOR_OPEN_HOLD_T)
+    show chapter_1_door_hand wind at placed(C1S1_DOOR_HAND_WIND_POS)
+    $ pause(C1S1_DOOR_WIND_T)
+    show chapter_1_door_hand hit at placed(C1S1_DOOR_HAND_HIT_POS)
+    with c1s1_door_hit_punch
+
+    $ pause(C1S1_DOOR_KNOCK_GAP_T)
+    show chapter_1_door_hand wind at placed(C1S1_DOOR_HAND_WIND_POS)
+    $ pause(C1S1_DOOR_WIND_T)
+    show chapter_1_door_hand hit at placed(C1S1_DOOR_HAND_HIT_POS)
+    with c1s1_door_hit_punch
+    $ pause(C1S1_DOOR_HIT_HOLD_T)
+
     $ dismiss_on()
 
-    ## Продолжение (реакция ГГ на стук) — следующим шагом.
+    ## Временная выдержка для отладки (дальше пока ничего нет).
+    $ pause(30)
+
+    ## Продолжение сцены у двери — следующим шагом.
     return
