@@ -4,7 +4,10 @@
 ################################################################################
 
 ## Статичное размещение: якорь anchor_xy в точке pos_xy, опциональный поворот.
+## transform_anchor — по правилу rotate-transform-anchor: без него активный
+## angle расширил бы холст (rotate_pad) и якорь отсчитывался бы от квадрата.
 transform placed(pos_xy, anchor_xy=(0.0, 0.0), angle=None):
+    transform_anchor True
     anchor anchor_xy
     pos pos_xy
     rotate angle

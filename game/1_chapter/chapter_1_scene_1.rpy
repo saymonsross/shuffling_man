@@ -93,8 +93,9 @@ define C1S1_HANDS_FOCUS = (0.51, 0.61)     # между кистями
 define C1S1_HANDS_Z0 = 1.10
 define C1S1_HANDS_T = 3.4
 
-## Пианино: размещение. ГГ заякорен за нижний край — «дыхание» поднимает корпус.
-define C1S1_GG_POS = (817, 1080)
+## Пианино: размещение. ГГ заякорен за низ фигуры по центру (левый край слоя
+## PSD 817 + половина ширины 363) — пивот покачивания и «дыхания» корпуса.
+define C1S1_GG_POS = (998, 1080)
 define C1S1_GG_PARALLAX = 3.0    # очень слабый объектный параллакс ГГ
 define C1S1_HANDS_LEFT_POS = (330, 284)
 define C1S1_HANDS_RIGHT_POS = (1113, 276)
@@ -118,7 +119,10 @@ define C1S1_KNOCK_SWAY = 1.2        # амплитуда покачивания 
 define C1S1_KNOCK_PAD = 1.22
 define C1S1_KNOCK_DRIFT = 10.0      # дрейф покачивания, px
 define C1S1_KNOCK_SWAY_SPEED = 1.4
-define C1S1_HANDS_TREMBLE = 1.5     # дрожь замерших рук, px
+## Дрожь замерших рук (px): включается с первым ударом и нарастает с каждым
+## следующим — по шагу на удар (6 ударов). Накопитель дрожи (jitter_key)
+## продолжается между show — смена амплитуды без рывка.
+define C1S1_HANDS_TREMBLE_STEPS = (0.8, 1.4, 2.0, 2.8, 3.6, 4.5)
 
 ## Вздрагивание экрана в такт удару (по образцу штатного vpunch, амплитуда
 ## своя). Вторая серия бьёт сильнее и резче.
@@ -200,10 +204,15 @@ transform c1s1_arrow_swing(pos_xy=C1S1_ARROW_PIVOT_POS, amp=C1S1_ARROW_AMP, half
 ## ГГ за пианино: очень слабый объектный параллакс (свой ключ накопителей,
 ## сильнее фонового — фигура читается ближе) + едва заметное «дыхание»:
 ## лёгкий наклон корпуса и рост от нижнего якоря. Взаимодействие с
-## инструментом, но ещё не игра.
+## инструментом, но ещё не игра. transform_anchor обязателен: активный
+## rotate расширяет холст спрайта до квадрата со стороной-диагональю
+## (rotate_pad), и без него anchor/pos отсчитывались бы от этого квадрата —
+## позиционирование уезжает; с ним якорь считается по самой фигуре и
+## одновременно служит пивотом поворота и масштаба.
 transform c1s1_gg_idle(pos_xy=C1S1_GG_POS, strength=C1S1_GG_PARALLAX):
     subpixel True
-    anchor (0.0, 1.0)
+    transform_anchor True
+    anchor (0.5, 1.0)
     pos pos_xy
     xoffset 0.0 yoffset 0.0
     rotate 0.0
@@ -212,6 +221,22 @@ transform c1s1_gg_idle(pos_xy=C1S1_GG_POS, strength=C1S1_GG_PARALLAX):
     parallel:
         ease 2.7 rotate 0.35 yzoom 1.004
         ease 3.4 rotate -0.3 yzoom 1.0
+        repeat
+
+## Руки над клавишами: слабый объектный параллакс (ключ уникален на руку) +
+## едва заметное парение над клавишами — руки живут, но ещё не играют.
+## Периоды у рук разные (параметры) — движение не синхронно. Дрейф — через
+## pos: xoffset/yoffset заняты параллакс-функцией (правило _fx_state).
+transform c1s1_piano_hand_idle(pos_xy, key, strength=C1S1_GG_PARALLAX, dy=4, t_up=2.9, t_down=3.6):
+    subpixel True
+    anchor (0.0, 0.0)
+    pos pos_xy
+    xoffset 0.0 yoffset 0.0
+    parallel:
+        function renpy.curry(mouse_parallax_f)(strength, 0.08, 0.0, 0.04, None, key)
+    parallel:
+        ease t_up pos (pos_xy[0], pos_xy[1] - dy)
+        ease t_down pos pos_xy
         repeat
 
 ## Сцена ########################################################################
@@ -293,8 +318,8 @@ label chapter_1_scene_1:
     ## подхватывает скорость отдаления и затухая завершает его.
     camera at parallax_settle(C1S1_HANDS_FOCUS, C1S1_HANDS_Z0, C1S1_CAM_Z_REST, C1S1_HANDS_T, strength=C1S1_SCENE_PARALLAX)
     scene chapter_1 piano_hands
-    show chapter_1_piano_hand_left at placed(C1S1_HANDS_LEFT_POS)
-    show chapter_1_piano_hand_right at placed(C1S1_HANDS_RIGHT_POS)
+    show chapter_1_piano_hand_left at c1s1_piano_hand_idle(C1S1_HANDS_LEFT_POS, "hand_l")
+    show chapter_1_piano_hand_right at c1s1_piano_hand_idle(C1S1_HANDS_RIGHT_POS, "hand_r", dy=3, t_up=3.3, t_down=2.7)
     with chapter_1_dissolve
 
     $ pause(C1S1_HANDS_T)
@@ -310,29 +335,42 @@ label chapter_1_scene_1:
 
     ## Первая серия: три удара в разных частях экрана, экран вздрагивает
     ## в такт каждому (punch — блокирующий транзишен, даёт и часть паузы).
+    ## С первого же удара замершие руки начинают мелко дрожать; каждый
+    ## следующий удар усиливает дрожь на шаг C1S1_HANDS_TREMBLE_STEPS —
+    ## show руки идёт до punch, чтобы скачок амплитуды совпал с ударом.
     $ knock_at(C1S1_KNOCK_POSES[0], zoom=0.9)
+    show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[0], jitter_key="c1s1_hand_l")
+    show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[0], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch
     $ pause(C1S1_KNOCK_GAP_T)
     $ knock_at(C1S1_KNOCK_POSES[1])
+    show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[1], jitter_key="c1s1_hand_l")
+    show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[1], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch
     $ pause(C1S1_KNOCK_GAP_T)
     $ knock_at(C1S1_KNOCK_POSES[2], zoom=1.1)
+    show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[2], jitter_key="c1s1_hand_l")
+    show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[2], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch
 
-    ## Тишина. Стук не повторяется — но замершие руки начинают мелко дрожать.
+    ## Тишина. Стук не повторяется — только руки продолжают дрожать.
     $ pause(C1S1_KNOCK_SERIES_GAP_T)
-    show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE, jitter_key="c1s1_hand_l")
-    show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE, jitter_key="c1s1_hand_r")
 
     ## Вторая серия: три удара громче и настойчивее — кольца крупнее, паузы
-    ## короче, тряска сильнее; точки снова новые.
+    ## короче, тряска сильнее; точки снова новые, дрожь рук доходит до предела.
     $ knock_at(C1S1_KNOCK_POSES[3], zoom=1.3)
+    show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[3], jitter_key="c1s1_hand_l")
+    show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[3], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch_hard
     $ pause(C1S1_KNOCK_GAP2_T)
     $ knock_at(C1S1_KNOCK_POSES[4], zoom=1.45)
+    show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[4], jitter_key="c1s1_hand_l")
+    show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[4], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch_hard
     $ pause(C1S1_KNOCK_GAP2_T)
     $ knock_at(C1S1_KNOCK_POSES[5], zoom=1.6)
+    show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[5], jitter_key="c1s1_hand_l")
+    show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[5], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch_hard
 
     ## Камера доваливается до предельного угла; сцена замирает в наклонном
