@@ -35,7 +35,7 @@ define NOTE_PARALLAX_SMOOTH = 0.06
 ## Беспорядок: центры (px) и повороты (градусы). Плейсхолдеры, подгонять по месту.
 define NOTE_PAPER_POS = (790, 415)
 define NOTE_PAPER_ANGLE = -8.0
-define NOTE_PENCIL_POS = (845, 180)
+define NOTE_PENCIL_POS = (937, 157)
 define NOTE_PENCIL_ANGLE = 80.0
 
 define NOTE_HAND_LEFT_POS = (310, 391)
@@ -48,7 +48,7 @@ define NOTE_HOVER_FLAGS = ("note_hover_paper", "note_hover_pencil")
 
 ## Порядок: позиции измерены по prologue_note center.jpg.
 define NOTE_PAPER_NEAT_POS = (990, 455)
-define NOTE_PENCIL_NEAT_POS = (1345, 432)
+define NOTE_PENCIL_NEAT_POS = (1264, 431)
 
 ## Взятие карандаша. Холст write-позы крупнее холста move — своя позиция,
 ## подобранная по alpha-маскам PNG, чтобы кончик карандаша не прыгал при смене поз.
