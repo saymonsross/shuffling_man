@@ -44,7 +44,8 @@ define NOTE_HAND_RIGHT_POS = (1358, 468)
 define NOTE_HAND_MOVE_POS = (904, 270)
 
 define NOTE_HOVER_BRIGHTNESS = 0.35
-define NOTE_HOVER_FLAGS = ("note_hover_paper", "note_hover_pencil")
+## Бумага и карандаш ведут себя как единый объект — общий флаг наведения.
+define NOTE_HOVER_FLAGS = ("note_hover_note",)
 
 ## Порядок: позиции измерены по prologue_note center.jpg.
 define NOTE_PAPER_NEAT_POS = (990, 455)
@@ -69,9 +70,9 @@ define PENCIL_CLOSE_SHAKE_AMP = 1.5
 
 ## Образы и трансформы ##########################################################
 
-## Единственная видимая копия предметов; светлеют по hover-флагам экрана.
-image note_paper = hover_lit("prologue_note_paper", "note_hover_paper", NOTE_HOVER_BRIGHTNESS)
-image note_pencil = hover_lit("prologue_note_pencil", "note_hover_pencil", NOTE_HOVER_BRIGHTNESS)
+## Единственная видимая копия предметов; светлеют вместе по общему hover-флагу.
+image note_paper = hover_lit("prologue_note_paper", "note_hover_note", NOTE_HOVER_BRIGHTNESS)
+image note_pencil = hover_lit("prologue_note_pencil", "note_hover_note", NOTE_HOVER_BRIGHTNESS)
 
 transform prologue_slow_zoom:
     subpixel True
@@ -84,8 +85,7 @@ define prologue_dissolve = Dissolve(1.2)
 define 1 note_paper_messy = placed(NOTE_PAPER_POS, (0.5, 0.5), NOTE_PAPER_ANGLE)
 define 1 note_pencil_messy = placed(NOTE_PENCIL_POS, (0.5, 0.5), NOTE_PENCIL_ANGLE)
 
-default note_hover_paper = False
-default note_hover_pencil = False
+default note_hover_note = False
 
 ## Сцена ########################################################################
 
@@ -113,8 +113,7 @@ label prologue_scene_1:
     "Кажется, осталось позади всё, что было мне ценно."
 
     ## Записка в беспорядке; карандаш объявлен позже бумаги — лежит поверх.
-    $ note_hover_paper = False
-    $ note_hover_pencil = False
+    $ note_hover_note = False
     camera at mouse_parallax(NOTE_PARALLAX, NOTE_PARALLAX_SMOOTH)
     scene prologue_note_bg
     show note_paper at note_paper_messy
@@ -130,13 +129,15 @@ label prologue_scene_1:
 
     window hide
 
-    call screen hover_click([
-        ("prologue_note_paper", note_paper_messy, "note_hover_paper", "done"),
-        ("prologue_note_pencil", note_pencil_messy, "note_hover_pencil", "done"),
-    ])
+    ## Оба варианта клика равнозначны — развилки сюжета нет, поэтому при
+    ## пропуске (Ctrl/«Пропуск») не ждём реального клика игрока.
+    if not renpy.is_skipping():
+        call screen hover_click([
+            ("prologue_note_paper", note_paper_messy, "note_hover_note", "done"),
+            ("prologue_note_pencil", note_pencil_messy, "note_hover_note", "done"),
+        ])
 
-    $ note_hover_paper = False
-    $ note_hover_pencil = False
+    $ note_hover_note = False
     window auto
 
     ## Кроссфейд в ровную записку из тех же частей; камера сброшена — кадр статичен.
@@ -173,6 +174,8 @@ label prologue_scene_1:
     "Обо всём случившемся невыносимо думать."
 
     "Но я должна излить наружу то, что пожирает меня изнутри."
+
+    window hide
 
     ## Взятие карандаша (автопроигрыш): рука с дрожью тянется, медлит и на том
     ## же месте перетекает в позу письма. Лёгкий шум-помехи включается здесь и
