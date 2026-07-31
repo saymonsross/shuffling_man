@@ -14,14 +14,15 @@
 Заменить вызов `call screen hover_click([...])` на новый сценический экран
 `prologue_note_fix()` в `prologue_scene_1.rpy`:
 
-- Один `textbutton _("Поправить")` со своим лёгким стилем (без фоновой
-  панели, размер по тексту — `choice_button`/`choice_button_text` не
+- Один `textbutton _("Поправить")` на базовом стиле `button`/`button_text`
+  (тот же, что у любой немаркированной кнопки в игре) с `background None` —
+  фоновую панель `gui/button/idle_background.png`/`hover_background.png`
+  отключаем, остаётся только текст. `choice_button`/`choice_button_text` не
   подходят: это полноширинный стиль экрана меню выбора реплик, 1185px с
-  фоновой рамкой). Цвета берутся из существующих `gui`-переменных:
-  `idle_color` — приглушённый `gui.choice_button_text_idle_color`
-  (`#888888`), `hover_color` — акцентный `gui.accent_color` (`#cc0000`);
-  шрифт/размер — `gui.text_font`/`gui.text_size`. Новых картинок не
-  создаётся.
+  фоновой рамкой. Цвета и шрифт — стандартные для базовой кнопки, ничего
+  переопределять не нужно: `gui.button_text_idle_color` (`#888888`) →
+  `gui.button_text_hover_color` (`#e06666`, стандартный hover-красный игры).
+  Новых картинок не создаётся.
 - Позиция — плейсхолдер-координата над запиской (между бумагой и
   карандашом), как и остальные `NOTE_*_POS` в файле; финально подбирается
   автором через Position Tuner (F9).
