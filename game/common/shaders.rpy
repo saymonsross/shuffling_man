@@ -51,6 +51,34 @@ init python:
         gl_FragColor = vec4(vec3(n) * a, a);
         """)
 
+init python:
+    ## sm.oval_glow: мягкое овальное пятно света без единого ассета. Рисует само
+    ## себя по нормированным координатам, поэтому тянется в любой размер без
+    ## потери качества — форма задаётся габаритами дисплеябля, к которому
+    ## прицеплен шейдер. Накладывать на Solid нужного размера с mesh True.
+    ##   u_glow_color — RGBA 0.0–1.0, цвет ядра;
+    ##   u_glow_soft  — доля радиуса, уходящая в растушёвку (0.0 — резкий край,
+    ##                  1.0 — сплошной градиент без плотной середины);
+    ##   u_glow_core  — насколько ядро плотнее краёв (степень кривой затухания).
+    renpy.register_shader("sm.oval_glow",
+        variables="""
+        uniform vec4 u_glow_color;
+        uniform float u_glow_soft;
+        uniform float u_glow_core;
+        attribute vec2 a_tex_coord;
+        varying vec2 v_tex_coord;
+        """,
+        vertex_300="""
+        v_tex_coord = a_tex_coord;
+        """,
+        fragment_300="""
+        vec2 p = (v_tex_coord - 0.5) * 2.0;
+        float d = length(p);
+        float a = 1.0 - smoothstep(1.0 - u_glow_soft, 1.0, d);
+        a = pow(a, u_glow_core);
+        gl_FragColor = u_glow_color * a;
+        """)
+
 ## Контур по краю объекта. width — px, color — RGBA-кортеж 0.0–1.0.
 transform outline_hover(width=5.0, color=(1.0, 0.97, 0.85, 1.0)):
     mesh True

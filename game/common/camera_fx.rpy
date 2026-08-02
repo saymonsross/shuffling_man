@@ -119,6 +119,21 @@ init -10 python:
         trans.yoffset = by + py
         return 1.0 / 60.0
 
+    def follow_camera_f(key, trans, st, at):
+        """Экранный элемент повторяет сдвиг камеры. Своего накопителя НЕ
+        заводит — читает готовые _fx_state[key + "_px"/"_py"/"_jx"/"_jy"],
+        которые пишет mouse_parallax_f. Поэтому элемент идёт с камерой кадр в
+        кадр: считай мы мышь заново, второй накопитель стартовал бы с нуля и
+        первую секунду догонял камеру видимым дрейфом."""
+        px = _fx_state.get(key + "_px", 0.0)
+        py = _fx_state.get(key + "_py", 0.0)
+        jx = _fx_state.get(key + "_jx", 0.0)
+        jy = _fx_state.get(key + "_jy", 0.0)
+
+        trans.xoffset = px + jx
+        trans.yoffset = py + jy
+        return 1.0 / 60.0
+
     def mouse_follow_f(rx, ry, smooth, key, trans, st, at):
         """Слой смещается так, чтобы опорная точка изображения (rx, ry, px)
         плавно следовала за курсором. key — префикс накопителей _fx_state,
@@ -154,17 +169,33 @@ init -10 python:
         trans.yoffset = jy
         return 1.0 / 60.0
 
+## Запас по краям у камеры. Общий для mouse_parallax и follow_camera: они
+## обязаны масштабировать одинаково, иначе экранный элемент разъедется с миром.
+define FX_CAMERA_ZOOM_PAD = 1.02
+
 ## Параллакс за мышкой + опциональная дрожь. Применять через `camera`.
 ## zoom_pad — запас по краям, чтобы при сдвигах не проступал фон.
 ## rotate 0.0 — явный сброс: состояние камеры переживает смену `camera at`,
 ## и завал rotate от предыдущего трансформа (uneasy_sway) иначе наследуется
 ## молча — сцена оставалась бы повернутой.
-transform mouse_parallax(strength=10.0, smooth=0.06, shake_amp=0.0, relax=0.04, tension_var=None, zoom_pad=1.02, key="cam"):
+transform mouse_parallax(strength=10.0, smooth=0.06, shake_amp=0.0, relax=0.04, tension_var=None, zoom_pad=FX_CAMERA_ZOOM_PAD, key="cam"):
     subpixel True
     align (0.5, 0.5) zoom zoom_pad
     rotate 0.0
     xoffset 0.0 yoffset 0.0
     function renpy.curry(mouse_parallax_f)(strength, smooth, shake_amp, relax, tension_var, key)
+
+## Элемент экрана живёт в мире, а не приклеен к экрану: повторяет сдвиг и зум,
+## которые mouse_parallax даёт слою master. Применять к контейнеру размером с
+## экран (xysize (config.screen_width, config.screen_height)) — тогда align
+## (0.5, 0.5) + zoom дают ровно тот же зум вокруг центра экрана, что у камеры,
+## и абсолютные координаты детей совпадают с мировыми. key — тот же, что у
+## камеры ("cam"), zoom_pad обязан совпадать с её zoom_pad.
+transform follow_camera(key="cam", zoom_pad=FX_CAMERA_ZOOM_PAD):
+    subpixel True
+    align (0.5, 0.5) zoom zoom_pad
+    xoffset 0.0 yoffset 0.0
+    function renpy.curry(follow_camera_f)(key)
 
 ## Параллакс + медленный наезд/отъезд камеры: зум z0 → z1 за t, точка кадра
 ## focus_align (доли изображения) неподвижно висит в точке экрана screen_align

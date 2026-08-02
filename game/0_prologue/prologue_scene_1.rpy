@@ -1,6 +1,6 @@
 ################################################################################
-## Пролог — сцена 1: тёмная комната → затылок ГГ → записка (интерактив: клик
-## по бумаге/карандашу выравнивает стол) → взятие карандаша → рука к строке.
+## Пролог — сцена 1: тёмная комната → затылок ГГ → записка (интерактив: кнопка
+## «Поправить» выравнивает стол) → взятие карандаша → рука к строке.
 ################################################################################
 
 ## Изображения ##################################################################
@@ -47,6 +47,14 @@ define NOTE_HOVER_BRIGHTNESS = 0.35
 ## Бумага и карандаш ведут себя как единый объект — общий флаг наведения.
 define NOTE_HOVER_FLAGS = ("note_hover_note",)
 
+## Плейсхолдер: центр кнопки «Поправить» — между бумагой (NOTE_PAPER_POS) и
+## карандашом (NOTE_PENCIL_POS). Финально подбирается через Position Tuner (F9).
+define NOTE_FIX_BUTTON_POS = (864, 286)
+## Габариты пятна под подписью «Поправить»: заметно шире надписи, но не
+## залезает на край бумаги. Кнопка стоит на светлой бумаге — вариант "light",
+## то есть пятно тёмное.
+define NOTE_FIX_BUTTON_SIZE = (310, 155)
+
 ## Порядок: позиции измерены по prologue_note center.jpg.
 define NOTE_PAPER_NEAT_POS = (990, 455)
 define NOTE_PENCIL_NEAT_POS = (1264, 431)
@@ -86,6 +94,31 @@ define 1 note_paper_messy = placed(NOTE_PAPER_POS, (0.5, 0.5), NOTE_PAPER_ANGLE)
 define 1 note_pencil_messy = placed(NOTE_PENCIL_POS, (0.5, 0.5), NOTE_PENCIL_ANGLE)
 
 default note_hover_note = False
+
+## Экраны ###################################################################
+
+## Видимая кнопка-подсказка вместо прежних невидимых хитзон по бумаге и
+## карандашу. Наведение пишет тот же note_hover_note — подсветка предметов
+## (hover_lit) и перетекание руки в позу move (flag_fade) не меняются.
+## Сама кнопка — общий компонент glow_button (common/glow_button.rpy): мягкое
+## световое пятно под надписью, которое дышит и светлеет под курсором.
+screen prologue_note_fix():
+    modal True
+    ## Кнопка лежит на столе, а не приклеена к экрану: внешний контейнер во весь
+    ## экран повторяет параллакс и зум камеры (follow_camera читает готовые
+    ## накопители того же ключа "cam"), поэтому NOTE_FIX_BUTTON_POS — координата
+    ## в мире записки, и кнопка ходит вместе с бумагой и карандашом.
+    fixed:
+        at follow_camera()
+        xysize (config.screen_width, config.screen_height)
+        use glow_button(
+            _("Поправить"),
+            Return("done"),
+            bg="light",
+            pos=NOTE_FIX_BUTTON_POS,
+            size=NOTE_FIX_BUTTON_SIZE,
+            hovered=SetVariable("note_hover_note", True),
+            unhovered=SetVariable("note_hover_note", False))
 
 ## Сцена ########################################################################
 
@@ -129,14 +162,12 @@ label prologue_scene_1:
 
     window hide
 
-    ## Оба варианта клика равнозначны — развилки сюжета нет, поэтому при
-    ## пропуске (Ctrl/«Пропуск») не ждём реального клика игрока.
+    ## Явная кнопка «Поправить» без развилки сюжета — при пропуске
+    ## (Ctrl/«Пропуск») не ждём реального клика игрока.
     if not renpy.is_skipping():
-        call screen hover_click([
-            ("prologue_note_paper", note_paper_messy, "note_hover_note", "done"),
-            ("prologue_note_pencil", note_pencil_messy, "note_hover_note", "done"),
-        ])
+        call screen prologue_note_fix
 
+    ## Экран закрыт — unhovered уже не сработает, флаг гасим вручную.
     $ note_hover_note = False
     window auto
 

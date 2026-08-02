@@ -81,6 +81,16 @@ define C1S1_HAND_SWAP_T = 0.8    # кроссфейд поз в движении
 define C1S1_HAND_EXIT_DELAY = 0.5  # заминка после толчка перед уходом
 define C1S1_HAND_EXIT_T = 1.1
 
+## Интерактив: две кнопки подряд, лампа и только потом метроном. Координаты
+## мировые (кнопки едут с камерой, см. экраны ниже), центры — на самих
+## предметах: у лампы между корпусом и основанием, у метронома на корпусе.
+## Пятно тёмного варианта здесь не годится — обе сцены тёмные, нужен bg="dark".
+define C1S1_LAMP_BTN_POS = (500, 700)
+define C1S1_LAMP_BTN_SIZE = (330, 165)
+## Подпись длиннее — пятно шире, иначе текст выходит за плотное ядро.
+define C1S1_METRONOME_BTN_POS = (1025, 560)
+define C1S1_METRONOME_BTN_SIZE = (430, 190)
+
 ## Метроном: пивот стрелки — низ маятника (спрайт 45×368, bbox (985, 292)).
 define C1S1_ARROW_PIVOT_POS = (1007, 660)
 define C1S1_ARROW_AMP = 20.0     # амплитуда качания, градусы
@@ -121,14 +131,16 @@ define C1S1_GG_PARALLAX = 3.0    # очень слабый объектный п
 define C1S1_HANDS_LEFT_POS = (330, 284)
 define C1S1_HANDS_RIGHT_POS = (1113, 276)
 
-## Стук в дверь (визуализация звука — knock_at, common/knock_fx.rpy).
-## Звук бьёт отовсюду: каждый удар вспыхивает в новой части экрана, экран
+## Стук в дверь (визуализация звука — flash_fx, common/flash_fx.rpy).
+## Звук бьёт отовсюду: на каждый удар весь экран коротко вспыхивает и
 ## вздрагивает в такт (punch-транзишены). Две серии по три удара с паузой.
 ## Камера с первым ударом начинает заваливаться набок (uneasy_sway с base):
 ## завал тянется через обе серии — тревога нарастает всю концовку сцены.
-## Точки ударов: серия 1 — [0..2], серия 2 — [3..5]; в пределах видимой
-## при зуме C1S1_KNOCK_PAD области кадра.
-define C1S1_KNOCK_POSES = ((320, 260), (1500, 700), (980, 190), (430, 800), (1460, 250), (900, 560))
+## Пик вспышки растёт от удара к удару (доли белого): серия 1 — [0..2],
+## серия 2 — [3..5], стук всё настойчивее.
+define C1S1_KNOCK_FLASH_PEAKS = (0.18, 0.22, 0.26, 0.34, 0.40, 0.48)
+define C1S1_KNOCK_FLASH_FALL_T = 0.22   # спад вспышки, сек
+define C1S1_KNOCK_FLASH_FALL2_T = 0.16  # вторая серия — гаснет резче
 define C1S1_KNOCK_HOLD_T = 1.5      # тишина после остановки рук до первого удара
 define C1S1_KNOCK_GAP_T = 0.3       # пауза между ударами (сверх punch-тряски)
 define C1S1_KNOCK_GAP2_T = 0.18     # вторая серия — настойчивее
@@ -173,11 +185,11 @@ define C1S1_Z_HALL_GROUP_2 = 30   # зонты у комода
 define C1S1_Z_HALL_MIRROR = 35
 define C1S1_Z_HALL_MOP = 40
 
-## Стук в холле: те же кольца (knock_at), но уменьшенные и по центру двери
-## (634+319/2, 128+690/2). Три удара; на каждый предметы у стен мелко дрожат
+## Стук в холле: те же вспышки (flash_fx), но слабее — звук тот же, а слушают
+## его уже из прихожей. Три удара; на каждый предметы у стен мелко дрожат
 ## и экран едва вздрагивает.
-define C1S1_HALL_KNOCK_POS = (793, 473)
-define C1S1_HALL_KNOCK_ZOOM = 0.5    # кольца мельче — примерно по ширине двери
+define C1S1_HALL_KNOCK_FLASH = 0.16      # пик вспышки, доля белого
+define C1S1_HALL_KNOCK_FLASH_FALL_T = 0.3  # спад мягче, чем у пианино
 define C1S1_HALL_KNOCK_HOLD_T = 1.0  # тишина после появления холла до стука
 define C1S1_HALL_KNOCK_GAP_T = 0.45  # пауза между ударами
 define C1S1_HALL_OBJ_TREMBLE = 2.0   # амплитуда дрожи предметов, px (несильно)
@@ -309,6 +321,36 @@ transform c1s1_piano_hand_idle(pos_xy, key, strength=C1S1_GG_PARALLAX, dy=4, t_u
         ease t_down pos pos_xy
         repeat
 
+## Экраны интерактива ###########################################################
+
+## Обе кнопки лежат в мире, а не приклеены к экрану: внешний контейнер во весь
+## кадр повторяет параллакс и наезд камеры (follow_camera читает готовые
+## накопители ключа "cam"), поэтому позиции — мировые координаты, и пятно
+## держится за предметом, пока камера едет. Как в прологе.
+screen c1s1_lamp_switch():
+    modal True
+    fixed:
+        at follow_camera()
+        xysize (config.screen_width, config.screen_height)
+        use glow_button(
+            _("Зажечь свет"),
+            Return("done"),
+            bg="dark",
+            pos=C1S1_LAMP_BTN_POS,
+            size=C1S1_LAMP_BTN_SIZE)
+
+screen c1s1_metronome_start():
+    modal True
+    fixed:
+        at follow_camera()
+        xysize (config.screen_width, config.screen_height)
+        use glow_button(
+            _("Завести метроном"),
+            Return("done"),
+            bg="dark",
+            pos=C1S1_METRONOME_BTN_POS,
+            size=C1S1_METRONOME_BTN_SIZE)
+
 ## Сцена ########################################################################
 
 label chapter_1_scene_1:
@@ -324,7 +366,14 @@ label chapter_1_scene_1:
 
     $ pause(1.0)
 
-    ## Рука входит из-за нижнего левого края и ложится на абажур (поверх него).
+    ## Первый шаг игрока: зажечь лампу. Развилки сюжета нет и состояние игры не
+    ## меняется — при пропуске (Ctrl/«Пропуск») экран не зовём, сцена проходится
+    ## насквозь (правило .claude/rules/skippable-scenes.md).
+    if not renpy.is_skipping():
+        call screen c1s1_lamp_switch
+
+    ## Ответ на клик: рука входит из-за нижнего левого края и ложится на абажур
+    ## (поверх него).
     show chapter_1_lamp_hand dark_reach zorder C1S1_Z_HAND_FRONT at slide_in(C1S1_HAND_ENTER_POS, C1S1_HAND_REACH_POS, t=C1S1_HAND_ENTER_T)
     $ pause(C1S1_HAND_ENTER_T)
     $ pause(0.5)
@@ -348,6 +397,11 @@ label chapter_1_scene_1:
     show chapter_1_lamp_hand light_pull zorder C1S1_Z_HAND_BEHIND at c1s1_hand_release(C1S1_HAND_PULL_POS)
     $ pause(C1S1_RELEASE_T + C1S1_SETTLE_T)
     $ pause(0.5)
+
+    ## Второй шаг: метроном. Кнопка появляется только теперь — рука всё это
+    ## время ждёт у шнурка, порядок действий задан жёстко.
+    if not renpy.is_skipping():
+        call screen c1s1_metronome_start
 
     ## Рука движется к метроному, на ходу перетекая во вторую позу:
     ## уходящая поза растворяется, не прекращая движения, новая — проявляется,
@@ -403,22 +457,23 @@ label chapter_1_scene_1:
     ## TODO(звук): стук в дверь (добавим позже).
     camera at uneasy_sway(C1S1_KNOCK_DRIFT, C1S1_KNOCK_SWAY, speed=C1S1_KNOCK_SWAY_SPEED, zoom_pad=C1S1_KNOCK_PAD, base=C1S1_KNOCK_TILT, base_in_t=C1S1_KNOCK_TILT_T, zoom0=C1S1_CAM_Z_REST)
 
-    ## Первая серия: три удара в разных частях экрана, экран вздрагивает
-    ## в такт каждому (punch — блокирующий транзишен, даёт и часть паузы).
+    ## Первая серия: три удара, на каждый экран вспыхивает и вздрагивает
+    ## (punch — блокирующий транзишен, даёт и часть паузы; вспышка идёт
+    ## параллельно ему и сценарий не держит).
     ## С первого же удара замершие руки начинают мелко дрожать; каждый
     ## следующий удар усиливает дрожь на шаг C1S1_HANDS_TREMBLE_STEPS —
     ## show руки идёт до punch, чтобы скачок амплитуды совпал с ударом.
-    $ knock_at(C1S1_KNOCK_POSES[0], zoom=0.9)
+    $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[0], fall=C1S1_KNOCK_FLASH_FALL_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[0], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[0], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch
     $ pause(C1S1_KNOCK_GAP_T)
-    $ knock_at(C1S1_KNOCK_POSES[1])
+    $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[1], fall=C1S1_KNOCK_FLASH_FALL_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[1], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[1], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch
     $ pause(C1S1_KNOCK_GAP_T)
-    $ knock_at(C1S1_KNOCK_POSES[2], zoom=1.1)
+    $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[2], fall=C1S1_KNOCK_FLASH_FALL_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[2], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[2], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch
@@ -426,19 +481,19 @@ label chapter_1_scene_1:
     ## Тишина. Стук не повторяется — только руки продолжают дрожать.
     $ pause(C1S1_KNOCK_SERIES_GAP_T)
 
-    ## Вторая серия: три удара громче и настойчивее — кольца крупнее, паузы
-    ## короче, тряска сильнее; точки снова новые, дрожь рук доходит до предела.
-    $ knock_at(C1S1_KNOCK_POSES[3], zoom=1.3)
+    ## Вторая серия: три удара громче и настойчивее — вспышки ярче и резче,
+    ## паузы короче, тряска сильнее; дрожь рук доходит до предела.
+    $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[3], fall=C1S1_KNOCK_FLASH_FALL2_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[3], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[3], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch_hard
     $ pause(C1S1_KNOCK_GAP2_T)
-    $ knock_at(C1S1_KNOCK_POSES[4], zoom=1.45)
+    $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[4], fall=C1S1_KNOCK_FLASH_FALL2_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[4], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[4], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch_hard
     $ pause(C1S1_KNOCK_GAP2_T)
-    $ knock_at(C1S1_KNOCK_POSES[5], zoom=1.6)
+    $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[5], fall=C1S1_KNOCK_FLASH_FALL2_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[5], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[5], jitter_key="c1s1_hand_r")
     with c1s1_knock_punch_hard
@@ -446,7 +501,6 @@ label chapter_1_scene_1:
     ## Камера доваливается до предельного угла; сцена замирает в наклонном
     ## тревожном покачивании над дрожащими руками.
     $ pause(2.0)
-    $ knock_clear()
 
     ## Холл: простая смена сцены (эффектный переход — отдельной задачей).
     ## Камера сбрасывается к спокойному параллаксу.
@@ -466,33 +520,34 @@ label chapter_1_scene_1:
 
     $ pause(0.5)
 
-    ## Тишина — и стук настигает уже здесь, в прихожей. Кольца вспыхивают
-    ## поверх двери (мельче, чем у пианино), предметы у стен начинают мелко
-    ## дрожать — реагируют на удары.
+    ## Тишина — и стук настигает уже здесь, в прихожей. Экран вспыхивает
+    ## слабее, чем у пианино, предметы у стен начинают мелко дрожать —
+    ## реагируют на удары.
     $ pause(C1S1_HALL_KNOCK_HOLD_T)
     show chapter_1_hall_mop zorder C1S1_Z_HALL_MOP at placed_jitter(C1S1_HALL_MOP_POS, jitter_amp=C1S1_HALL_OBJ_TREMBLE, jitter_key="hall_mop")
     show chapter_1_hall_umbrella_1 zorder C1S1_Z_HALL_GROUP_2 at placed_jitter(C1S1_HALL_UMBRELLA_1_POS, jitter_amp=C1S1_HALL_OBJ_TREMBLE, jitter_key="hall_umb1")
     show chapter_1_hall_umbrella_2 zorder C1S1_Z_HALL_GROUP_2 + 1 at placed_jitter(C1S1_HALL_UMBRELLA_2_POS, jitter_amp=C1S1_HALL_OBJ_TREMBLE, jitter_key="hall_umb2")
     show chapter_1_hall_bottles zorder C1S1_Z_HALL_GROUP_1 + 2 at placed_jitter(C1S1_HALL_BOTTLES_POS, jitter_amp=C1S1_HALL_OBJ_TREMBLE, jitter_key="hall_bottles")
 
-    ## Три удара по центру двери.
+    ## Три удара.
     ## TODO(звук): стук в дверь (добавим позже).
-    $ knock_at(C1S1_HALL_KNOCK_POS, zoom=C1S1_HALL_KNOCK_ZOOM)
+    $ flash_fx(high=C1S1_HALL_KNOCK_FLASH, fall=C1S1_HALL_KNOCK_FLASH_FALL_T)
     with c1s1_hall_knock_punch
     $ pause(C1S1_HALL_KNOCK_GAP_T)
-    $ knock_at(C1S1_HALL_KNOCK_POS, zoom=C1S1_HALL_KNOCK_ZOOM)
+    $ flash_fx(high=C1S1_HALL_KNOCK_FLASH, fall=C1S1_HALL_KNOCK_FLASH_FALL_T)
     with c1s1_hall_knock_punch
     $ pause(C1S1_HALL_KNOCK_GAP_T)
 
-    ## Третий удар — кольца вспыхивают, и на этом же ударе резкий переход:
+    ## Третий удар — экран вспыхивает, и на этом же ударе резкий переход:
     ## кадр склеивается с моментом удара рукой (дверь крупным планом).
-    $ knock_at(C1S1_HALL_KNOCK_POS, zoom=C1S1_HALL_KNOCK_ZOOM)
+    $ flash_fx(high=C1S1_HALL_KNOCK_FLASH, fall=C1S1_HALL_KNOCK_FLASH_FALL_T)
     with c1s1_hall_knock_punch
     $ pause(C1S1_HALL_CUT_T)
 
     ## Резкая смена сцены (без перехода): дверь крупным планом, кулак уже
     ## в позе удара — синхронно с третьим стуком, первый из трёх ударов
-    ## (scene очищает слой, предметы холла и кольца гасятся сами).
+    ## (scene очищает слой, предметы холла гасятся сами; вспышка живёт на
+    ## своём always_shown-экране и досветит поверх нового кадра).
     scene chapter_1 door
     show chapter_1_door_hand hit at placed(C1S1_DOOR_HAND_HIT_POS)
     with c1s1_door_hit_punch
