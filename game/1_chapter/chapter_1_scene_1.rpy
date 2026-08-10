@@ -1,7 +1,9 @@
 ################################################################################
 ## Глава 1 — сцена 1: тёмная комната → рука включает лампу (мгновенный переход
 ## в светлое состояние) → запуск метронома → пианино (отдаление от ГГ) → руки
-## над клавишами. Чистая кат-сцена без реплик, управление игроку недоступно.
+## над клавишами → стук в дверь → холл → дверь крупным планом (со стороны
+## подъезда) → та же дверь изнутри, замки. Каждый переход в цепочке стука
+## склеен с ударом. Чистая кат-сцена без реплик, управление игроку недоступно.
 ################################################################################
 
 ## Изображения ##################################################################
@@ -49,6 +51,12 @@ image chapter_1_hall_mop = "images/1_chapter/chapter_1_hall_mop.png"
 image chapter_1 door = "images/1_chapter/chapter_1 door.jpg"
 image chapter_1_door_hand wind = "images/1_chapter/chapter_1_door_hand wind.png"
 image chapter_1_door_hand hit = "images/1_chapter/chapter_1_door_hand hit.png"
+
+## Та же дверь изнутри квартиры: замки крупным планом (PSD Ch_1_Door _locks).
+## Внимание: `chapter_1 hall_door` (кадр сцены) и `chapter_1_hall_door` выше
+## (створка двери в холле) — разные образы, имена похожи из-за имён ассетов.
+image chapter_1 hall_door = "images/1_chapter/chapter_1 hall_door.jpg"
+image chapter_1_hall_door_bag = "images/1_chapter/chapter_1_hall_door_bag.png"
 
 ## Константы сцены ##############################################################
 
@@ -206,10 +214,48 @@ define C1S1_HALL_CUT_T = 0.08        # ринг-удар мигает и сра�
 define C1S1_DOOR_OPEN_HOLD_T = 0.6   # пауза после перехода до повторных ударов
 define C1S1_DOOR_WIND_T = 0.28       # замах держится перед ударом
 define C1S1_DOOR_KNOCK_GAP_T = 0.5   # пауза между ударами в дверь
-define C1S1_DOOR_HIT_HOLD_T = 1.4    # последний удар держится
+define C1S1_DOOR_CUT_T = 0.08        # третий удар мигает и сразу рез — как в холле
 
 ## Вздрагивание экрана на удар в дверь крупным планом (тверже холла).
 define c1s1_door_hit_punch = Move((0, 14), (0, -14), 0.08, bounce=True, repeat=True, delay=0.24)
+
+## Замки: та же дверь, но изнутри квартиры. Третий удар крупного плана
+## склеивается с этим кадром ровно тем же приёмом, что холл → дверь: вспышка
+## уходит в рез и досвечивает уже новый кадр, поэтому первый из трёх ударов
+## здесь — сам момент склейки, дальше добивают ещё два. После короткой тишины
+## стук возвращается ещё двумя ударами — громче и настойчивее.
+##
+## Сумка у стены: слой PSD обрезан по холсту (у PNG плоские срезы по левому и
+## нижнему краям), поэтому её нижний левый угол совпадает с нижним левым углом
+## кадра — размер спрайта знать не нужно, якорь ставим в (0.0, 1.0).
+define C1S1_DOOR_BAG_POS = (0, 1080)
+define C1S1_DOOR_BAG_ANCHOR = (0.0, 1.0)
+define C1S1_Z_DOOR_BAG = 5
+
+## Камера успокаивается после тревожного завала: спокойный параллакс и
+## медленный наезд на связку замков (шпингалет + сувальдный + ручка).
+## Старт с зума покоя — на резе кадр не дёргается, наезд длиннее сцены.
+define C1S1_LOCKS_FOCUS = (0.50, 0.32)
+define C1S1_LOCKS_Z1 = 1.16
+define C1S1_LOCKS_PUSH_T = 22.0
+
+## Стук слышен вплотную за дверью — вспышки ярче холла и растут от удара
+## к удару; экран вздрагивает твёрже, сумка у стены мелко трясётся.
+## Индексы [0..2] — первая серия (три удара), [3..4] — вторая (два добора):
+## она бьёт ярче, гаснет резче и паузу держит короче.
+define C1S1_LOCKS_FLASH_PEAKS = (0.22, 0.26, 0.30, 0.38, 0.44)
+define C1S1_LOCKS_FLASH_FALL_T = 0.22
+define C1S1_LOCKS_FLASH_FALL2_T = 0.16
+define C1S1_LOCKS_KNOCK_GAP_T = 0.5
+define C1S1_LOCKS_KNOCK_GAP2_T = 0.34
+define C1S1_LOCKS_SERIES_GAP_T = 1.4  # тишина между сериями
+define C1S1_LOCKS_BAG_TREMBLE = (2.0, 2.6, 3.2, 4.0, 4.8)  # дрожь сумки, px
+define C1S1_LOCKS_BAG_CALM = 0.8     # остаточное подрагивание в тишине
+define C1S1_LOCKS_SETTLE_T = 1.6     # шаг затухания дрожи после последнего удара
+define C1S1_LOCKS_HOLD_T = 2.5       # кадр держится в тишине
+
+define c1s1_locks_knock_punch = Move((0, 16), (0, -16), 0.08, bounce=True, repeat=True, delay=0.26)
+define c1s1_locks_knock_punch_hard = Move((0, 22), (0, -22), 0.08, bounce=True, repeat=True, delay=0.24)
 
 define chapter_1_fade_in = Dissolve(2.0)
 define chapter_1_dissolve = Dissolve(1.2)
@@ -560,17 +606,68 @@ label chapter_1_scene_1:
     show chapter_1_door_hand hit at placed(C1S1_DOOR_HAND_HIT_POS)
     with c1s1_door_hit_punch
 
+    ## Третий удар — и на нём же рез: вспышка уходит вперёд кадра и досветит
+    ## уже дверь изнутри, тот же удар слышен теперь из квартиры.
     $ pause(C1S1_DOOR_KNOCK_GAP_T)
     show chapter_1_door_hand wind at placed(C1S1_DOOR_HAND_WIND_POS)
     $ pause(C1S1_DOOR_WIND_T)
+    $ flash_fx(high=C1S1_LOCKS_FLASH_PEAKS[0], fall=C1S1_LOCKS_FLASH_FALL_T)
     show chapter_1_door_hand hit at placed(C1S1_DOOR_HAND_HIT_POS)
     with c1s1_door_hit_punch
-    $ pause(C1S1_DOOR_HIT_HOLD_T)
+    $ pause(C1S1_DOOR_CUT_T)
+
+    ## Дверь изнутри: замки крупным планом, у стены — сумка. Камера сбрасывает
+    ## завал и покачивание, дальше только спокойный параллакс и медленный
+    ## наезд на замки. Дрожь сумки включается с этим же ударом.
+    ## TODO(звук): стук в дверь изнутри квартиры (добавим позже).
+    camera at parallax_push(C1S1_LOCKS_FOCUS, C1S1_CAM_Z_REST, C1S1_LOCKS_Z1, C1S1_LOCKS_PUSH_T, strength=C1S1_SCENE_PARALLAX)
+    scene chapter_1 hall_door
+    show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_TREMBLE[0], jitter_key="c1s1_door_bag")
+    with c1s1_locks_knock_punch
+
+    ## Ещё два удара: экран вспыхивает и вздрагивает, сумка трясётся сильнее.
+    ## show сумки идёт до punch — скачок амплитуды совпадает с ударом.
+    $ pause(C1S1_LOCKS_KNOCK_GAP_T)
+    $ flash_fx(high=C1S1_LOCKS_FLASH_PEAKS[1], fall=C1S1_LOCKS_FLASH_FALL_T)
+    show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_TREMBLE[1], jitter_key="c1s1_door_bag")
+    with c1s1_locks_knock_punch
+    $ pause(C1S1_LOCKS_KNOCK_GAP_T)
+    $ flash_fx(high=C1S1_LOCKS_FLASH_PEAKS[2], fall=C1S1_LOCKS_FLASH_FALL_T)
+    show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_TREMBLE[2], jitter_key="c1s1_door_bag")
+    with c1s1_locks_knock_punch
+
+    ## Короткая тишина: кажется, что всё кончилось — сумка почти замирает.
+    ## Тем же ключом дрожь затухает без рывка (накопитель живёт между show).
+    $ pause(C1S1_LOCKS_SETTLE_T)
+    show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_CALM, jitter_key="c1s1_door_bag")
+    $ pause(C1S1_LOCKS_SERIES_GAP_T)
+
+    ## ...и стук возвращается: ещё два удара, громче и настойчивее — вспышки
+    ## ярче и резче, пауза короче, экран вздрагивает сильнее.
+    $ flash_fx(high=C1S1_LOCKS_FLASH_PEAKS[3], fall=C1S1_LOCKS_FLASH_FALL2_T)
+    show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_TREMBLE[3], jitter_key="c1s1_door_bag")
+    with c1s1_locks_knock_punch_hard
+    $ pause(C1S1_LOCKS_KNOCK_GAP2_T)
+    $ flash_fx(high=C1S1_LOCKS_FLASH_PEAKS[4], fall=C1S1_LOCKS_FLASH_FALL2_T)
+    show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_TREMBLE[4], jitter_key="c1s1_door_bag")
+    with c1s1_locks_knock_punch_hard
+
+    ## Теперь уже насовсем: стук не повторяется, сумка подрагивает и замирает.
+    $ pause(C1S1_LOCKS_SETTLE_T)
+    show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_CALM, jitter_key="c1s1_door_bag")
+    $ pause(C1S1_LOCKS_SETTLE_T)
+    show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=0.0, jitter_key="c1s1_door_bag")
+    $ pause(C1S1_LOCKS_HOLD_T)
+
+    ## Дальше — мини-игра с замками (chapter_1_scene_1_minigame_locks.rpy):
+    ## камера встаёт в кадр мини-игры, стук идёт без перерыва, над замками
+    ## загорается кнопка «Открыть дверь».
+    call chapter_1_scene_1_minigame_locks from _call_c1s1_minigame_locks
 
     $ dismiss_on()
 
     ## Временная выдержка для отладки (дальше пока ничего нет).
     $ pause(30)
 
-    ## Продолжение сцены у двери — следующим шагом.
+    ## Продолжение сцены за отпертой дверью — следующим шагом.
     return

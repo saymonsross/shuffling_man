@@ -65,38 +65,63 @@ init -20 python:
     import collections as _pt_collections
     import pygame_sdl2 as _pt_pygame
 
-    def pt_showing(layer="master"):
-        """Показанные образы в виде «тег атрибут атрибут»."""
-        out = python_list()
+    ## Тюнер осматривает ВСЕ слои сцены, а не только master: у мини-игр и
+    ## отдельных UI-планов бывают свои слои в config.layers (renpy.add_layer),
+    ## и их спрайты тоже надо уметь подбирать. Служебные слои пропускаем —
+    ## там живут экраны и транзиенты, а не спрайты сцены.
+    PT_SKIP_LAYERS = ("transient", "screens", "overlay", "top")
+
+    ## Тег → слой, на котором он сейчас показан. Заполняет pt_showing, читают
+    ## остальные: иначе каждой функции пришлось бы передавать слой руками через
+    ## весь UI. Имена образов в проекте уникальны во всём game/images
+    ## (конвенция ассетов), поэтому одной карты хватает.
+    _pt_tag_layer = python_dict()
+
+    def _pt_layers():
         try:
-            tags = sorted(renpy.get_showing_tags(layer, False))
+            return [l for l in config.layers if l not in PT_SKIP_LAYERS]
         except Exception:
-            return out
-        for tag in tags:
+            return ["master"]
+
+    def pt_layer_of(tag):
+        return _pt_tag_layer.get(tag.split(" ")[0], "master")
+
+    def pt_showing(layer=None):
+        """Показанные образы в виде «тег атрибут атрибут».
+        layer=None — все слои сцены разом (см. _pt_layers)."""
+        out = python_list()
+        for lay in ([layer] if layer else _pt_layers()):
             try:
-                attrs = renpy.get_attributes(tag, layer) or ()
+                tags = sorted(renpy.get_showing_tags(lay, False))
             except Exception:
-                attrs = ()
-            out.append(" ".join((tag,) + tuple(attrs)))
+                continue
+            for tag in tags:
+                try:
+                    attrs = renpy.get_attributes(tag, lay) or ()
+                except Exception:
+                    attrs = ()
+                _pt_tag_layer[tag] = lay
+                out.append(" ".join((tag,) + tuple(attrs)))
         return out
 
-    def pt_bounds(tag, layer="master"):
+    def pt_bounds(tag, layer=None):
         """Габариты на экране: (x, y, w, h) уже с учётом зума и поворота."""
         try:
-            b = renpy.get_image_bounds(tag.split(" ")[0], layer=layer)
+            b = renpy.get_image_bounds(tag.split(" ")[0], layer=(layer or pt_layer_of(tag)))
         except Exception:
             b = None
         if not b:
             return None
         return tuple(int(round(float(v))) for v in b)
 
-    def _pt_live(tag, layer="master"):
+    def _pt_live(tag, layer=None):
         """Живой трансформ тега из списка сцены.
 
         Важно: renpy.get_at_list отдаёт ШАБЛОН трансформа — у него все свойства
         пустые, потому что ATL-блок на нём не исполнялся. Реальные значения
         (в том числе rotate) есть только у экземпляра из scene_lists."""
         tag = tag.split(" ")[0]
+        layer = layer or pt_layer_of(tag)
         try:
             sl = renpy.scene_lists()
         except Exception:

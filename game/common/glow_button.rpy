@@ -76,6 +76,26 @@ transform glow_breath():
         easein GLOW_BREATH_T alpha GLOW_BREATH_LOW zoom 1.0
         repeat
 
+## Тревожное моргание — вариант дыхания для сцен, где кнопка не приглашает, а
+## подгоняет. Ритм неровный: две быстрые вспышки, провал, длинная пауза; глаз
+## читает это как сигнал, а не как спокойный пульс.
+define GLOW_ALARM_GROW = 1.10
+define GLOW_ALARM_LOW = 0.28
+define GLOW_ALARM_PAUSE = 0.62
+
+transform glow_alarm():
+    subpixel True
+    alpha 1.0
+    zoom 1.0
+    block:
+        easeout 0.10 alpha 1.0 zoom GLOW_ALARM_GROW
+        easein 0.16 alpha GLOW_ALARM_LOW zoom 1.0
+        pause 0.09
+        easeout 0.08 alpha 0.95 zoom GLOW_ALARM_GROW
+        easein 0.20 alpha GLOW_ALARM_LOW zoom 1.0
+        pause GLOW_ALARM_PAUSE
+        repeat
+
 ## Внешний слой: базовый зум под размер кнопки (xz/yz считаются при вызове) и
 ## потолок плотности. Альфа перемножается с дыханием, поэтому наведение не гасит
 ## цикл, а поднимает обе его границы. on idle здесь безобиден — повторный
@@ -113,13 +133,15 @@ style glow_button_text is default:
 
 ## label     — подпись; action — что делать по клику.
 ## bg        — какой под кнопкой фон: "light" или "dark" (см. «Два варианта»).
+## pulse     — характер пятна: "breath" (спокойное дыхание) или "alarm"
+##             (тревожное моргание, см. glow_alarm).
 ## pos/anchor— положение внутри родительского контейнера (px или доли экрана).
 ## size      — габариты пятна в пикселях; None — GLOW_BASE_SIZE.
 ## hovered/unhovered — доп. действия сцены (подсветка предметов и т.п.).
 ##
 ## Хит-зона — прямоугольник по size: у мягкого пятна нет видимого края, и
 ## попиксельная маска по нему ощущалась бы как случайная.
-screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), size=None, text_size=None, hovered=None, unhovered=None, sensitive=True):
+screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), size=None, text_size=None, hovered=None, unhovered=None, sensitive=True, pulse="breath"):
 
     $ _g_w, _g_h = size or GLOW_BASE_SIZE
     $ _g_xz = _g_w / float(GLOW_BASE_SIZE[0])
@@ -147,7 +169,13 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
             ## Пятно живёт внутри кнопки — так ATL получает события idle/hover,
             ## но зум дыхания не задевает надпись: масштабировать текст нельзя,
             ## он от передискретизации мылится.
-            add _g_img at glow_breath, glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
+            ## Ветка на весь `add`, а не выражение в `at`: так путь дыхания
+            ## остаётся ровно прежним и состояние ATL переносится между
+            ## обновлениями экрана, как раньше.
+            if pulse == "alarm":
+                add _g_img at glow_alarm, glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
+            else:
+                add _g_img at glow_breath, glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
             text label:
                 style "glow_button_text"
                 align (0.5, 0.5)
