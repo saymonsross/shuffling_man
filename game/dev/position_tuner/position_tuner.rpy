@@ -1,62 +1,32 @@
-################################################################################
 ## POSITION TUNER · ядро (dev-only)
-##
-## Смотрит на сцену и рассказывает про неё правду: обводит показанные спрайты
-## по контуру и показывает их точные параметры — позицию, якорь, угол наклона,
-## зум, собственный размер картинки и её габариты на экране. Значения берутся
-## из живых трансформов сцены, а не из какого-либо файла.
-##
-## Выбранный спрайт можно подвинуть мышью и стрелками, сменить точку привязки
-## (Tab) и угол наклона ([ и ]) — призрак показывает, как это будет выглядеть,
-## а панель считает новые числа. Числа копируются в буфер и переносятся
-## в код руками: инструмент ничего никуда не записывает и сцену не меняет.
-##
-## Портируется копированием папки game/dev/position_tuner/ целиком: внешних
-## зависимостей нет, используется только публичный API Ren'Py.
-##
-## В prod-сборку не попадает: см. README, раздел «Исключение из сборки».
-## Строки интерфейса — dev-only, намеренно без _().
-##
-## Документация: README.ru.md / README.en.md рядом с этим файлом.
-################################################################################
+## Читает живые трансформы, но меняет только свою модель; результат копируется вручную.
+## Папка переносима и исключена из prod-сборки. Документация — README.*.
 
-## ── Настройки ───────────────────────────────────────────────────────────────
-
-## Глубина стека отмены.
 define -30 PT_UNDO_LIMIT = 1000
 
-## Правки одного вида, идущие подряд быстрее этого времени (сек), склеиваются
-## в один шаг отмены — иначе удержание клавиши съедало бы весь стек.
+## Быстрые однотипные правки склеиваются в один шаг undo.
 define -30 PT_COALESCE_T = 0.35
 
-## Шаги: позиция (px) и угол (градусы), обычный и с Shift.
 define -30 PT_STEP = 1
 define -30 PT_STEP_BIG = 10
 define -30 PT_STEP_ANGLE = 1.0
 define -30 PT_STEP_ANGLE_BIG = 15.0
 
-## Якоря, которые перебирает Tab.
 define -30 PT_ANCHORS = [
     (0.0, 0.0), (0.5, 0.5), (0.5, 1.0), (1.0, 1.0),
     (0.0, 1.0), (1.0, 0.0), (0.5, 0.0), (0.0, 0.5), (1.0, 0.5),
 ]
 
-## Внешний вид.
 define -30 PT_GHOST_ALPHA = 0.55
-define -30 PT_COLOR_BOX = "#00ff88"       # контур выбранного
-define -30 PT_COLOR_DIM = "#00ff8855"     # контуры остальных
-define -30 PT_COLOR_GUIDE = "#00ff8840"   # направляющие через точку привязки
-define -30 PT_COLOR_MARK = "#ff3860"      # сама точка привязки
+define -30 PT_COLOR_BOX = "#00ff88"
+define -30 PT_COLOR_DIM = "#00ff8855"
+define -30 PT_COLOR_GUIDE = "#00ff8840"
+define -30 PT_COLOR_MARK = "#ff3860"
 
-## Шаблон вызова для кнопки «Копировать вызов». Подстановки: {pos}, {anchor},
-## {angle}. Под свой проект меняется здесь одной строкой.
 define -30 PT_CALL_TEMPLATE = "at placed({pos}, {anchor}, {angle})"
 
-## Клавиша открытия/закрытия.
 define -30 PT_HOTKEY = "K_F9"
 
-
-## ── Чтение состояния сцены ──────────────────────────────────────────────────
 
 init -20 python:
 
@@ -65,16 +35,10 @@ init -20 python:
     import collections as _pt_collections
     import pygame_sdl2 as _pt_pygame
 
-    ## Тюнер осматривает ВСЕ слои сцены, а не только master: у мини-игр и
-    ## отдельных UI-планов бывают свои слои в config.layers (renpy.add_layer),
-    ## и их спрайты тоже надо уметь подбирать. Служебные слои пропускаем —
-    ## там живут экраны и транзиенты, а не спрайты сцены.
+    ## Сканируем все scene-слои, кроме служебных экранных и transient.
     PT_SKIP_LAYERS = ("transient", "screens", "overlay", "top")
 
-    ## Тег → слой, на котором он сейчас показан. Заполняет pt_showing, читают
-    ## остальные: иначе каждой функции пришлось бы передавать слой руками через
-    ## весь UI. Имена образов в проекте уникальны во всём game/images
-    ## (конвенция ассетов), поэтому одной карты хватает.
+    ## tag → layer; карта опирается на проектную уникальность image-тегов.
     _pt_tag_layer = python_dict()
 
     def _pt_layers():
@@ -87,8 +51,6 @@ init -20 python:
         return _pt_tag_layer.get(tag.split(" ")[0], "master")
 
     def pt_showing(layer=None):
-        """Показанные образы в виде «тег атрибут атрибут».
-        layer=None — все слои сцены разом (см. _pt_layers)."""
         out = python_list()
         for lay in ([layer] if layer else _pt_layers()):
             try:
@@ -105,7 +67,7 @@ init -20 python:
         return out
 
     def pt_bounds(tag, layer=None):
-        """Габариты на экране: (x, y, w, h) уже с учётом зума и поворота."""
+        """Экранные (x, y, w, h) с учётом zoom и rotate."""
         try:
             b = renpy.get_image_bounds(tag.split(" ")[0], layer=(layer or pt_layer_of(tag)))
         except Exception:
@@ -115,11 +77,7 @@ init -20 python:
         return tuple(int(round(float(v))) for v in b)
 
     def _pt_live(tag, layer=None):
-        """Живой трансформ тега из списка сцены.
-
-        Важно: renpy.get_at_list отдаёт ШАБЛОН трансформа — у него все свойства
-        пустые, потому что ATL-блок на нём не исполнялся. Реальные значения
-        (в том числе rotate) есть только у экземпляра из scene_lists."""
+        """Реальные свойства живут в scene_lists, не в шаблоне get_at_list."""
         tag = tag.split(" ")[0]
         layer = layer or pt_layer_of(tag)
         try:
@@ -132,8 +90,7 @@ init -20 python:
         return None
 
     def _pt_px(v, total):
-        """Ren'Py: int и absolute — пиксели, обычный float — доля. absolute
-        проверяем первым, иначе пиксельные 400.0 уехали бы как 400 экранов."""
+        """int/absolute — пиксели, float — доля; absolute проверять первым."""
         if v is None:
             return None
         if isinstance(v, absolute):
@@ -143,7 +100,7 @@ init -20 python:
         return float(v)
 
     def _pt_anchor(v, size):
-        """Якорь: float — доля стороны, int/absolute — пиксели от края."""
+        """float — доля стороны, int/absolute — пиксели от края."""
         if v is None:
             return None
         if isinstance(v, absolute):
@@ -153,8 +110,7 @@ init -20 python:
         return (float(v) / size) if size else 0.0
 
     def pt_scene_state(name):
-        """Что сцена сделала со спрайтом: позиция, якорь, угол, зум, размеры.
-        Позиция и якорь приводятся к пикселям и долям соответственно."""
+        """Нормализует позицию в px, якорь — в доли."""
         b = pt_bounds(name)
         d = _pt_live(name)
 
@@ -191,7 +147,7 @@ init -20 python:
             w, h = b[2], b[3]
         st["natural"] = (int(w), int(h))
 
-        ## Трансформа нет или он ничего не задал — берём то, что видно на экране.
+        ## Fallback для displayable без явного transform.
         if px is None or py is None:
             if b:
                 px, py, ax, ay = b[0], b[1], 0.0, 0.0
@@ -204,14 +160,9 @@ init -20 python:
         return st
 
 
-## ── Модель ──────────────────────────────────────────────────────────────────
-
 init -20 python:
 
     class PTTarget(python_object):
-        """Спрайт под наблюдением: что сцена с ним сделала (scene) и что
-        подобрано в инструменте (pos / anchor / rotate)."""
-
         def __init__(self, name, state):
             self.name = name
             self.scene = state
@@ -220,7 +171,6 @@ init -20 python:
             self.rotate = state["rotate"]
 
         def resync(self, state):
-            """Перечитать сцену, сбросив подобранное."""
             self.scene = state
             self.pos = state["pos"]
             self.anchor = state["anchor"]
@@ -248,8 +198,8 @@ init -20 python:
         ни в rollback, ни в сейвы игрока."""
 
         def __init__(self):
-            self.targets = python_dict()      # имя -> PTTarget
-            self.name = None                  # выбранный спрайт
+            self.targets = python_dict()
+            self.name = None
             self.undo = _pt_collections.deque(maxlen=PT_UNDO_LIMIT)
             self.redo = _pt_collections.deque(maxlen=PT_UNDO_LIMIT)
             self.dragging = False
@@ -287,13 +237,9 @@ init -20 python:
                    key="anchor:" + t.name)
 
 
-## ── Правка подобранных значений ─────────────────────────────────────────────
-## Меняется только состояние инструмента: сцена и код игры не трогаются.
-
 init -20 python:
 
     def pt_push(records, label=""):
-        """records — список (имя спрайта, прежний набор значений)."""
         if not records:
             return
         pt_model.undo.append((label, python_list(records)))
@@ -301,7 +247,7 @@ init -20 python:
         pt_model._last_key = None
 
     def pt_set(t, pos=None, anchor=None, rotate=None, key=None, commit=True):
-        """Изменить подобранные значения. key — ключ склейки серии правок."""
+        """key склеивает серию однотипных правок в один undo."""
         if t is None:
             return
         new = (pos if pos is not None else t.pos,
@@ -370,7 +316,6 @@ init -20 python:
         pt_model.status = "возвращено: " + label
 
     def pt_reset():
-        """Вернуть выбранный спрайт к тому, что реально задала сцена."""
         t = pt_model.target()
         if t is None:
             return
@@ -380,7 +325,6 @@ init -20 python:
         pt_model.status = "значения снова из сцены"
 
     def pt_sync(keep_edits=True):
-        """Обновить список спрайтов по текущей сцене."""
         shown = pt_showing()
         for name in shown:
             t = pt_model.targets.get(name)
@@ -408,8 +352,6 @@ init -20 python:
         pt_sync()
 
 
-## ── Тексты ──────────────────────────────────────────────────────────────────
-
 init -20 python:
 
     def _pt_num(v):
@@ -430,7 +372,6 @@ init -20 python:
         return sum(1 for t in pt_model.targets.values() if t.dirty)
 
     def pt_atl_text():
-        """Блок ATL для вставки в сцену."""
         t = pt_model.target()
         if t is None:
             return ""
@@ -440,7 +381,6 @@ init -20 python:
         return "\n".join(lines)
 
     def pt_call_text():
-        """Вызов трансформа по шаблону PT_CALL_TEMPLATE."""
         t = pt_model.target()
         if t is None:
             return ""
@@ -451,8 +391,7 @@ init -20 python:
         )
 
     def pt_info_text():
-        """Живой блок значений — рисуется через DynamicDisplayable, поэтому
-        обновляется и во время перетаскивания, без перезапуска взаимодействия."""
+        """DynamicDisplayable обновляет значения прямо во время drag."""
         t = pt_model.target()
         if t is None:
             return "{color=#f66}на сцене нет спрайтов{/color}"
@@ -491,21 +430,10 @@ init -20 python:
         return "   ".join(bits)
 
 
-## ── Слои отрисовки и мыши ───────────────────────────────────────────────────
-
 init -20 python:
 
     class PTSurface(renpy.Displayable):
-        """Полноэкранный слой тюнера. Два экземпляра с разными ролями:
-
-        mode="draw" — обводит спрайты и рисует призрак, событий не трогает;
-                      кладётся в экран первым, то есть под панелью.
-        mode="grab" — ничего не рисует, но ловит мышь; кладётся последним,
-                      потому что Ren'Py отдаёт события детям с конца списка.
-                      Клики по площади панели пропускает дальше, к кнопкам.
-
-        Своя обработка мыши вместо drag: координаты пересчитываются на каждом
-        событии движения, а не по завершении перетаскивания."""
+        """draw рисует снизу; grab стоит последним и первым получает события."""
 
         def __init__(self, mode="draw", **kwargs):
             super(PTSurface, self).__init__(**kwargs)
@@ -516,8 +444,6 @@ init -20 python:
             self._solids = python_dict()
             self._grab = None
 
-        ## ── кэши мелких displayable ──
-
         def _solid(self, color):
             d = self._solids.get(color)
             if d is None:
@@ -526,9 +452,7 @@ init -20 python:
             return d
 
         def _frame(self, w, h, color, th):
-            """Прямоугольник-обводка размером ровно с картинку: его можно
-            повернуть тем же трансформом, что и сам спрайт, — контур ляжет
-            на наклонённый спрайт точно, а не axis-aligned коробкой."""
+            """Обводка повторяет rotate спрайта, а не его axis-aligned bbox."""
             key = (w, h, color, th)
             d = self._frames.get(key)
             if d is None:
@@ -558,21 +482,16 @@ init -20 python:
                 return
             rv.blit(renpy.render(self._solid(color), w, h, st, at), (int(x), int(y)))
 
-        ## ── отрисовка ──
-
         def render(self, width, height, st, at):
             rv = renpy.Render(width, height)
             if self.mode != "draw":
                 return rv
 
-            ## Ren'Py кэширует рендер, пока его не сбросили. Модель меняется
-            ## мимо экрана (стрелки, Tab, отмена), поэтому слой сам просит
-            ## перерисовку. Без этого контур остаётся на старом месте.
+            ## Модель меняется вне screen tree, поэтому render надо инвалидировать.
             renpy.redraw(self, 0 if pt_model.dragging else 1.0 / 30.0)
 
             sel = pt_model.target()
 
-            ## Остальные спрайты — тусклой рамкой по габаритам на экране.
             for name, t in pt_model.targets.items():
                 if sel is not None and name == sel.name:
                     continue
@@ -594,8 +513,6 @@ init -20 python:
 
             layers = python_list()
 
-            ## Призрак нужен, только когда значения разошлись со сценой: иначе
-            ## он лёг бы поверх настоящего спрайта и всё выглядело бы мутным.
             if sel.dirty:
                 child = self._ghost(sel.name)
                 if child is not None:
@@ -613,16 +530,13 @@ init -20 python:
             rv.blit(renpy.render(Fixed(*layers, xysize=(width, height)),
                                  width, height, st, at), (0, 0))
 
-            ## transform_anchor=True ставит точку привязки ровно в pos — по ней
-            ## и бьём направляющие с крестиком.
+            ## transform_anchor=True совмещает pos с направляющими.
             mx, my = sel.pos
             self._bar(rv, PT_COLOR_GUIDE, 0, my, width, 1, st, at)
             self._bar(rv, PT_COLOR_GUIDE, mx, 0, 1, height, st, at)
             self._bar(rv, PT_COLOR_MARK, mx - 9, my - 1, 19, 3, st, at)
             self._bar(rv, PT_COLOR_MARK, mx - 1, my - 9, 3, 19, st, at)
             return rv
-
-        ## ── мышь ──
 
         def event(self, ev, x, y, st):
             if self.mode != "grab":
@@ -638,7 +552,7 @@ init -20 python:
                     if px <= x < px + pw and py <= y < py + ph:
                         return None      # клик по панели — это кнопки
 
-                    ## Сначала пробуем взять выбранный, потом — любой под курсором.
+                    ## Выбранный спрайт имеет приоритет при пересечении.
                     hit = t if self._inside(t, x, y) else self._pick_at(x, y)
                     if hit is None:
                         return None
@@ -653,7 +567,7 @@ init -20 python:
                     raise renpy.IgnoreEvent()
                 return None
 
-            ## Взяли — дальше ведём где угодно, в том числе под панелью.
+            ## Захваченный спрайт продолжаем вести и под панелью.
             if ev.type == _pt_pygame.MOUSEMOTION:
                 pt_set(t, pos=pt_model.pos_from_topleft(x - self._grab[0], y - self._grab[1]),
                        commit=False)
@@ -683,7 +597,7 @@ init -20 python:
             return b[0] <= x < b[0] + b[2] and b[1] <= y < b[1] + b[3]
 
         def _pick_at(self, x, y):
-            """Самый мелкий спрайт под курсором — так мелочь не перекрывается фоном."""
+            """При пересечении выбирает самый мелкий спрайт."""
             best = None
             for t in pt_model.targets.values():
                 if not self._inside(t, x, y):

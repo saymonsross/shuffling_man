@@ -1,17 +1,13 @@
-################################################################################
-## Общие эффекты камеры и экрана: параллакс, покачивание, зерно-помехи, дрожь.
-## Перед добавлением новых — проверить, нет ли готового в libs/7dots.rpy.
-################################################################################
-
-## Параллакс за мышкой. Полоса плитки внизу была не из-за него, а из-за
-## дробных anchor/pos на камере (см. _focus_offset) — после фикса параллакс
-## снова включён глобально.
 define FX_MOUSE_PARALLAX_ON = True
 
 init -10 python:
 
+    import random as sm_python_random
+
+    ## Визуальный RNG изолирован: renpy.random засоряет rollback-log на 60 fps.
+    sm_visual_rng = sm_python_random.Random()
+
     def _fx_num(v, default, lo=None, hi=None):
-        """Число с проверкой: не число → default, вне диапазона → к границе."""
         if not isinstance(v, (int, float)) or isinstance(v, bool):
             v = default
         if lo is not None:
@@ -20,34 +16,27 @@ init -10 python:
             v = min(v, hi)
         return float(v)
 
-    ## Накопители сглаживания function-трансформов. ПРАВИЛО для любого нового
-    ## эффекта с накапливаемым состоянием (сглаживание, дрожь, альфа):
-    ## 1. Состояние — только здесь, под уникальным ключом (параметр key).
-    ##    НЕ в атрибутах trans: camera-слой и always_shown-экраны пересобирают
-    ##    обёртку трансформа при каждом restart_interaction (любой клик/
-    ##    наведение), python-атрибуты вроде trans.fx_px теряются — видимый рывок.
-    ## 2. НЕ сбрасывать состояние по st ≈ 0: повторное применение трансформа
-    ##    (`camera at ...` на стыке сцен, повторный `show ... at ...`) начинает
-    ##    ATL заново, и сброс давал бы скачок эффекта к нулю и обратно —
-    ##    «вздрагивание» камеры на переходах. Накопитель продолжается через
-    ##    _fx_step; start используется только при первом обращении к ключу.
+    ## Состояние function-трансформов хранится здесь под уникальным key:
+    ## restart_interaction пересоздаёт trans, а повторный ATL сбрасывает st.
+    ## Поэтому накопители нельзя сбрасывать при st≈0 между сценами.
     _fx_state = {}
 
     def _fx_step(key, target, relax, start):
-        """Шаг сглаживания _fx_state[key] к target. Накопитель переживает
-        рестарты трансформа (повторный `camera at ...` на стыке сцен,
-        повторный show с тем же ключом) — продолжаем с сохранённого значения,
-        иначе на каждом стыке эффект скачком уходил бы к start и обратно
-        (видимое вздрагивание камеры). start — только для самого первого
-        использования ключа."""
+        """Сглаживает _fx_state[key]; start действует только при первом вызове
+        для key, а накопитель переживает пересборку transform."""
         cur = _fx_state.get(key, start)
         cur += (target - cur) * relax
         _fx_state[key] = cur
         return cur
 
+    def _fx_visual_jitter(amp):
+        """Случайный визуальный offset без загрязнения игрового RNG/rollback."""
+        if amp <= 0.0 or sm_reduced_motion():
+            return 0.0
+        return sm_visual_rng.uniform(-amp, amp)
+
     def _fx_tension(tension_var, relax, key):
-        """Сглаженное значение store[tension_var] (0..1); нет переменной —
-        полная сила. key — свой накопитель на каждый вызывающий эффект."""
+        """Пустой tension_var означает полную силу; key задаёт накопитель."""
         if isinstance(tension_var, str) and tension_var:
             target = _fx_num(getattr(store, tension_var, 0.0), 0.0, 0.0, 1.0)
         else:
@@ -55,14 +44,16 @@ init -10 python:
         return _fx_step(key, target, relax, start=target)
 
     def mouse_parallax_f(strength, smooth, shake_amp, relax, tension_var, key, trans, st, at):
-        """Слой сдвигается против движения мыши (до strength px), поверх —
-        дрожь shake_amp × напряжение store[tension_var]. key — префикс
-        накопителей _fx_state: уникален на каждого одновременного пользователя
-        (камера — "cam", объектный параллакс — свой ключ на объект)."""
+        """Параллакс с дрожью от tension_var; key уникален для каждого
+        одновременного эффекта."""
         strength = _fx_num(strength, 10.0, 0.0)
-        ## Глобальный выключатель (FX_MOUSE_PARALLAX_ON): при False слои за
-        ## курсором не следят — сила гасится в 0, накопители плавно доводят
-        ## текущий сдвиг до нуля, без скачка. Дрожь shake_amp сохраняется.
+        ## Глобальный флаг плавно гасит параллакс; reduced motion сразу гасит и дрожь.
+        if sm_reduced_motion():
+            for suffix in ("_px", "_py", "_jx", "_jy"):
+                _fx_state[key + suffix] = 0.0
+            trans.xoffset = 0.0
+            trans.yoffset = 0.0
+            return 1.0 / 60.0
         if not FX_MOUSE_PARALLAX_ON:
             strength = 0.0
         smooth = _fx_num(smooth, 0.06, 0.001, 1.0)
@@ -77,22 +68,16 @@ init -10 python:
 
         t = _fx_tension(tension_var, relax, key + "_tension")
         amp = shake_amp * t
-        jx = _fx_step(key + "_jx", renpy.random.uniform(-amp, amp), 0.5, start=0.0)
-        jy = _fx_step(key + "_jy", renpy.random.uniform(-amp, amp), 0.5, start=0.0)
+        jx = _fx_step(key + "_jx", _fx_visual_jitter(amp), 0.5, start=0.0)
+        jy = _fx_step(key + "_jy", _fx_visual_jitter(amp), 0.5, start=0.0)
 
         trans.xoffset = px + jx
         trans.yoffset = py + jy
         return 1.0 / 60.0
 
     def _focus_offset(focus_align, screen_align, z):
-        """Пиксельные оффсеты, дающие при align (0.5, 0.5) тот же кадр, что
-        anchor focus_align / pos screen_align: точка изображения focus_align
-        (доли) встаёт в точку экрана screen_align при зуме z. Дробные
-        anchor/pos на камере неверно масштабируются на части рендеров
-        (Windows/ANGLE: слой уезжает вверх на ~100+ px, снизу оголяется
-        полоса) — поэтому камера якорится центром, а фокус доводится
-        оффсетами. Оффсеты — float px: xoffset/yoffset всегда абсолютные
-        пиксели, дробной семантики не имеют, int-приведение не требуется."""
+        """Совмещает focus_align изображения со screen_align экрана пиксельным
+        offset: дробные anchor/pos камеры артефактят на Windows/ANGLE."""
         fx, fy = focus_align
         sx, sy = (screen_align or focus_align)
         ox = config.screen_width * (sx - 0.5 - (fx - 0.5) * z)
@@ -100,12 +85,16 @@ init -10 python:
         return ox, oy
 
     def focus_parallax_f(focus_align, screen_align, strength, smooth, key, trans, st, at):
-        """База кадра (от текущего trans.zoom — зум-трек идёт параллельно)
-        + параллакс за мышкой поверх. Оффсеты базы линейны по зуму, поэтому
-        кадр точен в каждый момент анимации зума."""
+        """Считает базовый кадр по текущему trans.zoom и добавляет параллакс."""
         bx, by = _focus_offset(focus_align, screen_align, trans.zoom or 1.0)
 
         strength = _fx_num(strength, 10.0, 0.0)
+        if sm_reduced_motion():
+            _fx_state[key + "_px"] = 0.0
+            _fx_state[key + "_py"] = 0.0
+            trans.xoffset = bx
+            trans.yoffset = by
+            return 1.0 / 60.0
         if not FX_MOUSE_PARALLAX_ON:
             strength = 0.0
         smooth = _fx_num(smooth, 0.06, 0.001, 1.0)
@@ -120,11 +109,8 @@ init -10 python:
         return 1.0 / 60.0
 
     def follow_camera_f(key, trans, st, at):
-        """Экранный элемент повторяет сдвиг камеры. Своего накопителя НЕ
-        заводит — читает готовые _fx_state[key + "_px"/"_py"/"_jx"/"_jy"],
-        которые пишет mouse_parallax_f. Поэтому элемент идёт с камерой кадр в
-        кадр: считай мы мышь заново, второй накопитель стартовал бы с нуля и
-        первую секунду догонял камеру видимым дрейфом."""
+        """Читает готовые offsets камеры из _fx_state, чтобы не создавать
+        второй накопитель и не давать экранному элементу дрейфовать."""
         px = _fx_state.get(key + "_px", 0.0)
         py = _fx_state.get(key + "_py", 0.0)
         jx = _fx_state.get(key + "_jx", 0.0)
@@ -135,12 +121,16 @@ init -10 python:
         return 1.0 / 60.0
 
     def mouse_follow_f(rx, ry, smooth, key, trans, st, at):
-        """Слой смещается так, чтобы опорная точка изображения (rx, ry, px)
-        плавно следовала за курсором. key — префикс накопителей _fx_state,
-        уникален на объект."""
         rx = _fx_num(rx, 0.0)
         ry = _fx_num(ry, 0.0)
         smooth = _fx_num(smooth, 0.12, 0.001, 1.0)
+
+        if sm_reduced_motion():
+            _fx_state[key + "_fx"] = 0.0
+            _fx_state[key + "_fy"] = 0.0
+            trans.xoffset = 0.0
+            trans.yoffset = 0.0
+            return 1.0 / 60.0
 
         mx, my = renpy.get_mouse_pos()
         fx = _fx_step(key + "_fx", mx - rx, smooth, start=0.0)
@@ -151,33 +141,35 @@ init -10 python:
         return 1.0 / 60.0
 
     def noise_overlay_f(strength, relax, tension_var, trans, st, at):
-        """Сила зерна = strength × напряжение (0..1)."""
         strength = _fx_num(strength, 0.1, 0.0, 1.0)
+        if sm_reduced_motion():
+            strength = 0.0
         relax = _fx_num(relax, 0.04, 0.001, 1.0)
         trans.u_strength = strength * _fx_tension(tension_var, relax, "noise_tension")
         return 1.0 / 60.0
 
     def object_jitter_f(amp, relax, key, trans, st, at):
-        """Дрожь объекта добавочным offset — parallel-трек поверх pos/alpha,
-        складывается с движением аддитивно. key уникален на объект."""
+        """Аддитивный jitter поверх ATL; key должен быть уникален для объекта."""
         amp = _fx_num(amp, 3.0, 0.0)
         relax = _fx_num(relax, 0.5, 0.001, 1.0)
 
-        jx = _fx_step(key + "_jx", renpy.random.uniform(-amp, amp), relax, start=0.0)
-        jy = _fx_step(key + "_jy", renpy.random.uniform(-amp, amp), relax, start=0.0)
+        if sm_reduced_motion():
+            _fx_state[key + "_jx"] = 0.0
+            _fx_state[key + "_jy"] = 0.0
+            trans.xoffset = 0.0
+            trans.yoffset = 0.0
+            return 1.0 / 60.0
+
+        jx = _fx_step(key + "_jx", _fx_visual_jitter(amp), relax, start=0.0)
+        jy = _fx_step(key + "_jy", _fx_visual_jitter(amp), relax, start=0.0)
         trans.xoffset = jx
         trans.yoffset = jy
         return 1.0 / 60.0
 
-## Запас по краям у камеры. Общий для mouse_parallax и follow_camera: они
-## обязаны масштабировать одинаково, иначе экранный элемент разъедется с миром.
+## Общий zoom_pad камеры и world-space UI: значения обязаны совпадать.
 define FX_CAMERA_ZOOM_PAD = 1.02
 
-## Параллакс за мышкой + опциональная дрожь. Применять через `camera`.
-## zoom_pad — запас по краям, чтобы при сдвигах не проступал фон.
-## rotate 0.0 — явный сброс: состояние камеры переживает смену `camera at`,
-## и завал rotate от предыдущего трансформа (uneasy_sway) иначе наследуется
-## молча — сцена оставалась бы повернутой.
+## Явный rotate 0.0 сбрасывает наклон, унаследованный от предыдущего camera at.
 transform mouse_parallax(strength=10.0, smooth=0.06, shake_amp=0.0, relax=0.04, tension_var=None, zoom_pad=FX_CAMERA_ZOOM_PAD, key="cam"):
     subpixel True
     align (0.5, 0.5) zoom zoom_pad
@@ -185,55 +177,41 @@ transform mouse_parallax(strength=10.0, smooth=0.06, shake_amp=0.0, relax=0.04, 
     xoffset 0.0 yoffset 0.0
     function renpy.curry(mouse_parallax_f)(strength, smooth, shake_amp, relax, tension_var, key)
 
-## Элемент экрана живёт в мире, а не приклеен к экрану: повторяет сдвиг и зум,
-## которые mouse_parallax даёт слою master. Применять к контейнеру размером с
-## экран (xysize (config.screen_width, config.screen_height)) — тогда align
-## (0.5, 0.5) + zoom дают ровно тот же зум вокруг центра экрана, что у камеры,
-## и абсолютные координаты детей совпадают с мировыми. key — тот же, что у
-## камеры ("cam"), zoom_pad обязан совпадать с её zoom_pad.
+## World-space UI: контейнер должен быть размером с экран, а key и zoom_pad —
+## совпадать с камерой.
 transform follow_camera(key="cam", zoom_pad=FX_CAMERA_ZOOM_PAD):
     subpixel True
     align (0.5, 0.5) zoom zoom_pad
     xoffset 0.0 yoffset 0.0
     function renpy.curry(follow_camera_f)(key)
 
-## Параллакс + медленный наезд/отъезд камеры: зум z0 → z1 за t, точка кадра
-## focus_align (доли изображения) неподвижно висит в точке экрана screen_align
-## (доли экрана; по умолчанию совпадает с focus_align — поведение align).
-## Разные значения позволяют, например, держать объект не в «родной» точке
-## композиции, а строго по центру экрана весь зум. Оба зума > 1.0 — запас
-## краёв под сдвиги параллакса. Применять через `camera`.
-## Реализация: align (0.5, 0.5) + пиксельные оффсеты из focus_parallax_f
-## (дробные anchor/pos на камере сдвигают слой на части рендеров — см.
-## _focus_offset). Зум-трек первым: function читает trans.zoom того же кадра.
+## focus_align удерживается в screen_align во время зума. Пиксельные offsets
+## обязательны: дробные anchor/pos камеры дают артефакты на части render paths.
+## Зум-трек идёт первым, поскольку function читает trans.zoom текущего кадра.
 transform parallax_push(focus_align, z0, z1, t, strength=10.0, smooth=0.06, key="cam", screen_align=None):
     subpixel True
     align (0.5, 0.5)
-    zoom z0
+    zoom (z1 if sm_reduced_motion() else z0)
     parallel:
-        ease t zoom z1
+        ease sm_motion_time(t) zoom z1
     parallel:
         function renpy.curry(focus_parallax_f)(focus_align, screen_align, strength, smooth, key)
 
-## То же, но зум затухающий (easein — быстрый старт, плавная остановка):
-## подхватывает и завершает движение камеры, начатое в предыдущей сцене.
 transform parallax_settle(focus_align, z0, z1, t, strength=10.0, smooth=0.06, key="cam", screen_align=None):
     subpixel True
     align (0.5, 0.5)
-    zoom z0
+    zoom (z1 if sm_reduced_motion() else z0)
     parallel:
-        easein t zoom z1
+        easein sm_motion_time(t) zoom z1
     parallel:
         function renpy.curry(focus_parallax_f)(focus_align, screen_align, strength, smooth, key)
 
-## Слой следует за курсором опорной точкой (rx, ry). key уникален на объект.
 transform mouse_follow(rx, ry, smooth=0.12, key="follow"):
     subpixel True
     xoffset 0.0 yoffset 0.0
     function renpy.curry(mouse_follow_f)(rx, ry, smooth, key)
 
-## Полноэкранное зерно. Глобально включено через fx_noise_screen ниже —
-## руками показывать не нужно, сцены только меняют fx_noise_strength.
+## Зерно показано глобально; сцены меняют только fx_noise_strength.
 image fx_noise = Solid("#FFF")
 
 transform noise_overlay(strength=0.1, relax=0.04, tension_var=None):
@@ -242,42 +220,37 @@ transform noise_overlay(strength=0.1, relax=0.04, tension_var=None):
     u_strength 0.0
     function renpy.curry(noise_overlay_f)(strength, relax, tension_var)
 
-## Фоновая сила зерна (0..1). Сцены временно меняют fx_noise_strength и
-## возвращают FX_NOISE_DEFAULT; переход плавный (relax в noise_overlay_f).
+## После сцены возвращать силу зерна к FX_NOISE_DEFAULT.
 define FX_NOISE_DEFAULT = 0.10
 default fx_noise_strength = FX_NOISE_DEFAULT
 
-## always_shown: виден всегда, `scene` его не сбрасывает (чистит только master).
+## always_shown переживает очистку master через scene.
 screen fx_noise_screen():
     add "fx_noise" at noise_overlay(1.0, tension_var="fx_noise_strength")
 
 init python:
     config.always_shown_screens.append("fx_noise_screen")
 
-## Тревожное покачивание камеры: дрейф (drift, px) + наклон (tilt, градусы).
-## Периоды осей некратны — движение не выглядит зацикленным.
-## base — базовый завал горизонта (градусы): за base_in_t камера заваливается
-## до base (и доводит зум zoom0 → zoom_pad, если задан zoom0 — плавный вход
-## из другого камера-трансформа), дальше качается вокруг base. Дефолты
-## (base=0, base_in_t=0, zoom0=None) дают прежнее поведение без завала.
-## zoom_pad должен покрывать поворот: для угла θ нужен зум ≥ cos θ + (16/9)·sin θ.
+## Некратные периоды скрывают цикл покачивания. base/base_in_t задают входной
+## наклон; zoom0 — плавный вход из другого camera-transform.
+## Для угла θ: zoom_pad ≥ cos θ + (16/9)·sin θ.
 transform uneasy_sway(drift=12.0, tilt=0.6, speed=1.0, zoom_pad=1.06, base=0.0, base_in_t=0.0, zoom0=None):
     subpixel True
     align (0.5, 0.5)
-    zoom (zoom_pad if zoom0 is None else zoom0)
+    zoom (zoom_pad if sm_reduced_motion() or zoom0 is None else zoom0)
     parallel:
-        easein base_in_t zoom zoom_pad
+        easein sm_motion_time(base_in_t) zoom zoom_pad
     parallel:
-        ease 3.4 / max(speed, 0.05) xoffset drift
-        ease 4.1 / max(speed, 0.05) xoffset -drift * 0.85
+        ease sm_motion_time(3.4 / max(speed, 0.05)) xoffset (drift * sm_motion_scale())
+        ease 4.1 / max(speed, 0.05) xoffset (-drift * 0.85 * sm_motion_scale())
         repeat
     parallel:
-        easein base_in_t rotate base
+        easein sm_motion_time(base_in_t) rotate (base * sm_motion_scale())
         block:
-            ease 5.3 / max(speed, 0.05) rotate base + tilt
-            ease 4.7 / max(speed, 0.05) rotate base - tilt * 0.85
+            ease 5.3 / max(speed, 0.05) rotate ((base + tilt) * sm_motion_scale())
+            ease 4.7 / max(speed, 0.05) rotate ((base - tilt * 0.85) * sm_motion_scale())
             repeat
     parallel:
-        ease 2.9 / max(speed, 0.05) yoffset -drift * 0.7
-        ease 3.7 / max(speed, 0.05) yoffset drift * 0.75
+        ease sm_motion_time(2.9 / max(speed, 0.05)) yoffset (-drift * 0.7 * sm_motion_scale())
+        ease 3.7 / max(speed, 0.05) yoffset (drift * 0.75 * sm_motion_scale())
         repeat

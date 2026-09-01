@@ -1,22 +1,16 @@
-################################################################################
 ## Интерактив «наведи и кликни»: невидимые кнопки с попиксельной хит-зоной.
-################################################################################
 
 init -5 python:
 
-    ## Образ с подсветкой при наведении: пока store[flag] истинен — светлее
-    ## (7dots brightness). Использовать в image-статементах сцен.
+    ## Подсветка image-стейтмента по store-флагу.
     def hover_lit(img, flag, amount=0.35):
         return ConditionSwitch(
             flag, At(img, brightness(amount)),
             True, img,
             predict_all=True)
 
-## items — список (image, transform, flag, return_value). Кнопка полностью
-## прозрачна и только ловит курсор: хит-зона — по альфе image (focus_mask),
-## наведение пишет флаг (подсветку рисует сам спрайт на master, см. hover_lit),
-## клик возвращает return_value. После закрытия экрана флаги гасить вручную —
-## unhovered уже не сработает.
+## items: (image, transform, flag, return_value). После Hide флаги гасить вручную:
+## unhovered закрытого экрана не вызывается.
 screen hover_click(items):
     modal True
 

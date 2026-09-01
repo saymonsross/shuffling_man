@@ -1,0 +1,133 @@
+## Навигатор сцен для локальной developer-сборки.
+## game/dev/** исключён из дистрибутива; меню также проверяет config.developer.
+
+define DEV_SCENE_NAV_CARDS_PER_ROW = 3
+
+## В реестр входят только labels, безопасные без подготовленного состояния.
+define DEV_SCENE_NAV_ENTRIES = (
+    {
+        "section": "ПРОЛОГ",
+        "title": "Сцена 1 · Записка",
+        "label": "prologue_scene_1",
+        "preview": "dev/scene_navigation/previews/prologue_scene_1.jpg",
+    },
+    {
+        "section": "ГЛАВА 1",
+        "title": "Сцена 1 · Стук в дверь",
+        "label": "chapter_1_scene_1",
+        "preview": "dev/scene_navigation/previews/chapter_1_scene_1.jpg",
+    },
+)
+
+
+init python:
+
+    def dev_scene_nav_start(label):
+        if not config.developer:
+            return
+
+        if not renpy.has_label(label):
+            renpy.notify("Не найден label: {}".format(label))
+            return
+
+        ## full_restart не переносит состояние предыдущей сцены.
+        renpy.full_restart(None, label=label)
+
+
+screen dev_scene_navigator():
+
+    tag menu
+
+    ## ShowMenu сохраняет старый фокус; переносим его на первую карточку.
+    on ("show", "replace") action Function(
+        renpy.set_focus,
+        "dev_scene_navigator",
+        DEV_SCENE_NAV_ENTRIES[0]["label"])
+
+    use game_menu("Навигация по сценам", scroll="viewport", spacing=24):
+
+        text "DEV · сцена запускается с начала в чистом состоянии":
+            style "dev_scene_nav_hint"
+            xalign 0.5
+
+        for row_start in range(0, len(DEV_SCENE_NAV_ENTRIES), DEV_SCENE_NAV_CARDS_PER_ROW):
+
+            hbox:
+                xalign 0.5
+                spacing 24
+
+                for entry_index in range(row_start, min(row_start + DEV_SCENE_NAV_CARDS_PER_ROW, len(DEV_SCENE_NAV_ENTRIES))):
+
+                    use dev_scene_nav_card(
+                        DEV_SCENE_NAV_ENTRIES[entry_index],
+                        autofocus=(entry_index == 0))
+
+
+screen dev_scene_nav_card(entry, autofocus=False):
+
+    button:
+        id entry["label"]
+        style "dev_scene_nav_card"
+        action Function(dev_scene_nav_start, entry["label"])
+        default_focus autofocus
+
+        vbox:
+            xfill True
+            spacing 3
+
+            fixed:
+                xysize (384, 216)
+                xalign 0.5
+
+                if renpy.loadable(entry["preview"]):
+                    add entry["preview"]:
+                        xysize (384, 216)
+                else:
+                    add Solid("#241c1c")
+                    text "ПРЕВЬЮ ПОКА НЕТ":
+                        style "dev_scene_nav_missing"
+                        xalign 0.5
+                        yalign 0.5
+
+            text entry["section"]:
+                style "dev_scene_nav_section"
+
+            text entry["title"]:
+                style "dev_scene_nav_title"
+
+            text entry["label"]:
+                style "dev_scene_nav_label"
+
+
+style dev_scene_nav_card is slot_button:
+    xsize 414
+    ysize 340
+    padding (15, 15)
+
+style dev_scene_nav_hint is gui_text:
+    color gui.idle_small_color
+    size 23
+
+style dev_scene_nav_section is gui_text:
+    color gui.dark_background_accent
+    hover_color "#ffffff"
+    size 18
+    xalign 0.5
+
+style dev_scene_nav_title is gui_text:
+    color gui.interface_text_color
+    hover_color "#ffffff"
+    size 26
+    xalign 0.5
+    textalign 0.5
+
+style dev_scene_nav_label is gui_text:
+    color gui.idle_small_color
+    hover_color gui.hover_color
+    size 16
+    xalign 0.5
+    textalign 0.5
+
+style dev_scene_nav_missing is gui_text:
+    color gui.idle_small_color
+    size 20

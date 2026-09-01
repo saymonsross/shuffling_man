@@ -1,9 +1,5 @@
-################################################################################
 ## POSITION TUNER · интерфейс (dev-only)
-##
-## Экран, хоткеи и стили. Логика — в position_tuner.rpy рядом.
-## Строки интерфейса — dev-only, намеренно без _().
-################################################################################
+## Логика — в position_tuner.rpy; строки намеренно не локализуются.
 
 init -20 python:
 
@@ -34,7 +30,6 @@ init -20 python:
                     style="pt_head"), (0.0 if pt_model.dragging else 0.15)
 
     def pt_rows():
-        """Спрайты на экране: имя и краткая сводка по нему."""
         rows = python_list()
         for name in sorted(pt_model.targets):
             t = pt_model.targets[name]
@@ -46,8 +41,6 @@ init -20 python:
         return rows
 
 
-## ── Экран ───────────────────────────────────────────────────────────────────
-
 screen position_tuner():
 
     modal True
@@ -55,17 +48,14 @@ screen position_tuner():
 
     on "show" action Function(pt_open)
 
-    ## Геометрия панели считается здесь и кладётся в модель: слой захвата мыши
-    ## по ней понимает, где клик управляет кнопками, а где берёт спрайт.
+    ## Mouse-layer использует геометрию панели, чтобы пропускать её клики.
     python:
         _pt_pw = 620
         _pt_ph = min(1000, config.screen_height - 20)
         _pt_px = 0 if pt_model.side == "left" else (config.screen_width - _pt_pw)
         pt_model.panel_rect = (0, 0, 0, 0) if pt_model.collapsed else (_pt_px, 0, _pt_pw, _pt_ph)
 
-    ## Порядок детей важен вдвойне: рисуются с начала, а события Ren'Py отдаёт
-    ## с конца. Контуры снизу — панель поверх них; слой захвата мыши последний —
-    ## мышь достаётся ему первому, а клики по панели он пропускает дальше.
+    ## Ren'Py рисует детей вперёд, а события раздаёт назад: порядок здесь важен.
     add pt_ghost
 
     if pt_model.collapsed:
@@ -78,9 +68,7 @@ screen position_tuner():
 
     add pt_grab
 
-    ## ── Клавиатура ──
-    ## noshift/shift разведены намеренно: без этого Shift давал бы двойное
-    ## срабатывание, а Ctrl+Shift+Z вызывал бы и отмену, и повтор.
+    ## noshift/shift разделены, чтобы модификаторы не давали двойной action.
 
     key "anyrepeat_noshift_K_LEFT" action Function(pt_nudge, -1, 0)
     key "anyrepeat_noshift_K_RIGHT" action Function(pt_nudge, 1, 0)
@@ -179,9 +167,7 @@ screen pt_panel(px, pw, ph):
                                 style "pt_item"
                                 selected (name == pt_model.name)
                                 action Function(pt_pick, name)
-                ## Полоса прокрутки своя, из Solid: штатные scrollbars тянут
-                ## картинки из gui/ конкретного проекта, а инструмент должен
-                ## одинаково работать в любом.
+                ## Solid не привязывает переносимый инструмент к gui/-ассетам.
                 vbar:
                     value YScrollValue("pt_vp")
                     style "pt_vbar"
@@ -192,7 +178,6 @@ screen pt_panel(px, pw, ph):
             text "мышь — взять спрайт и тащить · стрелки ±[PT_STEP] · Shift+стрелки ±[PT_STEP_BIG] · Tab — точка привязки\n[[ и ]] — наклон ±[PT_STEP_ANGLE]° (с Shift ±[PT_STEP_ANGLE_BIG]°) · Ctrl+Z — отменить · Ctrl+C — копировать\nR — вернуть значения сцены · H — свернуть панель · F9/Esc — закрыть" style "pt_hint"
 
 
-## ── Хоткей открытия ─────────────────────────────────────────────────────────
 ## zorder выше модальных экранов игры — иначе хоткей глохнет внутри интерактивов.
 
 screen pt_hotkey_controller():
@@ -203,8 +188,6 @@ init python:
     if config.developer:
         config.always_shown_screens.append("pt_hotkey_controller")
 
-
-## ── Стили ───────────────────────────────────────────────────────────────────
 
 style pt_panel is frame:
     background "#000000d8"

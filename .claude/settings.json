@@ -1,11 +1,10 @@
 {
     "$schema": "https://www.schemastore.org/claude-code-settings.json",
-    "plansDirectory": "./.claude/plans",
+    "plansDirectory": "./.agents/plans",
     "enableAllProjectMcpServers": true,
     "permissions": {
         "allow": [
-            "Bash(git:*)",
-            "Edit(src/**)"
+            "Bash(git:*)"
         ],
         "deny": [
             "Read(.env*)"
