@@ -3,15 +3,15 @@
 label start:
 
     call prologue_scene_1 from _call_prologue_scene_1
+    call prologue_scene_2 from _call_prologue_scene_2
 
-    ## TODO: пролог — сцена 2.
-
-    ## Акцент границы глав: пролог уходит в чёрный, короткая выдержка —
-    ## глава 1 сама открывается дизолвом уже из черноты.
+    ## Сохраняет исходную границу между прологом и первой главой.
     scene black
     with Dissolve(2.0)
     $ pause(1.2)
 
     call chapter_1_scene_1 from _call_chapter_1_scene_1
+    call chapter_1_scene_2 from _call_chapter_1_scene_2
+    call chapter_1_scene_3 from _call_chapter_1_scene_3
 
     return

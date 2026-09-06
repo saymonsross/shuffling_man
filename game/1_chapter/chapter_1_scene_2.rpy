@@ -1,0 +1,72 @@
+## Глава 1, сцена 2.
+
+## Изображения
+
+image chapter_1 scene_2_parents_room_door = "images/1_chapter/chapter_1 scene_2_parents_room_door.jpg"
+image chapter_1 scene_2_parents_room_door_marina = "images/1_chapter/chapter_1 scene_2_parents_room_door_marina.jpg"
+image chapter_1 scene_2_parents_room_vitya_1 = "images/1_chapter/chapter_1 scene_2_parents_room_vitya_1.jpg"
+image chapter_1 scene_2_parents_room_vitya_2 = "images/1_chapter/chapter_1 scene_2_parents_room_vitya_2.jpg"
+image chapter_1 scene_2_marina_close = "images/1_chapter/chapter_1 scene_2_marina_close.jpg"
+image chapter_1 scene_2_marina_hands = "images/1_chapter/chapter_1 scene_2_marina_hands.jpg"
+image chapter_1 scene_2_dark = "images/1_chapter/chapter_1 scene_2_dark.jpg"
+image chapter_1 scene_2_kitchen = "images/1_chapter/chapter_1 scene_2_kitchen.jpg"
+image chapter_1 scene_2_sandwiches = "images/1_chapter/chapter_1 scene_2_sandwiches.jpg"
+
+label chapter_1_scene_2:
+
+    camera
+    scene chapter_1 scene_2_parents_room_door
+
+    "Я потеряла способность закрывать на эти мелочи глаза."
+    "А Витя не хотел понимать меня. Не воспринимал серьёзно."
+    vit "Доброе утро... А, ой, сейчас уже три часа дня!"
+
+    scene chapter_1 scene_2_marina_close
+
+    mar "Я не могу подняться. Извини."
+    vit "Просто бери пример с меня. Сделай над собой усилие..."
+    "Я много раз предлагала мужу сходить к семейному психологу, но он, как типичный мужик, боялся терапии, словно огня. Смешно!"
+
+    scene chapter_1 scene_2_parents_room_vitya_1
+
+    mar "Тамара Витальевна говорит, что ты тоже должен прийти. Семейная терапия..."
+    vit "Нахуя? У меня-то с головой всё в порядке."
+
+    scene chapter_1 scene_2_parents_room_vitya_2
+
+    mar "Это нелепо..."
+    vit "Знаешь что? Хватит. Это невозможно."
+    mar "О чём ты говоришь?!"
+    vit "Сумасшедший дом. Только решёток на окнах нет. А стоило бы, да?"
+    vit "Тамара не помогает! Не знал, что на болтовню с подружкой можно сжечь столько денег..."
+    mar "Это терапия! У меня есть диагноз!"
+    vit "Какой? Тоска гробовая? Выйди на улицу. Перестань копаться в себе. Поговори с дочкой в конце концов!"
+
+    scene chapter_1 scene_2_marina_hands
+
+    "Мы ещё не заходили так далеко. Впервые за восемь лет брака. Трещина между нами росла, дна не видно..."
+    vit "Какой пример ты подаёшь Насте? Я тяну наше семейство, как могу. За всё плачу, всё покупаю, всё дома есть."
+    vit "И прошу совсем немного! Здоровой атмосферы, счастливых лиц!"
+    vit "Ты же знаешь... Я очень вас люблю..."
+    "И я тебя, Вить. До сих пор. А тогда я не смогла тебе ответить: меня ломало изнутри, я пряталась в собственных ладонях, как хочется спрятаться и сейчас."
+
+    scene chapter_1 scene_2_dark
+
+    "В этой темноте есть кто-то ещё."
+
+    scene chapter_1 scene_2_parents_room_door_marina
+
+    vit "Ладно, пойдём поедим. Я состряпаю чего-нибудь."
+    mar "Л-ладно..."
+
+    scene chapter_1 scene_2_kitchen
+
+    "Наш брак давно был не идеален, понимала ли я это? Не совсем."
+    "После каждого такого скандала я старалась притворяться, подыгрывать."
+
+    scene chapter_1 scene_2_sandwiches
+
+    "Для него, для Настеньки. Для себя. Трещины можно спрятать. Сделать вид, что их нет. Представить, что процесс разрушения остановлен."
+    "Все люди притворяются. Почему мы не могли?.."
+
+    return

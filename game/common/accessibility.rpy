@@ -18,8 +18,14 @@ init -20 python:
     def sm_motion_time(duration):
         return 0.0 if sm_reduced_motion() else duration
 
+    def _sm_stationary_transition(effect, old_widget, new_widget):
+        ## Длительность доступна только после создания перехода с обоими кадрами.
+        original = effect(old_widget=old_widget, new_widget=new_widget)
+        return Pause(max(0.0, float(original.delay)))(
+            old_widget=old_widget, new_widget=new_widget)
+
     def sm_motion_transition(effect):
         """Сохраняет ритм перехода, но убирает движение камеры."""
         if sm_reduced_motion():
-            return Pause(max(0.0, float(effect.delay)))
+            return renpy.curry(_sm_stationary_transition)(effect)
         return effect

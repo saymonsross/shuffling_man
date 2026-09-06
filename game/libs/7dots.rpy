@@ -395,7 +395,7 @@ init python:
     turn2up = TurnPage(vertical=True, reverse=True)
     turn2down = TurnPage(vertical=True)
 
-# default обеспечивает совместимость старых save без dismiss_lock.
+# Начальное состояние блокировки пропуска реплик.
 default can_dismiss = True
 
 init -222 python:

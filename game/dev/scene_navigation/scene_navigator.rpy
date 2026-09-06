@@ -12,10 +12,28 @@ define DEV_SCENE_NAV_ENTRIES = (
         "preview": "dev/scene_navigation/previews/prologue_scene_1.jpg",
     },
     {
+        "section": _("ПРОЛОГ"),
+        "title": _("Сцена 2 · Начало письма"),
+        "label": "prologue_scene_2",
+        "preview": "images/0_prologue/prologue pencil_close.jpg",
+    },
+    {
         "section": "ГЛАВА 1",
         "title": "Сцена 1 · Стук в дверь",
         "label": "chapter_1_scene_1",
         "preview": "dev/scene_navigation/previews/chapter_1_scene_1.jpg",
+    },
+    {
+        "section": _("ГЛАВА 1"),
+        "title": _("Сцена 2 · Ссора"),
+        "label": "chapter_1_scene_2",
+        "preview": "images/1_chapter/chapter_1 scene_2_parents_room_door.jpg",
+    },
+    {
+        "section": _("ГЛАВА 1"),
+        "title": _("Сцена 3 · Воображаемый друг"),
+        "label": "chapter_1_scene_3",
+        "preview": "images/1_chapter/chapter_1 scene_3_children_room_girl_neutral.jpg",
     },
 )
 

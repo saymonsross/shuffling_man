@@ -46,6 +46,21 @@ image chapter_1_door_hand hit = "images/1_chapter/chapter_1_door_hand hit.png"
 image chapter_1 hall_door = "images/1_chapter/chapter_1 hall_door.jpg"
 image chapter_1_hall_door_bag = "images/1_chapter/chapter_1_hall_door_bag.png"
 
+## Статические кадры продолжения сцены.
+image chapter_1 scene_1_hall_vitya = "images/1_chapter/chapter_1 scene_1_hall_vitya.jpg"
+image chapter_1 scene_1_hall_mess = "images/1_chapter/chapter_1 scene_1_hall_mess.jpg"
+image chapter_1 scene_1_vitya_door = "images/1_chapter/chapter_1 scene_1_vitya_door.jpg"
+image chapter_1 scene_1_vitya_outcome_fast = "images/1_chapter/chapter_1 scene_1_vitya_outcome_fast.jpg"
+image chapter_1 scene_1_vitya_outcome_normal = "images/1_chapter/chapter_1 scene_1_vitya_outcome_normal.jpg"
+image chapter_1 scene_1_vitya_outcome_timeout = "images/1_chapter/chapter_1 scene_1_vitya_outcome_timeout.jpg"
+image chapter_1 scene_1_sofa_tv = "images/1_chapter/chapter_1 scene_1_sofa_tv.jpg"
+image chapter_1 scene_1_tv_close = "images/1_chapter/chapter_1 scene_1_tv_close.jpg"
+image chapter_1 scene_1_sofa_tv_night = "images/1_chapter/chapter_1 scene_1_sofa_tv_night.jpg"
+image chapter_1 scene_1_tv_close_night = "images/1_chapter/chapter_1 scene_1_tv_close_night.jpg"
+image chapter_1 scene_1_kitchen_sink = "images/1_chapter/chapter_1 scene_1_kitchen_sink.jpg"
+image chapter_1 scene_1_living_room_mess = "images/1_chapter/chapter_1 scene_1_living_room_mess.jpg"
+image chapter_1 scene_1_vitya_sofa = "images/1_chapter/chapter_1 scene_1_vitya_sofa.jpg"
+
 ## Константы сцены
 
 ## Порядок слоёв: стрелка за всем, рука под абажуром, абажур, рука поверх.
@@ -298,7 +313,9 @@ transform c1s1_piano_hand_idle(pos_xy, key, strength=C1S1_GG_PARALLAX, dy=4, t_u
 ## Кнопки используют мировые координаты и следуют за камерой.
 screen c1s1_lamp_switch():
     modal True
+    use sm_skippable_interaction
     fixed:
+        id "lamp_world"
         at follow_camera()
         xysize (config.screen_width, config.screen_height)
         use glow_button(
@@ -310,7 +327,9 @@ screen c1s1_lamp_switch():
 
 screen c1s1_metronome_start():
     modal True
+    use sm_skippable_interaction
     fixed:
+        id "metronome_world"
         at follow_camera()
         xysize (config.screen_width, config.screen_height)
         use glow_button(
@@ -543,8 +562,88 @@ label chapter_1_scene_1:
 
     $ dismiss_on()
 
-    ## Временная выдержка только в developer-сборке (дальше пока ничего нет).
-    if config.developer:
-        pause 30
+    call .after_locks from _call_chapter_1_scene_1_after_locks
+
+    return
+
+label .after_locks:
+
+    camera
+
+    if c1s1_locks_outcome == "fast":
+        scene chapter_1 scene_1_vitya_outcome_fast
+
+        vit "Привет."
+
+        scene chapter_1 scene_1_hall_vitya
+
+        "Часто Витя бывал просто невыносим."
+
+        scene chapter_1 scene_1_hall_mess
+
+        "Ничего серьёзного: какие-то банальности, быт... И эти его дурацкие, неискоренимые привычки."
+
+    elif c1s1_locks_outcome == "normal":
+        scene chapter_1 scene_1_vitya_outcome_normal
+
+        vit "Ну наконец-то, бля."
+
+        scene chapter_1 scene_1_hall_vitya
+
+        "Часто Витя бывал просто невыносим."
+
+        scene chapter_1 scene_1_hall_mess
+
+        "Ничего серьёзного: какие-то банальности, быт... И эти его дурацкие, неискоренимые привычки."
+
+    else:
+        scene chapter_1 scene_1_vitya_outcome_timeout
+
+        vit "Отлично. Теперь ещё и замок менять... Ты в порядке?"
+        mar "Что делаешь? Совсем ненормальный?!"
+        vit "Ясно."
+
+        "Витя всегда был таким. Злым, нетерпеливым."
+        "Раздражённым всем и всегда. Пленник своих грёбаных привычек."
+
+    "Раньше мне хватало сил их не замечать. Терпеть."
+
+    if c1s1_locks_outcome == "timeout":
+        scene chapter_1 scene_1_sofa_tv
+
+        vit "Чуть не пропустил..."
+    else:
+        scene chapter_1 scene_1_tv_close
+
+        vit "Наконец-то..."
+
+    scene chapter_1 scene_1_living_room_mess
+
+    "Разбросанные носки, не опускающийся стульчак, как типично!"
+
+    scene chapter_1 scene_1_kitchen_sink
+
+    mar "Ты в магазин зашёл?"
+    "Нарушенные обещания..."
+
+    scene chapter_1 scene_1_sofa_tv_night
+
+    vit "Не-а."
+    "Ну, мелочь. И ещё одна. И ещё одна. День за днём."
+    mar "У нас на завтра..."
+    "Раз за разом просишь, напоминаешь, умоляешь…"
+
+    scene chapter_1 scene_1_tv_close_night
+
+    vit "Не, завтра не могу никак."
+    mar "Но мы договаривались!"
+
+    scene chapter_1 scene_1_vitya_sofa
+
+    vit "Не ори!"
+    mar "Сам не ори!"
+    "Скандалишь, наконец. Но тебя не слышат. Как это выводило меня из себя."
+    vit "Ты опять начинаешь?!"
+    "И так по кругу. Снова и снова."
 
     return

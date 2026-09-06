@@ -9,6 +9,11 @@ init -5 python:
             True, img,
             predict_all=True)
 
+## Только для интерактивов без выбора: пропуск может включиться уже после call screen.
+screen sm_skippable_interaction():
+    if renpy.is_skipping():
+        timer 0.01 action SkipOnce() modal True
+
 ## items: (image, transform, flag, return_value). После Hide флаги гасить вручную:
 ## unhovered закрытого экрана не вызывается.
 screen hover_click(items):

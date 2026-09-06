@@ -34,9 +34,6 @@ image chapter_1_big_lock_spin = "images/1_chapter/lock_mini_game/big_lock/big_lo
 image chapter_1_handle_body = "images/1_chapter/lock_mini_game/door_handle/door_handle_body.png"
 image chapter_1_handle_lever = "images/1_chapter/lock_mini_game/door_handle/door_handle.png"
 
-## Совместимость сохранений, созданных до перехода на screen Timer.
-image chapter_1_mg_driver = Solid("#0000", xysize=(1, 1))
-
 image chapter_1_mg_overlay = Solid("#0a0806")
 
 ## Игровое состояние
@@ -44,12 +41,14 @@ image chapter_1_mg_overlay = Solid("#0a0806")
 default c1s1_latch_open = False
 default c1s1_big_lock_open = False
 default c1s1_door_handle_open = False
-## Время прохождения, сек; задел для будущей развилки.
+## Чистое время управления закрытыми замками, сек.
 default c1s1_locks_time = 0.0
+default c1s1_locks_outcome = "fast"
+default c1s1_locks_forced = False
 default c1s1_mg_knocking = False
 default c1s1_mg_active = False
 default c1s1_mg_lock_i = 0
-## Save/rollback-модель прогресса.
+## Откатываемая модель прогресса.
 default c1s1_mg_state = {}
 
 ## Новому замку нужны запись здесь, grab/step и лейбл .show_<замок>.
@@ -163,6 +162,18 @@ define C1S1_MG_POLL_T = 0.15
 define C1S1_MG_TICK_T = 1.0 / 30.0  # 30 обновлений/с
 define C1S1_MG_POINTER_LOST_T = 0.25  # release вне окна: защита от вечного drag
 
+define C1S1_MG_VITYA_INTERVAL_T = 10.0
+define C1S1_MG_FAST_T = C1S1_MG_VITYA_INTERVAL_T
+define C1S1_MG_TIMEOUT_T = C1S1_MG_VITYA_INTERVAL_T * 4.0
+define C1S1_MG_TIMEOUT_HOLD_T = 1.8
+define C1S1_MG_VITYA_LINES = (
+    _("Это я, открывай!"),
+    _("Опять заперлась? Я ж на минуту выскочил!"),
+    _("Боже, что ты там возишься?"),
+    _("Марина, ну ёбана! Замок сломался?"),
+)
+define C1S1_MG_VITYA_TIMEOUT_LINE = _("Всё, отходи!")
+
 ## Оверлей на master; модель замка живёт на отдельном lockgame.
 define C1S1_Z_MG_OVERLAY = 50
 
@@ -178,18 +189,17 @@ init -5 python:
         def __init__(self):
             self.context_level = None
             self.rollback_active = False
+            self.tick_clock = None
             self.pointer_down = False
             self.pointer_up_since = None
 
     _c1s1_clock_state = _C1S1ClockState()
 
-    ## В отличие от _fx_state, эта модель входит в save/rollback.
+    ## В отличие от _fx_state, эта модель участвует в rollback.
     def _mg_get(name, default=0.0):
-        return getattr(store, "c1s1_mg_state", {}).get(name, default)
+        return store.c1s1_mg_state.get(name, default)
 
     def _mg_set(name, value):
-        if not isinstance(getattr(store, "c1s1_mg_state", None), dict):
-            store.c1s1_mg_state = {}
         store.c1s1_mg_state[name] = value
         return value
 
@@ -211,6 +221,10 @@ init -5 python:
         _mg_set("big_grab", 0.0)
         _mg_set("handle_grab", 0.0)
 
+    def c1s1_mg_anchor_clock():
+        """Исключает паузы игрового меню из игрового времени."""
+        _c1s1_clock_state.tick_clock = sm_time.monotonic()
+
     def c1s1_mg_sync_pointer_after_context():
         """Сбрасывает drag, сохраняя release-барьер при смене контекста с hold."""
         held = c1s1_mg_physical_primary_down()
@@ -231,40 +245,45 @@ init -5 python:
     def _mg_lerp(a, b, t):
         return a + (b - a) * max(0.0, min(1.0, t))
 
-    def c1s1_mg_ensure_state():
-        """Мигрирует старые saves без сброса прогресса и текущего замка."""
-        if not isinstance(getattr(store, "c1s1_mg_state", None), dict):
-            store.c1s1_mg_state = {}
-        defaults = (
-            ("elapsed", 0.0), ("play_t", 0.0), ("wave", 0.0),
-            ("shake_a", 0.0), ("shake_t", 0.0),
-            ("latch_p", 0.0), ("latch_grab", 0.0),
-            ("latch_last_mx", 0.0), ("latch_last_my", 0.0),
-            ("big_p", 0.0), ("big_grab", 0.0),
-            ("big_last_mx", 0.0), ("big_last_a", 0.0),
-            ("handle_p", 0.0), ("handle_grab", 0.0),
-            ("handle_last_a", 0.0),
-            ("knock_next", -1.0), ("done", -1.0),
-            ("simple_target", -1.0),
-        )
-        for name, value in defaults:
-            if name not in store.c1s1_mg_state:
-                store.c1s1_mg_state[name] = value
-        if "clock" not in store.c1s1_mg_state:
-            store.c1s1_mg_state["clock"] = sm_time.monotonic()
+    def c1s1_mg_init_state():
+        """Создаёт чистое состояние новой попытки."""
+        store.c1s1_mg_state.clear()
+        store.c1s1_mg_state.update({
+            "elapsed": 0.0,
+            "play_t": 0.0,
+            "decision_t": 0.0,
+            "timeout_play_t": -1.0,
+            "wave": 0.0,
+            "shake_a": 0.0,
+            "shake_t": 0.0,
+            "latch_p": 0.0,
+            "latch_grab": 0.0,
+            "latch_last_mx": 0.0,
+            "latch_last_my": 0.0,
+            "big_p": 0.0,
+            "big_grab": 0.0,
+            "big_last_mx": 0.0,
+            "big_last_a": 0.0,
+            "handle_p": 0.0,
+            "handle_grab": 0.0,
+            "handle_last_a": 0.0,
+            "knock_next": -1.0,
+            "done": -1.0,
+            "simple_target": -1.0,
+        })
 
     def c1s1_mg_reset():
-        c1s1_mg_ensure_state()
-        store.c1s1_mg_state.clear()
-        c1s1_mg_ensure_state()
+        c1s1_mg_init_state()
         for flag in C1S1_MG_LOCK_FLAGS.values():
             setattr(store, flag, False)
         store.c1s1_mg_lock_i = 0
         store.c1s1_locks_time = 0.0
+        store.c1s1_locks_outcome = "fast"
+        store.c1s1_locks_forced = False
         store.c1s1_mg_knocking = False
         store.c1s1_mg_active = False
         c1s1_mg_cancel_pointer()
-        _mg_set("clock", sm_time.monotonic())
+        c1s1_mg_anchor_clock()
 
     def c1s1_mg_stop():
         """Обнуляет shake до остановки драйвера, чтобы кадр не застыл смещённым."""
@@ -272,8 +291,27 @@ init -5 python:
         _mg_set("shake_t", 0.0)
 
     def c1s1_mg_elapsed():
-        """Игровое время замков без ожидания кнопки «Открыть дверь»."""
-        return _mg_get("play_t")
+        """Время реального управления ещё закрытыми замками."""
+        return _mg_get("decision_t")
+
+    def c1s1_mg_outcome_for_time(elapsed):
+        if elapsed < C1S1_MG_FAST_T:
+            return "fast"
+        if elapsed < C1S1_MG_TIMEOUT_T:
+            return "normal"
+        return "timeout"
+
+    def c1s1_mg_vitya_line(elapsed=None):
+        if elapsed is None:
+            elapsed = c1s1_mg_elapsed()
+        if elapsed >= C1S1_MG_TIMEOUT_T:
+            return C1S1_MG_VITYA_TIMEOUT_LINE
+        i = min(int(elapsed // C1S1_MG_VITYA_INTERVAL_T),
+                len(C1S1_MG_VITYA_LINES) - 1)
+        return C1S1_MG_VITYA_LINES[max(0, i)]
+
+    def c1s1_mg_vitya_dd(st, at):
+        return Text(c1s1_mg_vitya_line(), style="c1s1_mg_bark_text"), 0.1
 
     def c1s1_mg_reanchor_clock():
         """Исключает menu/rollback из времени, не сбрасывая clock при restart."""
@@ -290,7 +328,7 @@ init -5 python:
             c1s1_mg_sync_pointer_after_context()
         if (getattr(store, "c1s1_mg_knocking", False)
                 and (context_changed or rollback_started)):
-            _mg_set("clock", sm_time.monotonic())
+            c1s1_mg_anchor_clock()
 
     if c1s1_mg_reanchor_clock not in config.interact_callbacks:
         config.interact_callbacks.append(c1s1_mg_reanchor_clock)
@@ -310,12 +348,6 @@ init -5 python:
         return getattr(store, C1S1_MG_LOCK_FLAGS[lock], False)
 
     def c1s1_mg_check_done():
-        if renpy.is_skipping():
-            if c1s1_mg_pointer_held():
-                return
-            c1s1_mg_open_all()
-            renpy.end_interaction("skipped")
-            return
         if not store.c1s1_mg_active or not c1s1_mg_lock_open():
             return
 
@@ -329,13 +361,6 @@ init -5 python:
         if t - _mg_get("done") >= C1S1_MG_DONE_HOLD_T:
             _mg_set("done", -1.0)
             renpy.end_interaction("done")
-
-    def c1s1_mg_check_skip():
-        if renpy.is_skipping():
-            if c1s1_mg_pointer_held():
-                return
-            c1s1_mg_open_all()
-            renpy.end_interaction("skipped")
 
     ## Вздрагивание кадра
 
@@ -388,12 +413,13 @@ init -5 python:
         c1s1_mg_reanchor_clock()
         now = sm_time.monotonic()
         c1s1_mg_recover_lost_pointer(now)
-        dt = now - _mg_get("clock", now)
+        previous = getattr(_c1s1_clock_state, "tick_clock", None)
+        dt = 0.0 if previous is None else now - previous
         if dt < 0.0:
             dt = 0.0
         else:
             dt = min(dt, 0.25)
-        _mg_set("clock", now)
+        _c1s1_clock_state.tick_clock = now
         _mg_set("shake_t", _mg_get("shake_t") + dt)
 
         if store.c1s1_mg_knocking:
@@ -402,6 +428,9 @@ init -5 python:
 
         if store.c1s1_mg_active:
             _mg_set("play_t", _mg_get("play_t") + dt)
+            if not store.c1s1_locks_forced and not c1s1_mg_lock_open():
+                _mg_set("decision_t", _mg_get("decision_t") + dt)
+            c1s1_mg_timeout_step()
             if not c1s1_mg_simplified_tick(dt):
                 lock = c1s1_mg_lock()
                 if lock == "latch":
@@ -411,25 +440,19 @@ init -5 python:
                 elif lock == "door_handle":
                     c1s1_handle_step(dt)
 
-    def c1s1_mg_driver_f(trans, st, at):
-        """Fallback-драйвер для старых mid-minigame saves без runtime-screen."""
-        trans.alpha = 0.0
-        if (renpy.get_screen("c1s1_mg_runtime") is None
-                and renpy.get_screen("c1s1_locks_open_door") is None
-                and renpy.get_screen("c1s1_locks_minigame") is None):
-            c1s1_mg_tick()
-        return C1S1_MG_TICK_T
-
     ## Камера
 
     def c1s1_mg_camera_f(strength, smooth, key, trans, st, at):
         """Сводит параллакс и shake в общие _fx_state-ключи камеры двери."""
+        if renpy.predicting():
+            return 1.0 / 60.0
         strength = _fx_num(strength, 10.0, 0.0)
         if sm_reduced_motion():
             for suffix in ("_px", "_py", "_jx", "_jy"):
                 _fx_state[key + suffix] = 0.0
             trans.xoffset = 0.0
             trans.yoffset = 0.0
+            _fx_publish_camera(key, trans)
             return 1.0 / 60.0
         if not FX_MOUSE_PARALLAX_ON:
             strength = 0.0
@@ -447,6 +470,7 @@ init -5 python:
 
         trans.xoffset = px
         trans.yoffset = py + sy
+        _fx_publish_camera(key, trans)
         return 1.0 / 60.0
 
     ## Модель замка
@@ -525,14 +549,20 @@ init -5 python:
             _mg_set("latch_last_mx", mx)
             _mg_set("latch_last_my", my)
 
-            ## На целой границе берём следующее колено, иначе ввод замирает.
             seg = int(min(p, max_p - 0.001))
             vx, vy = C1S1_LATCH_PATH[seg]
+            ## На повороте можно продолжить вперёд или вернуться по прежнему колену.
+            if p == float(seg) and seg > 0 and dx * vx + dy * vy <= 0.0:
+                prev_vx, prev_vy = C1S1_LATCH_PATH[seg - 1]
+                if dx * prev_vx + dy * prev_vy < 0.0:
+                    seg -= 1
+                    vx, vy = prev_vx, prev_vy
             span2 = (vx * vx + vy * vy) * C1S1_LATCH_ZOOM * C1S1_LATCH_ZOOM
             if span2 > 1.0:
                 ## Проекция движения мыши на ось колена.
                 p += (dx * vx + dy * vy) * C1S1_LATCH_ZOOM / span2
-            p = max(0.0, min(max_p, p))
+            ## Избыток одного движения не переносится через поворот траектории.
+            p = max(float(seg), min(float(seg + 1), p))
             _mg_set("latch_p", p)
 
             if p >= max_p:
@@ -717,7 +747,8 @@ init -5 python:
 
     def c1s1_mg_grab():
         c1s1_mg_cancel_pointer()
-        if not store.c1s1_mg_active or c1s1_mg_lock_open():
+        if (not store.c1s1_mg_active or store.c1s1_locks_forced
+                or c1s1_mg_lock_open()):
             return
         lock = c1s1_mg_lock()
         if lock == "latch":
@@ -767,7 +798,8 @@ init -5 python:
 
     def c1s1_mg_simplified_step():
         """Запускает focusable-шаг; при reduced motion завершает синхронно."""
-        if (not store.c1s1_mg_active or c1s1_mg_lock_open()
+        if (not store.c1s1_mg_active or store.c1s1_locks_forced
+                or c1s1_mg_lock_open()
                 or _mg_get("simple_target", -1.0) >= 0.0):
             return
         c1s1_mg_release()
@@ -821,9 +853,24 @@ init -5 python:
             setattr(store, flag, True)
         store.c1s1_mg_lock_i = len(C1S1_MG_LOCK_ORDER)
 
+    def c1s1_mg_timeout_step():
+        if not store.c1s1_mg_active:
+            return
+        if not store.c1s1_locks_forced:
+            if c1s1_mg_elapsed() < C1S1_MG_TIMEOUT_T:
+                return
+            store.c1s1_locks_forced = True
+            _mg_set("timeout_play_t", _mg_get("play_t"))
+            c1s1_mg_release()
+        if (_mg_get("play_t") - _mg_get("timeout_play_t")
+                >= C1S1_MG_TIMEOUT_HOLD_T):
+            c1s1_mg_open_all()
+
     ## Сумка
 
     def c1s1_mg_bag_f(trans, st, at):
+        if renpy.predicting():
+            return 1.0 / 60.0
         if sm_reduced_motion():
             _fx_state["c1s1_mg_bag_jx"] = 0.0
             _fx_state["c1s1_mg_bag_jy"] = 0.0
@@ -833,17 +880,11 @@ init -5 python:
 
         amp = _mg_lerp(C1S1_MG_BAG_TREMBLE[0], C1S1_MG_BAG_TREMBLE[1],
                        c1s1_mg_shake_env())
-        trans.xoffset = _fx_step("c1s1_mg_bag_jx", _fx_visual_jitter(amp), 0.5, start=0.0)
-        trans.yoffset = _fx_step("c1s1_mg_bag_jy", _fx_visual_jitter(amp), 0.5, start=0.0)
+        trans.xoffset = _fx_step("c1s1_mg_bag_jx", lambda: _fx_visual_jitter(amp), 0.5, start=0.0)
+        trans.yoffset = _fx_step("c1s1_mg_bag_jy", lambda: _fx_visual_jitter(amp), 0.5, start=0.0)
         return 1.0 / 60.0
 
 ## Трансформы
-
-## Не удалять до сознательного сброса совместимости со старыми сохранениями.
-transform c1s1_mg_driver():
-    alpha 0.0
-    pos (0, 0)
-    function c1s1_mg_driver_f
 
 ## Начальный zoom наследуется для плавной склейки; rotate сбрасывается явно.
 transform c1s1_mg_camera(z1=C1S1_MG_ZOOM, t=C1S1_MG_SETTLE_T, strength=8.0, smooth=0.06, key="cam"):
@@ -943,8 +984,8 @@ screen c1s1_locks_open_door():
     zorder 110
     modal True
     timer C1S1_MG_TICK_T action Function(c1s1_mg_tick, _update_screens=False) repeat True modal True
-    timer C1S1_MG_POLL_T action Function(c1s1_mg_check_skip) repeat True modal True
     fixed:
+        id "door_world"
         at follow_camera(zoom_pad=C1S1_MG_ZOOM)
         xysize (config.screen_width, config.screen_height)
         use glow_button(
@@ -965,6 +1006,8 @@ screen c1s1_locks_minigame():
     timer C1S1_MG_TICK_T action Function(c1s1_mg_tick, _update_screens=False) repeat True modal True
     timer C1S1_MG_POLL_T action Function(c1s1_mg_check_done) repeat True modal True
 
+    use c1s1_mg_vitya_bark
+
     if persistent.sm_simplified_locks:
         textbutton c1s1_mg_simplified_label():
             style "c1s1_mg_step_button"
@@ -972,20 +1015,6 @@ screen c1s1_locks_minigame():
             default_focus True
             xalign 0.5
             yalign 0.90
-
-        textbutton _("Вернуть перетаскивание"):
-            style "c1s1_mg_access_button"
-            action SetField(persistent, "sm_simplified_locks", False)
-            sensitive (_mg_get("simple_target", -1.0) < 0.0)
-            xalign 0.98
-            yalign 0.97
-    else:
-        textbutton _("Упростить управление"):
-            style "c1s1_mg_access_button"
-            action SetField(persistent, "sm_simplified_locks", True)
-            default_focus True
-            xalign 0.98
-            yalign 0.97
 
     if C1S1_MG_DEBUG_HIT and c1s1_mg_lock() == "latch":
         add Solid("#00ff0040"):
@@ -996,6 +1025,31 @@ screen c1s1_locks_minigame():
     ## capture False пропускает обычные клики.
     key "mousedown_1" action Function(c1s1_mg_grab, _update_screens=False) capture False
     key "mouseup_1" action Function(c1s1_mg_capture_release, _update_screens=False) capture False
+
+screen c1s1_mg_vitya_bark():
+
+    frame:
+        style "c1s1_mg_bark_frame"
+
+        vbox:
+            spacing 4
+            text _("Витя") style "c1s1_mg_bark_name"
+            add DynamicDisplayable(c1s1_mg_vitya_dd)
+
+style c1s1_mg_bark_frame is frame:
+    xalign 0.5
+    yalign 0.04
+    xsize 1500
+    padding (30, 18)
+    background Solid("#0a0806e6")
+
+style c1s1_mg_bark_name is default:
+    properties gui.text_properties("name")
+    color "#5c7c9e"
+
+style c1s1_mg_bark_text is default:
+    properties gui.text_properties("dialogue")
+    xsize 1440
 
 style c1s1_mg_access_button is button:
     background Solid("#17120ee6")
@@ -1031,12 +1085,9 @@ label chapter_1_scene_1_minigame_locks:
 
     $ pause(C1S1_MG_SETTLE_T)
 
-    ## Пока развилок нет, мини-игра пропускается вместе со сценой.
-    ## TODO: убрать guard, когда появятся развилки по времени.
-    if not renpy.is_skipping():
-        ## Screen action сохраняет состояние после rollback-checkpoint statement.
-        $ renpy.retain_after_load()
-        call screen c1s1_locks_open_door
+    ## Временной исход делает интерактив обязательным даже при пропуске текста.
+    $ skip_stop()
+    call screen c1s1_locks_open_door
 
     ## Оверлей отделяет сцену двери от моделей замков.
     show chapter_1_mg_overlay zorder C1S1_Z_MG_OVERLAY at c1s1_mg_overlay_in()
@@ -1045,14 +1096,11 @@ label chapter_1_scene_1_minigame_locks:
 
     ## Замки открываются по C1S1_MG_LOCK_ORDER без остановки часов и стука.
     $ c1s1_mg_lock_i = 0
-    if renpy.is_skipping():
-        $ c1s1_mg_open_all()
-    else:
-        while c1s1_mg_lock() is not None:
-            call .play_lock from _call_c1s1_mg_play_lock
+    while c1s1_mg_lock() is not None:
+        call .play_lock from _call_c1s1_mg_play_lock
 
-    ## Время сохраняется для будущей развилки.
     $ c1s1_locks_time = c1s1_mg_elapsed()
+    $ c1s1_locks_outcome = c1s1_mg_outcome_for_time(c1s1_locks_time)
 
     ## Возврат к сцене.
     $ c1s1_mg_knocking = False
@@ -1063,7 +1111,6 @@ label chapter_1_scene_1_minigame_locks:
 
     ## Runtime снимается после сброса вздрагивания.
     $ c1s1_mg_stop()
-    hide chapter_1_mg_driver
     hide screen c1s1_mg_runtime
 
     return
@@ -1081,8 +1128,6 @@ label .play_lock:
     $ pause(C1S1_MG_LOCK_FADE_T)
 
     $ c1s1_mg_active = True
-    ## Сохраняет текущий замок при load во время drag.
-    $ renpy.retain_after_load()
     call screen c1s1_locks_minigame
     $ c1s1_mg_active = False
 

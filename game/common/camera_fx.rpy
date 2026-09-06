@@ -21,11 +21,31 @@ init -10 python:
     ## Поэтому накопители нельзя сбрасывать при st≈0 между сценами.
     _fx_state = {}
 
+    def _fx_frame_time():
+        ## SDK 8.5.3 фиксирует это время на весь render; st сбрасывается при смене ATL.
+        return renpy.game.interface.frame_time
+
     def _fx_step(key, target, relax, start):
-        """Сглаживает _fx_state[key]; start действует только при первом вызове
-        для key, а накопитель переживает пересборку transform."""
+        """relax задан для 60 Hz; callable-цель вычисляется только на новом кадре."""
         cur = _fx_state.get(key, start)
-        cur += (target - cur) * relax
+        if renpy.predicting():
+            return cur
+
+        now = _fx_frame_time()
+        clock_key = (key, "time")
+        previous = _fx_state.get(clock_key)
+        dt = 1.0 / 60.0 if previous is None else now - previous
+        if dt <= 0.0:
+            ## Смена часов не сбрасывает позицию и не замораживает эффект до старой даты.
+            if dt < 0.0:
+                _fx_state[clock_key] = now
+            return cur
+
+        value = target() if callable(target) else target
+        ## После скрытого окна не отыгрываем весь простой одним скачком.
+        blend = 1.0 - (1.0 - relax) ** (min(dt, 0.25) * 60.0)
+        cur += (value - cur) * blend
+        _fx_state[clock_key] = now
         _fx_state[key] = cur
         return cur
 
@@ -46,6 +66,8 @@ init -10 python:
     def mouse_parallax_f(strength, smooth, shake_amp, relax, tension_var, key, trans, st, at):
         """Параллакс с дрожью от tension_var; key уникален для каждого
         одновременного эффекта."""
+        if renpy.predicting():
+            return 1.0 / 60.0
         strength = _fx_num(strength, 10.0, 0.0)
         ## Глобальный флаг плавно гасит параллакс; reduced motion сразу гасит и дрожь.
         if sm_reduced_motion():
@@ -53,6 +75,7 @@ init -10 python:
                 _fx_state[key + suffix] = 0.0
             trans.xoffset = 0.0
             trans.yoffset = 0.0
+            _fx_publish_camera(key, trans)
             return 1.0 / 60.0
         if not FX_MOUSE_PARALLAX_ON:
             strength = 0.0
@@ -68,11 +91,12 @@ init -10 python:
 
         t = _fx_tension(tension_var, relax, key + "_tension")
         amp = shake_amp * t
-        jx = _fx_step(key + "_jx", _fx_visual_jitter(amp), 0.5, start=0.0)
-        jy = _fx_step(key + "_jy", _fx_visual_jitter(amp), 0.5, start=0.0)
+        jx = _fx_step(key + "_jx", lambda: _fx_visual_jitter(amp), 0.5, start=0.0)
+        jy = _fx_step(key + "_jy", lambda: _fx_visual_jitter(amp), 0.5, start=0.0)
 
         trans.xoffset = px + jx
         trans.yoffset = py + jy
+        _fx_publish_camera(key, trans)
         return 1.0 / 60.0
 
     def _focus_offset(focus_align, screen_align, z):
@@ -86,6 +110,8 @@ init -10 python:
 
     def focus_parallax_f(focus_align, screen_align, strength, smooth, key, trans, st, at):
         """Считает базовый кадр по текущему trans.zoom и добавляет параллакс."""
+        if renpy.predicting():
+            return 1.0 / 60.0
         bx, by = _focus_offset(focus_align, screen_align, trans.zoom or 1.0)
 
         strength = _fx_num(strength, 10.0, 0.0)
@@ -94,6 +120,7 @@ init -10 python:
             _fx_state[key + "_py"] = 0.0
             trans.xoffset = bx
             trans.yoffset = by
+            _fx_publish_camera(key, trans)
             return 1.0 / 60.0
         if not FX_MOUSE_PARALLAX_ON:
             strength = 0.0
@@ -106,21 +133,25 @@ init -10 python:
 
         trans.xoffset = bx + px
         trans.yoffset = by + py
+        _fx_publish_camera(key, trans)
         return 1.0 / 60.0
+
+    def _fx_publish_camera(key, trans):
+        ## master рендерится перед screens; UI получает итоговый transform этого кадра.
+        _fx_state[(key, "camera")] = (
+            trans.zoom, trans.rotate, trans.xoffset, trans.yoffset)
 
     def follow_camera_f(key, trans, st, at):
-        """Читает готовые offsets камеры из _fx_state, чтобы не создавать
-        второй накопитель и не давать экранному элементу дрейфовать."""
-        px = _fx_state.get(key + "_px", 0.0)
-        py = _fx_state.get(key + "_py", 0.0)
-        jx = _fx_state.get(key + "_jx", 0.0)
-        jy = _fx_state.get(key + "_jy", 0.0)
-
-        trans.xoffset = px + jx
-        trans.yoffset = py + jy
-        return 1.0 / 60.0
+        """Копирует камеру целиком, не создавая второй накопитель параллакса."""
+        snapshot = _fx_state.get((key, "camera"))
+        if snapshot is not None:
+            trans.zoom, trans.rotate, trans.xoffset, trans.yoffset = snapshot
+        ## ATL-зум камеры меняется каждый кадр даже при статичном содержимом кнопки.
+        return 0.0
 
     def mouse_follow_f(rx, ry, smooth, key, trans, st, at):
+        if renpy.predicting():
+            return 1.0 / 60.0
         rx = _fx_num(rx, 0.0)
         ry = _fx_num(ry, 0.0)
         smooth = _fx_num(smooth, 0.12, 0.001, 1.0)
@@ -150,6 +181,8 @@ init -10 python:
 
     def object_jitter_f(amp, relax, key, trans, st, at):
         """Аддитивный jitter поверх ATL; key должен быть уникален для объекта."""
+        if renpy.predicting():
+            return 1.0 / 60.0
         amp = _fx_num(amp, 3.0, 0.0)
         relax = _fx_num(relax, 0.5, 0.001, 1.0)
 
@@ -160,13 +193,13 @@ init -10 python:
             trans.yoffset = 0.0
             return 1.0 / 60.0
 
-        jx = _fx_step(key + "_jx", _fx_visual_jitter(amp), relax, start=0.0)
-        jy = _fx_step(key + "_jy", _fx_visual_jitter(amp), relax, start=0.0)
+        jx = _fx_step(key + "_jx", lambda: _fx_visual_jitter(amp), relax, start=0.0)
+        jy = _fx_step(key + "_jy", lambda: _fx_visual_jitter(amp), relax, start=0.0)
         trans.xoffset = jx
         trans.yoffset = jy
         return 1.0 / 60.0
 
-## Общий zoom_pad камеры и world-space UI: значения обязаны совпадать.
+## Запас по краям для параллакса.
 define FX_CAMERA_ZOOM_PAD = 1.02
 
 ## Явный rotate 0.0 сбрасывает наклон, унаследованный от предыдущего camera at.
@@ -177,8 +210,8 @@ transform mouse_parallax(strength=10.0, smooth=0.06, shake_amp=0.0, relax=0.04, 
     xoffset 0.0 yoffset 0.0
     function renpy.curry(mouse_parallax_f)(strength, smooth, shake_amp, relax, tension_var, key)
 
-## World-space UI: контейнер должен быть размером с экран, а key и zoom_pad —
-## совпадать с камерой.
+## World-space UI: размер контейнера и key совпадают с камерой.
+## zoom_pad задаёт только начальное значение до первого кадра камеры.
 transform follow_camera(key="cam", zoom_pad=FX_CAMERA_ZOOM_PAD):
     subpixel True
     align (0.5, 0.5) zoom zoom_pad
