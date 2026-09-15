@@ -1,6 +1,6 @@
 ## Настоящие call screen без ожидания предшествующих анимаций и реплик.
-label sm_test_skip_note:
-    call screen prologue_note_fix
+label sm_test_skip_note_start:
+    call screen prologue_note_start
     jump sm_test_skip_complete
 
 label sm_test_skip_lamp:
@@ -39,7 +39,7 @@ screen sm_test_skip_modal():
 
 testcase nonbranching_prompt_late_skip:
     parameter (prompt_label, prompt_screen) = [
-        ("sm_test_skip_note", "prologue_note_fix"),
+        ("sm_test_skip_note_start", "prologue_note_start"),
         ("sm_test_skip_lamp", "c1s1_lamp_switch"),
         ("sm_test_skip_metronome", "c1s1_metronome_start")]
     parameter skip_mode = ["fast", "normal", "ctrl"]

@@ -23,9 +23,11 @@ screen sm_test_pointer_leak_target():
 testsuite global:
     before testcase:
         $ renpy.session["_sm_test_preferences"] = (persistent.sm_reduce_motion, persistent.sm_simplified_locks, persistent.sm_disable_flashes)
+        $ renpy.session["_sm_test_get_mouse_pos"] = renpy.get_mouse_pos
 
     after testcase:
         $ persistent.sm_reduce_motion, persistent.sm_simplified_locks, persistent.sm_disable_flashes = renpy.session.pop("_sm_test_preferences")
+        $ renpy.get_mouse_pos = renpy.session.pop("_sm_test_get_mouse_pos")
 
     teardown:
         exit
@@ -127,13 +129,17 @@ testcase c1s1_minigame_model:
 testcase c1s1_minigame_timed_outcomes:
     assert eval (c1s1_mg_outcome_for_time(C1S1_MG_FAST_T - 0.01) == 'fast')
     assert eval (c1s1_mg_outcome_for_time(C1S1_MG_FAST_T) == 'normal')
-    assert eval (c1s1_mg_outcome_for_time(C1S1_MG_TIMEOUT_T - 0.01) == 'normal')
-    assert eval (c1s1_mg_outcome_for_time(C1S1_MG_TIMEOUT_T) == 'timeout')
+    assert eval (c1s1_mg_outcome_for_time(C1S1_MG_FAST_T + 0.01) == 'normal')
+    ## Прежний порог проигрыша больше не создаёт отдельный исход.
+    assert eval (c1s1_mg_outcome_for_time(39.99) == 'normal')
+    assert eval (c1s1_mg_outcome_for_time(40.0) == 'normal')
+    assert eval (c1s1_mg_outcome_for_time(3600.0) == 'normal')
     assert eval (c1s1_mg_vitya_line(0.0) == 'Это я, открывай!')
     assert eval (c1s1_mg_vitya_line(C1S1_MG_VITYA_INTERVAL_T) == 'Опять заперлась? Я ж на минуту выскочил!')
     assert eval (c1s1_mg_vitya_line(C1S1_MG_VITYA_INTERVAL_T * 2.0) == 'Боже, что ты там возишься?')
     assert eval (c1s1_mg_vitya_line(C1S1_MG_VITYA_INTERVAL_T * 3.0) == 'Марина, ну ёбана! Замок сломался?')
-    assert eval (c1s1_mg_vitya_line(C1S1_MG_TIMEOUT_T) == 'Всё, отходи!')
+    assert eval (c1s1_mg_vitya_line(40.0) == 'Марина, ну ёбана! Замок сломался?')
+    assert eval (c1s1_mg_vitya_line(3600.0) == 'Марина, ну ёбана! Замок сломался?')
 
     ## Время выбора не включает короткую выдержку уже открытого замка.
     $ c1s1_mg_reset()
@@ -163,21 +169,10 @@ testcase c1s1_minigame_timed_outcomes:
     assert eval (c1s1_mg_state.get('decision_t') == 0.0)
 
     $ c1s1_mg_reset()
-    $ c1s1_mg_active = True
-    $ _mg_set("decision_t", C1S1_MG_TIMEOUT_T)
-    $ _mg_set("play_t", C1S1_MG_TIMEOUT_T)
-    $ c1s1_mg_timeout_step()
-    assert eval (c1s1_locks_forced and not c1s1_latch_open)
-    $ _mg_set("play_t", _mg_get("timeout_play_t") + C1S1_MG_TIMEOUT_HOLD_T - 0.001)
-    $ c1s1_mg_timeout_step()
-    assert eval (not c1s1_latch_open)
-    $ _mg_set("play_t", _mg_get("timeout_play_t") + C1S1_MG_TIMEOUT_HOLD_T + 0.001)
-    $ c1s1_mg_timeout_step()
-    assert eval (c1s1_mg_lock_i == len(C1S1_MG_LOCK_ORDER))
-    assert eval (c1s1_latch_open and c1s1_big_lock_open and c1s1_door_handle_open)
-    $ c1s1_mg_reset()
 
 testcase c1s1_minigame_accessibility:
+    ## UI и drag должны читать один виртуальный курсор; hook восстановит export даже при падении.
+    $ renpy.get_mouse_pos = lambda: renpy.test.testmouse.get_mouse_pos(0, 0)
     $ persistent.sm_simplified_locks = True
     $ persistent.sm_reduce_motion = True
     assert eval (abs(
@@ -276,14 +271,16 @@ testcase c1s1_story_normal_outcome:
     advance until "Наконец-то..." timeout 10.0
     assert eval (c1s1_locks_outcome == 'normal')
 
-testcase c1s1_story_timeout_outcome:
+testcase c1s1_story_legacy_timeout_outcome:
     $ c1s1_locks_outcome = "timeout"
     $ dismiss_on()
     run Jump("chapter_1_scene_1.after_locks")
-    assert "Отлично. Теперь ещё и замок менять... Ты в порядке?" timeout 10.0
+    assert "Ну наконец-то, бля." timeout 10.0
     advance
-    advance until "Чуть не пропустил..." timeout 10.0
-    assert eval (c1s1_locks_outcome == 'timeout')
+    advance until "Ничего серьёзного:" timeout 10.0
+    assert eval (sprite_showed('chapter_1 scene_1_hall_mess'))
+    advance until "Наконец-то..." timeout 10.0
+    assert eval (c1s1_locks_outcome == 'normal')
 
 testcase c1s3_apologize_branch:
     $ c1s3_teaparty_choice = None
@@ -319,7 +316,8 @@ testcase c1s3_confront_branch:
     click "А где Полли?"
     advance until screen "choice" timeout 10.0
     click "Заткнитесь!"
-    advance until "Они не имели права нравоучать нас. Пусть лучше приглядывают за своими детьми, болтающимися без дела по двору, как оборванцы." timeout 10.0
+    advance until "Они не имели права нравоучать нас." timeout 10.0
+    advance until "Пусть лучше приглядывают за своими детьми, болтающимися без дела по двору, как оборванцы." timeout 5.0
     assert eval (c1s3_teaparty_choice == 'where_is_polly')
     assert eval (c1s3_neighbor_choice == 'confront')
     advance until "Шаркающий человек." timeout 10.0
@@ -340,11 +338,15 @@ testcase story_full_route:
         run MainMenu(confirm=False)
     click "Начать"
     $ persistent.sm_reduce_motion = reduce_motion
-    advance until screen "prologue_note_fix" timeout 20.0
-    click "Поправить"
-    advance until "Теперь всё ровно. Можно начинать." timeout 10.0
+    advance until "Я здесь после нервного срыва" timeout 10.0
+    assert eval (sprite_showed('prologue_head'))
+    assert eval (not sprite_showed('prologue_note_bg'))
     advance until "Долго я не находила в себе сил" timeout 10.0
     assert eval (sprite_showed('prologue_head'))
+    advance until screen "prologue_note_start" timeout 10.0
+    click "Начать"
+    assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0
+    assert eval (not note_hover_pencil and can_dismiss)
     advance until "Я Расскажу всё на одном дыхании. Здесь и сейчас." timeout 20.0
     assert eval (sprite_showed('prologue_pencil_close'))
     advance until screen "c1s1_lamp_switch" timeout 15.0
@@ -362,6 +364,19 @@ testcase story_full_route:
     $ c1s1_mg_open_all()
     assert "Привет." timeout 10.0
     assert eval (c1s1_locks_outcome == 'fast')
+    advance until "Разбросанные носки, не опускающийся стульчак, как типично!" timeout 10.0
+    assert eval (sprite_showed('chapter_1 scene_1_living_room_mess'))
+    advance until screen "c1s1_cleanup_minigame" timeout 3.0
+    assert eval (c1s1_cleanup_collected == ())
+    ## Сбор каждого предмета проверен отдельно; здесь продолжаем настоящий маршрут.
+    python hide:
+        for key in C1S1_CLEANUP_KEYS:
+            c1s1_cleanup_collect(key)
+        renpy.restart_interaction()
+    assert id "cleanup_continue" timeout 1.0
+    click id "cleanup_continue"
+    assert eval (c1s1_cleanup_outcome == 'done')
+    assert "Ты в магазин зашёл?" timeout 3.0
     advance until "Я потеряла способность закрывать на эти мелочи глаза." timeout 15.0
     assert eval (sprite_showed('chapter_1 scene_2_parents_room_door'))
     advance until "Ладно, пойдём поедим. Я состряпаю чего-нибудь." timeout 15.0

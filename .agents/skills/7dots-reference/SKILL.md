@@ -15,6 +15,8 @@ description: Справочник по библиотеке 7dots.rpy для п�
 
 Все функции автоматически добавляют папку и расширение `.ogg`. Директории по умолчанию: музыка → `game/audio/music/`, звуки → `game/audio/sfx/`, голос → `game/audio/voice/`.
 
+Обёртки подключены к проектному пулу `game/common/audio_manager.rpy`: по 5 каналов на линии `music`/`voice`/`sfx`. Дополнительные аргументы: `tag` — слой, `overlap` — наложение, `volume` — громкость `0..1`; play возвращает handle или `None`, stop принимает `tag`/`handle`. Подробный контракт, вытеснение и save/rollback — `docs/03_audio_system.md`. Имена каналов ниже обозначают логические группы внутри пула.
+
 | Функция | Описание | Пример |
 |---------|----------|--------|
 | `mplay(name)` | Музыка с fade (1.5с) | `$ mplay("theme")` |
@@ -28,9 +30,10 @@ description: Справочник по библиотеке 7dots.rpy для п�
 | `sfxplay(name)` | Зацикленный эффект (канал effect) | `$ sfxplay("wind")` |
 | `sfxstop()` | Стоп зацикленный эффект | `$ sfxstop()` |
 | `vplay(name)` | Голос из `audio/voice/` | `$ vplay("marina_01")` |
+| `vstop()` | Стоп ручную голосовую линию | `$ vstop(fadeout=0.2)` |
 | `sstop()` / `sndstop()` | Стоп звук | `$ sstop()` |
 
-Action-версии для экранов: `MPlay`, `MStop`, `SPlay`, `SFXPlay`, `SFXStop`, `VPlay`, `FNPlay`.
+Action-версии для экранов: `MPlay`, `MStop`, `SPlay`, `SStop`, `SFXPlay`, `SFXStop`, `VPlay`, `VStop`, `FNPlay`. Ручная линия `vplay` не реализует автоозвучку реплик, voice replay и ожидание голоса при автопереходе.
 
 Воспроизведение звука из transform/функции: `function renpy.curry(s_play)("click")` (однократно), `function renpy.curry(sfx_play)("wind")` (зациклено).
 

@@ -844,88 +844,89 @@ init -222 python:
 
     renpy.music.register_channel("effect", "sfx", loop=True, tight=True)
 
-    def sfxplay(name, channel="effect", loop=True, fadein=default_fade, fadeout=default_fade, ext="ogg", audio_dir=audio_dir):
+    def sfxplay(name, channel="effect", loop=True, fadein=default_fade, fadeout=default_fade, ext="ogg", audio_dir=audio_dir, tag=None, overlap=None, volume=1.0):
         if name:
-            renpy.music.play(add_ext(audio_dir + "/" + name, ext), channel=channel, loop=loop, fadein=fadein, fadeout=fadeout)
+            return _sm_audio_legacy_play(add_ext(audio_dir + "/" + name, ext), channel=channel, loop=loop, fadein=fadein, fadeout=fadeout, tag=tag, overlap=overlap, volume=volume)
 
     # Аудио helpers добавляют стандартные каталоги и расширения.
 
-    def mplay(mname, fadein=default_fade, fadeout=default_fade, loop=True, channel="music", ext="ogg"):
+    def mplay(mname, fadein=default_fade, fadeout=default_fade, loop=True, channel="music", ext="ogg", tag=None, overlap=None, volume=1.0, if_changed=False):
         lst = []
         mname = make_list(mname)
         for i in mname:
             lst.append(add_ext(music_dir + "/" + i, ext))
-        renpy.music.play(lst, channel=channel, loop=loop, fadein=fadein, fadeout=fadeout)
+        return _sm_audio_legacy_play(lst, channel=channel, loop=loop, fadein=fadein, fadeout=fadeout, tag=tag, overlap=overlap, volume=volume, if_changed=if_changed)
 
-    def rndplay(mname, fadein=default_fade, fadeout=default_fade, loop=True, channel="music", ext="ogg"):
+    def rndplay(mname, fadein=default_fade, fadeout=default_fade, loop=True, channel="music", ext="ogg", tag=None, overlap=None, volume=1.0):
         lst = make_list(mname)
         if len(lst) > 1:
             renpy.random.shuffle(lst)
-        mplay(lst, fadein, fadeout, loop, channel, ext)
+        return mplay(lst, fadein, fadeout, loop, channel, ext, tag, overlap, volume)
 
-    def mreplay(mname, fadein=default_fade, fadeout=default_fade, loop=True, channel="music", ext="ogg"):
+    def mreplay(mname, fadein=default_fade, fadeout=default_fade, loop=True, channel="music", ext="ogg", tag=None, overlap=None, volume=1.0):
         new_fn = add_ext(music_dir + "/" + mname, ext)
-        renpy.music.play(new_fn, channel=channel, loop=loop, fadein=fadein, fadeout=fadeout)
+        return _sm_audio_legacy_play(new_fn, channel=channel, loop=loop, fadein=fadein, fadeout=fadeout, tag=tag, overlap=overlap, volume=volume)
 
     def mdeletetags(str):
         return re.sub(re.compile('<.*?>'), '', str)
 
-    def fnplay(new_fn, fadein=default_fade, fadeout=default_fade, channel="music", loop=True, if_changed=False):
-        old_fn = renpy.music.get_playing()
-        renpy.music.play(new_fn, channel=channel, loop=loop, fadein=fadein, fadeout=fadeout, if_changed=if_changed)
-
-    last_music_fn = ""
+    def fnplay(new_fn, fadein=default_fade, fadeout=default_fade, channel="music", loop=True, if_changed=False, tag=None, overlap=None, volume=1.0):
+        return _sm_audio_legacy_play(new_fn, channel=channel, loop=loop, fadein=fadein, fadeout=fadeout, if_changed=if_changed, tag=tag, overlap=overlap, volume=volume)
 
     def msave():
-        store.last_music_fn = renpy.music.get_playing()
+        store.last_music_fn = _sm_audio_legacy_playing()
 
     def mrestore(fadein=default_fade, fadeout=default_fade, channel="music"):
         if last_music_fn:
-            fnplay(last_music_fn, fadein=fadein, fadeout=fadeout, channel=channel)
+            return fnplay(last_music_fn, fadein=fadein, fadeout=fadeout, channel=channel)
 
     def add_ext(fn, ext="ogg"):
         if not fn.endswith("." + ext):
             fn = fn + "." + ext
         return fn
 
-    def splay(mname, fadein=0, fadeout=0, channel=config.play_channel, ext="ogg", audio_dir=audio_dir):
+    def splay(mname, fadein=0, fadeout=0, channel=config.play_channel, ext="ogg", audio_dir=audio_dir, tag=None, overlap=None, volume=1.0):
         if mname:
             mname = make_list(mname)
             lst = []
             for i in mname:
                 lst.append(add_ext(audio_dir + "/" + i, ext))
-            renpy.play(lst, channel=channel, fadein=fadein, fadeout=fadeout)
+            return _sm_audio_legacy_play(lst, channel=channel, fadein=fadein, fadeout=fadeout, tag=tag, overlap=overlap, volume=volume)
 
-    def sndplay(mname, fadein=0, fadeout=0, channel="sound", ext="ogg", audio_dir=audio_dir):
+    def sndplay(mname, fadein=0, fadeout=0, channel="sound", ext="ogg", audio_dir=audio_dir, tag=None, overlap=None, volume=1.0):
         if mname:
             mname = make_list(mname)
             lst = []
             for i in mname:
                 lst.append(add_ext(audio_dir + "/" + i, ext))
-            renpy.play(lst, channel=channel, fadein=fadein, fadeout=fadeout)
+            return _sm_audio_legacy_play(lst, channel=channel, fadein=fadein, fadeout=fadeout, tag=tag, overlap=overlap, volume=volume)
 
-    def vplay(mname, fadein=0, fadeout=0, channel="voice", ext="ogg", voice_dir=voice_dir):
+    def vplay(mname, fadein=0, fadeout=0, channel="voice", ext="ogg", voice_dir=voice_dir, tag=None, overlap=None, volume=1.0):
         if mname:
-            renpy.play(add_ext(voice_dir + "/" + mname, ext), channel=channel, fadein=fadein, fadeout=fadeout)
+            return _sm_audio_legacy_play(add_ext(voice_dir + "/" + mname, ext), channel=channel, fadein=fadein, fadeout=fadeout, tag=tag, overlap=overlap, volume=volume)
 
-    def sstop(fadeout=None, channel='audio'):
-        renpy.music.stop(channel=channel, fadeout=fadeout)
+    def sstop(fadeout=None, channel='audio', tag=None, handle=()):
+        _sm_audio_legacy_stop(channel, fadeout, tag, handle)
 
-    def sndstop(fadeout=0, channel='sound'):
-        renpy.music.stop(channel=channel, fadeout=fadeout)
+    def sndstop(fadeout=0, channel='sound', tag=None, handle=()):
+        _sm_audio_legacy_stop(channel, fadeout, tag, handle)
 
-    def mstop(fadeout=default_fade, channel='music'):
-        renpy.music.stop(channel=channel, fadeout=fadeout)
+    def mstop(fadeout=default_fade, channel='music', tag=None, handle=()):
+        _sm_audio_legacy_stop(channel, fadeout, tag, handle)
 
-    def sfxstop(fadeout=default_fade, channel='effect'):
-        renpy.music.stop(channel=channel, fadeout=fadeout)
+    def sfxstop(fadeout=default_fade, channel='effect', tag=None, handle=()):
+        _sm_audio_legacy_stop(channel, fadeout, tag, handle)
 
-    SPlay = renpy.curry(splay)
-    SFXPlay = renpy.curry(sfxplay)
+    def _sm_audio_run_action(function, *args, **kwargs):
+        # A returned handle would end the screen interaction, like Return(handle).
+        function(*args, **kwargs)
+
+    SPlay = renpy.curry(renpy.partial(_sm_audio_run_action, splay))
+    SFXPlay = renpy.curry(renpy.partial(_sm_audio_run_action, sfxplay))
     SFXStop = renpy.curry(sfxstop)
-    MPlay = renpy.curry(mplay)
-    FNPlay = renpy.curry(fnplay)
-    VPlay = renpy.curry(vplay)
+    MPlay = renpy.curry(renpy.partial(_sm_audio_run_action, mplay))
+    FNPlay = renpy.curry(renpy.partial(_sm_audio_run_action, fnplay))
+    VPlay = renpy.curry(renpy.partial(_sm_audio_run_action, vplay))
     SStop = renpy.curry(sstop)
     MStop = renpy.curry(mstop)
 
@@ -940,8 +941,8 @@ init -222 python:
     def sfx_stop(trans, st, at):
         sfxstop()
 
-    S_Play = renpy.curry(splay)
-    SFX_Play = renpy.curry(sfxplay)
+    S_Play = SPlay
+    SFX_Play = SFXPlay
 
     def blank_list(a):
         def transpose(grid):

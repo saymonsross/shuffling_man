@@ -3,36 +3,62 @@
 
 define DEV_SCENE_NAV_CARDS_PER_ROW = 3
 
-## В реестр входят только labels, безопасные без подготовленного состояния.
+## label — ключ карточки; start — вход в общий маршрут с подготовленным стеком call.
 define DEV_SCENE_NAV_ENTRIES = (
     {
-        "section": "ПРОЛОГ",
-        "title": "Сцена 1 · Записка",
+        "section": _("ПРОЛОГ"),
+        "title": _("Сцена 1 · Записка"),
         "label": "prologue_scene_1",
+        "start": "start",
         "preview": "dev/scene_navigation/previews/prologue_scene_1.jpg",
     },
     {
         "section": _("ПРОЛОГ"),
         "title": _("Сцена 2 · Начало письма"),
         "label": "prologue_scene_2",
+        "start": "start.prologue_scene_2",
         "preview": "images/0_prologue/prologue pencil_close.jpg",
     },
     {
-        "section": "ГЛАВА 1",
-        "title": "Сцена 1 · Стук в дверь",
+        "section": _("ГЛАВА 1"),
+        "title": _("Сцена 1 · Стук в дверь"),
         "label": "chapter_1_scene_1",
+        "start": "start.chapter_1_scene_1",
         "preview": "dev/scene_navigation/previews/chapter_1_scene_1.jpg",
+    },
+    {
+        "section": _("ГЛАВА 1"),
+        "title": _("Телевизор"),
+        "label": "chapter_1_scene_1.tv",
+        "start": "start.chapter_1_tv",
+        "preview": "images/1_chapter/chapter_1 scene_1_tv_close.jpg",
+    },
+    {
+        "section": _("ГЛАВА 1"),
+        "title": _("Уборка"),
+        "label": "chapter_1_scene_1.cleanup",
+        "start": "start.chapter_1_cleanup",
+        "preview": "images/1_chapter/cleanup/chapter_1_cleanup_mess.png",
     },
     {
         "section": _("ГЛАВА 1"),
         "title": _("Сцена 2 · Ссора"),
         "label": "chapter_1_scene_2",
+        "start": "start.chapter_1_scene_2",
         "preview": "images/1_chapter/chapter_1 scene_2_parents_room_door.jpg",
+    },
+    {
+        "section": _("ГЛАВА 1"),
+        "title": _("Бутерброды"),
+        "label": "chapter_1_scene_2.sandwiches",
+        "start": "start.chapter_1_sandwiches",
+        "preview": "images/1_chapter/chapter_1 scene_2_sandwiches.jpg",
     },
     {
         "section": _("ГЛАВА 1"),
         "title": _("Сцена 3 · Воображаемый друг"),
         "label": "chapter_1_scene_3",
+        "start": "start.chapter_1_scene_3",
         "preview": "images/1_chapter/chapter_1 scene_3_children_room_girl_neutral.jpg",
     },
 )
@@ -45,7 +71,7 @@ init python:
             return
 
         if not renpy.has_label(label):
-            renpy.notify("Не найден label: {}".format(label))
+            renpy.notify(_("Сцена недоступна."))
             return
 
         ## full_restart не переносит состояние предыдущей сцены.
@@ -62,11 +88,7 @@ screen dev_scene_navigator():
         "dev_scene_navigator",
         DEV_SCENE_NAV_ENTRIES[0]["label"])
 
-    use game_menu("Навигация по сценам", scroll="viewport", spacing=24):
-
-        text "DEV · сцена запускается с начала в чистом состоянии":
-            style "dev_scene_nav_hint"
-            xalign 0.5
+    use game_menu(_("Сцены"), scroll="viewport", spacing=24):
 
         for row_start in range(0, len(DEV_SCENE_NAV_ENTRIES), DEV_SCENE_NAV_CARDS_PER_ROW):
 
@@ -86,7 +108,7 @@ screen dev_scene_nav_card(entry, autofocus=False):
     button:
         id entry["label"]
         style "dev_scene_nav_card"
-        action Function(dev_scene_nav_start, entry["label"])
+        action Function(dev_scene_nav_start, entry["start"])
         default_focus autofocus
 
         vbox:
@@ -102,10 +124,6 @@ screen dev_scene_nav_card(entry, autofocus=False):
                         xysize (384, 216)
                 else:
                     add Solid("#241c1c")
-                    text "ПРЕВЬЮ ПОКА НЕТ":
-                        style "dev_scene_nav_missing"
-                        xalign 0.5
-                        yalign 0.5
 
             text entry["section"]:
                 style "dev_scene_nav_section"
@@ -113,18 +131,10 @@ screen dev_scene_nav_card(entry, autofocus=False):
             text entry["title"]:
                 style "dev_scene_nav_title"
 
-            text entry["label"]:
-                style "dev_scene_nav_label"
-
-
 style dev_scene_nav_card is slot_button:
     xsize 414
-    ysize 340
+    ysize 316
     padding (15, 15)
-
-style dev_scene_nav_hint is gui_text:
-    color gui.idle_small_color
-    size 23
 
 style dev_scene_nav_section is gui_text:
     color gui.dark_background_accent
@@ -138,14 +148,3 @@ style dev_scene_nav_title is gui_text:
     size 26
     xalign 0.5
     textalign 0.5
-
-style dev_scene_nav_label is gui_text:
-    color gui.idle_small_color
-    hover_color gui.hover_color
-    size 16
-    xalign 0.5
-    textalign 0.5
-
-style dev_scene_nav_missing is gui_text:
-    color gui.idle_small_color
-    size 20

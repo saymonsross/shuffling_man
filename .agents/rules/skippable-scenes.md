@@ -13,6 +13,6 @@
   — тогда пропуск проходит сцену насквозь.
 - Если у интерактива ЕСТЬ развилка сюжета или он меняет состояние игры — это правило не
   применяется: такой интерактив должен дожидаться реального выбора игрока всегда.
-- Пример — `game/0_prologue/prologue_scene_1.rpy`, экран `prologue_note_fix`
-  (кнопка «Поправить»): развилки сюжета нет, поэтому вызов обёрнут в
-  `if not renpy.is_skipping(): call screen prologue_note_fix`.
+- Пример — `game/0_prologue/prologue_scene_2.rpy`, экран `prologue_note_start`
+  (кнопка «Начать» на карандаше): развилки сюжета нет, поэтому вызов обёрнут в
+  `if not renpy.is_skipping(): call screen prologue_note_start`.

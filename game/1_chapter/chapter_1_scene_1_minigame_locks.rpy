@@ -19,20 +19,20 @@ image chapter_1_latch_body = "images/1_chapter/lock_mini_game/latch/latch_body.p
 image chapter_1_latch_stroke = "images/1_chapter/lock_mini_game/latch/latch_stroke.png"
 image chapter_1_latch_overlay_body = "images/1_chapter/lock_mini_game/latch/latch_body_owerlay_1.png"
 image chapter_1_latch_overlay_keeper = "images/1_chapter/lock_mini_game/latch/latch_body_owerlay_2.png"
-image chapter_1_latch_knob = "images/1_chapter/lock_mini_game/latch/latch_knob.png"
+image chapter_1_latch_knob = hover_lit("images/1_chapter/lock_mini_game/latch/latch_knob.png", "c1s1_mg_part_lit('latch')", 0.24)
 
 ## У деталей большого замка разные холсты; расхождения заданы в C1S1_BIG_*_OFF.
 image chapter_1_big_lock_body = "images/1_chapter/lock_mini_game/big_lock/big_lock_body.png"
 image chapter_1_big_lock_stroke = "images/1_chapter/lock_mini_game/big_lock/big_lock_stroke.png"
 image chapter_1_big_lock_latch_shadow = "images/1_chapter/lock_mini_game/big_lock/big_lock_latch_shadow.png"
-image chapter_1_big_lock_latch = "images/1_chapter/lock_mini_game/big_lock/big_lock_latch.png"
+image chapter_1_big_lock_latch = hover_lit("images/1_chapter/lock_mini_game/big_lock/big_lock_latch.png", "c1s1_mg_part_lit('big_latch')", 0.24)
 image chapter_1_big_lock_spin_shadow = "images/1_chapter/lock_mini_game/big_lock/big_lock_knob_spinner_shadow.png"
 ## Центр обрезанной вертушки совпадает с осью вращения.
-image chapter_1_big_lock_spin = "images/1_chapter/lock_mini_game/big_lock/big_lock_knob_spinner_crop.png"
+image chapter_1_big_lock_spin = hover_lit("images/1_chapter/lock_mini_game/big_lock/big_lock_knob_spinner_crop.png", "c1s1_mg_part_lit('big_spin')", 0.24)
 
 ## Рычаг ручки вращается вокруг C1S1_HANDLE_PIVOT, не центра холста.
 image chapter_1_handle_body = "images/1_chapter/lock_mini_game/door_handle/door_handle_body.png"
-image chapter_1_handle_lever = "images/1_chapter/lock_mini_game/door_handle/door_handle.png"
+image chapter_1_handle_lever = hover_lit("images/1_chapter/lock_mini_game/door_handle/door_handle.png", "c1s1_mg_part_lit('handle')", 0.24)
 
 image chapter_1_mg_overlay = Solid("#0a0806")
 
@@ -44,7 +44,6 @@ default c1s1_door_handle_open = False
 ## Чистое время управления закрытыми замками, сек.
 default c1s1_locks_time = 0.0
 default c1s1_locks_outcome = "fast"
-default c1s1_locks_forced = False
 default c1s1_mg_knocking = False
 default c1s1_mg_active = False
 default c1s1_mg_lock_i = 0
@@ -62,15 +61,17 @@ define C1S1_MG_LOCK_FLAGS = {
 ## Константы
 
 ## Кадр мини-игры и неподвижный фокус камеры.
-define C1S1_MG_ZOOM = 1.06
-define C1S1_MG_SETTLE_T = 1.4
+define C1S1_MG_ZOOM = 1.16
+define C1S1_MG_SETTLE_T = 0.35
 
 define C1S1_MG_OVERLAY_ALPHA = 0.72
 define C1S1_MG_OVERLAY_T = 0.9
 define C1S1_MG_NOISE = 0.34     # выше FX_NOISE_DEFAULT
 
-define C1S1_LOCKS_BTN_POS = (960, 800)
+define C1S1_LOCKS_BTN_POS = (960, 540)
 define C1S1_LOCKS_BTN_SIZE = (430, 190)
+define C1S1_LOCKS_BTN_RATTLE = (18, 8)
+define C1S1_LOCKS_BTN_TILT = 2.0
 
 ## Стук меняется медленной волной; пары значений — (тишина, пик).
 define C1S1_MG_KNOCK_GAP = (1.35, 0.40)     # сек
@@ -162,17 +163,21 @@ define C1S1_MG_POLL_T = 0.15
 define C1S1_MG_TICK_T = 1.0 / 30.0  # 30 обновлений/с
 define C1S1_MG_POINTER_LOST_T = 0.25  # release вне окна: защита от вечного drag
 
+define C1S1_MG_HOVER_SOUND = "click"
+define C1S1_MG_BLOCKED_SOUND = "033_denied_03"
+define C1S1_MG_HOVER_GAP_T = 0.15
+define C1S1_MG_BLOCKED_GAP_T = 0.35
+define C1S1_MG_BLOCKED_T = 1.25
+define C1S1_MG_BLOCKED_SHAKE_T = 0.3
+
 define C1S1_MG_VITYA_INTERVAL_T = 10.0
 define C1S1_MG_FAST_T = C1S1_MG_VITYA_INTERVAL_T
-define C1S1_MG_TIMEOUT_T = C1S1_MG_VITYA_INTERVAL_T * 4.0
-define C1S1_MG_TIMEOUT_HOLD_T = 1.8
 define C1S1_MG_VITYA_LINES = (
     _("Это я, открывай!"),
     _("Опять заперлась? Я ж на минуту выскочил!"),
     _("Боже, что ты там возишься?"),
     _("Марина, ну ёбана! Замок сломался?"),
 )
-define C1S1_MG_VITYA_TIMEOUT_LINE = _("Всё, отходи!")
 
 ## Оверлей на master; модель замка живёт на отдельном lockgame.
 define C1S1_Z_MG_OVERLAY = 50
@@ -252,7 +257,10 @@ init -5 python:
             "elapsed": 0.0,
             "play_t": 0.0,
             "decision_t": 0.0,
-            "timeout_play_t": -1.0,
+            "hover_part": None,
+            "hover_next": -1.0,
+            "blocked_at": -10.0,
+            "blocked_active": False,
             "wave": 0.0,
             "shake_a": 0.0,
             "shake_t": 0.0,
@@ -279,7 +287,6 @@ init -5 python:
         store.c1s1_mg_lock_i = 0
         store.c1s1_locks_time = 0.0
         store.c1s1_locks_outcome = "fast"
-        store.c1s1_locks_forced = False
         store.c1s1_mg_knocking = False
         store.c1s1_mg_active = False
         c1s1_mg_cancel_pointer()
@@ -289,6 +296,7 @@ init -5 python:
         """Обнуляет shake до остановки драйвера, чтобы кадр не застыл смещённым."""
         _mg_set("shake_a", 0.0)
         _mg_set("shake_t", 0.0)
+        c1s1_mg_clear_feedback()
 
     def c1s1_mg_elapsed():
         """Время реального управления ещё закрытыми замками."""
@@ -297,15 +305,11 @@ init -5 python:
     def c1s1_mg_outcome_for_time(elapsed):
         if elapsed < C1S1_MG_FAST_T:
             return "fast"
-        if elapsed < C1S1_MG_TIMEOUT_T:
-            return "normal"
-        return "timeout"
+        return "normal"
 
     def c1s1_mg_vitya_line(elapsed=None):
         if elapsed is None:
             elapsed = c1s1_mg_elapsed()
-        if elapsed >= C1S1_MG_TIMEOUT_T:
-            return C1S1_MG_VITYA_TIMEOUT_LINE
         i = min(int(elapsed // C1S1_MG_VITYA_INTERVAL_T),
                 len(C1S1_MG_VITYA_LINES) - 1)
         return C1S1_MG_VITYA_LINES[max(0, i)]
@@ -379,6 +383,15 @@ init -5 python:
         decay = math.exp(-t / max(0.01, C1S1_MG_SHAKE_TAU))
         return amp * decay * math.sin(2.0 * math.pi * C1S1_MG_SHAKE_FREQ * t)
 
+    def c1s1_mg_button_rattle_f(trans, st, at):
+        ## Читаем импульс двери: hover и пересборка экрана не перезапускают дребезг.
+        shake = 0.0 if sm_reduced_motion() else (
+            c1s1_mg_shake_offset() / max(1.0, C1S1_MG_KNOCK_SHAKE[1]))
+        trans.xoffset = int(round(C1S1_LOCKS_BTN_RATTLE[0] * shake))
+        trans.yoffset = int(round(-C1S1_LOCKS_BTN_RATTLE[1] * shake))
+        trans.rotate = C1S1_LOCKS_BTN_TILT * shake
+        return 1.0 / 60.0
+
     ## Драйвер
 
     def c1s1_mg_knock_step():
@@ -428,9 +441,8 @@ init -5 python:
 
         if store.c1s1_mg_active:
             _mg_set("play_t", _mg_get("play_t") + dt)
-            if not store.c1s1_locks_forced and not c1s1_mg_lock_open():
+            if not c1s1_mg_lock_open():
                 _mg_set("decision_t", _mg_get("decision_t") + dt)
-            c1s1_mg_timeout_step()
             if not c1s1_mg_simplified_tick(dt):
                 lock = c1s1_mg_lock()
                 if lock == "latch":
@@ -439,6 +451,7 @@ init -5 python:
                     c1s1_big_step(dt)
                 elif lock == "door_handle":
                     c1s1_handle_step(dt)
+            c1s1_mg_update_hover()
 
     ## Камера
 
@@ -447,11 +460,12 @@ init -5 python:
         if renpy.predicting():
             return 1.0 / 60.0
         strength = _fx_num(strength, 10.0, 0.0)
+        bx, by = _focus_offset(C1S1_LOCKS_FOCUS, None, trans.zoom or 1.0)
         if sm_reduced_motion():
             for suffix in ("_px", "_py", "_jx", "_jy"):
                 _fx_state[key + suffix] = 0.0
-            trans.xoffset = 0.0
-            trans.yoffset = 0.0
+            trans.xoffset = bx
+            trans.yoffset = by
             _fx_publish_camera(key, trans)
             return 1.0 / 60.0
         if not FX_MOUSE_PARALLAX_ON:
@@ -468,8 +482,8 @@ init -5 python:
         _fx_state[key + "_jx"] = 0.0
         _fx_state[key + "_jy"] = sy
 
-        trans.xoffset = px
-        trans.yoffset = py + sy
+        trans.xoffset = bx + px
+        trans.yoffset = by + py + sy
         _fx_publish_camera(key, trans)
         return 1.0 / 60.0
 
@@ -623,6 +637,8 @@ init -5 python:
             if c1s1_big_latch_hit(mx, my):
                 _mg_set("big_grab", 1.0)
                 _mg_set("big_last_mx", mx)
+            elif c1s1_big_spin_hit(mx, my):
+                c1s1_mg_blocked_feedback()
             return
         if c1s1_big_spin_hit(mx, my):
             _mg_set("big_grab", 2.0)
@@ -675,6 +691,10 @@ init -5 python:
 
     def c1s1_big_spin_f(trans, st, at):
         trans.rotate = -C1S1_BIG_SPIN_TURN * c1s1_big_turn()
+        age = _mg_get("play_t") - _mg_get("blocked_at", -10.0)
+        if c1s1_mg_blocked_visible() and not sm_reduced_motion() and age < C1S1_MG_BLOCKED_SHAKE_T:
+            fade = 1.0 - age / C1S1_MG_BLOCKED_SHAKE_T
+            trans.rotate += 3.0 * math.sin(age * math.pi * 20.0) * fade
         return 1.0 / 60.0
 
     ## Дверная ручка
@@ -745,10 +765,66 @@ init -5 python:
 
     ## Ввод
 
+    def c1s1_mg_hover_target(mx, my):
+        """Hover и grab используют одну геометрию, включая движущиеся детали."""
+        if not store.c1s1_mg_active or c1s1_mg_lock_open():
+            return None
+        lock = c1s1_mg_lock()
+        if lock == "latch" and c1s1_latch_hit(mx, my):
+            return "latch"
+        if lock == "big_lock":
+            if _mg_get("big_p") < 1.0 and c1s1_big_latch_hit(mx, my):
+                return "big_latch"
+            if c1s1_big_spin_hit(mx, my):
+                return "big_spin"
+        if lock == "door_handle" and c1s1_handle_hit(mx, my):
+            return "handle"
+        return None
+
+    def c1s1_mg_blocked_visible():
+        age = _mg_get("play_t") - _mg_get("blocked_at", -10.0)
+        return (store.c1s1_mg_active and c1s1_mg_lock() == "big_lock"
+                and _mg_get("big_p") < 1.0 and 0.0 <= age < C1S1_MG_BLOCKED_T)
+
+    def c1s1_mg_part_lit(part):
+        return (store.c1s1_mg_active
+                and (_mg_get("hover_part", None) == part
+                     or (part == "big_latch" and c1s1_mg_blocked_visible())))
+
+    def c1s1_mg_update_hover():
+        target = (c1s1_mg_hover_target(*renpy.get_mouse_pos())
+                  if renpy.game.interface.mouse_focused else None)
+        changed = target != _mg_get("hover_part", None)
+        if changed:
+            _mg_set("hover_part", target)
+            now = _mg_get("play_t")
+            if target is not None and now >= _mg_get("hover_next", -1.0) and not c1s1_mg_pointer_down():
+                _mg_set("hover_next", now + C1S1_MG_HOVER_GAP_T)
+                splay(C1S1_MG_HOVER_SOUND, ext="ogg")
+        blocked = c1s1_mg_blocked_visible()
+        changed = changed or blocked != _mg_get("blocked_active", False)
+        _mg_set("blocked_active", blocked)
+        if changed:
+            ## ConditionSwitch и подсказка обновляются только на границах состояния.
+            renpy.restart_interaction()
+
+    def c1s1_mg_blocked_feedback():
+        now = _mg_get("play_t")
+        if now - _mg_get("blocked_at", -10.0) < C1S1_MG_BLOCKED_GAP_T:
+            return
+        _mg_set("blocked_at", now)
+        _mg_set("blocked_active", True)
+        splay(C1S1_MG_BLOCKED_SOUND, ext="ogg")
+        renpy.restart_interaction()
+
+    def c1s1_mg_clear_feedback():
+        _mg_set("hover_part", None)
+        _mg_set("blocked_at", -10.0)
+        _mg_set("blocked_active", False)
+
     def c1s1_mg_grab():
         c1s1_mg_cancel_pointer()
-        if (not store.c1s1_mg_active or store.c1s1_locks_forced
-                or c1s1_mg_lock_open()):
+        if not store.c1s1_mg_active or c1s1_mg_lock_open():
             return
         lock = c1s1_mg_lock()
         if lock == "latch":
@@ -798,7 +874,7 @@ init -5 python:
 
     def c1s1_mg_simplified_step():
         """Запускает focusable-шаг; при reduced motion завершает синхронно."""
-        if (not store.c1s1_mg_active or store.c1s1_locks_forced
+        if (not store.c1s1_mg_active
                 or c1s1_mg_lock_open()
                 or _mg_get("simple_target", -1.0) >= 0.0):
             return
@@ -853,19 +929,6 @@ init -5 python:
             setattr(store, flag, True)
         store.c1s1_mg_lock_i = len(C1S1_MG_LOCK_ORDER)
 
-    def c1s1_mg_timeout_step():
-        if not store.c1s1_mg_active:
-            return
-        if not store.c1s1_locks_forced:
-            if c1s1_mg_elapsed() < C1S1_MG_TIMEOUT_T:
-                return
-            store.c1s1_locks_forced = True
-            _mg_set("timeout_play_t", _mg_get("play_t"))
-            c1s1_mg_release()
-        if (_mg_get("play_t") - _mg_get("timeout_play_t")
-                >= C1S1_MG_TIMEOUT_HOLD_T):
-            c1s1_mg_open_all()
-
     ## Сумка
 
     def c1s1_mg_bag_f(trans, st, at):
@@ -885,6 +948,12 @@ init -5 python:
         return 1.0 / 60.0
 
 ## Трансформы
+
+transform c1s1_mg_button_rattle():
+    subpixel True
+    transform_anchor True
+    align (0.5, 0.5)
+    function c1s1_mg_button_rattle_f
 
 ## Начальный zoom наследуется для плавной склейки; rotate сбрасывается явно.
 transform c1s1_mg_camera(z1=C1S1_MG_ZOOM, t=C1S1_MG_SETTLE_T, strength=8.0, smooth=0.06, key="cam"):
@@ -978,15 +1047,14 @@ screen c1s1_mg_runtime():
     ## Под modal-меню таймер останавливается.
     timer C1S1_MG_TICK_T action Function(c1s1_mg_tick, _update_screens=False) repeat True modal True
 
-## Кнопка «Открыть дверь» использует мировые координаты.
+## Центр и хит-зона неподвижны; от стука дребезжит только текст со свечением.
 screen c1s1_locks_open_door():
     ## Выше quick_menu: интерактив остаётся modal.
     zorder 110
     modal True
     timer C1S1_MG_TICK_T action Function(c1s1_mg_tick, _update_screens=False) repeat True modal True
     fixed:
-        id "door_world"
-        at follow_camera(zoom_pad=C1S1_MG_ZOOM)
+        id "door_prompt"
         xysize (config.screen_width, config.screen_height)
         use glow_button(
             _("Открыть дверь"),
@@ -994,24 +1062,37 @@ screen c1s1_locks_open_door():
             bg="dark",
             pulse="alarm",
             pos=C1S1_LOCKS_BTN_POS,
-            size=C1S1_LOCKS_BTN_SIZE)
+            size=C1S1_LOCKS_BTN_SIZE,
+            visual_at=c1s1_mg_button_rattle())
 
 ## Drag для мыши и focusable-альтернатива для клавиатуры, touch и self-voicing.
 screen c1s1_locks_minigame():
     zorder 110
     modal True
 
-    on "hide" action Function(c1s1_mg_release, _update_screens=False)
+    on "hide" action [Function(c1s1_mg_release, _update_screens=False), Function(c1s1_mg_clear_feedback, _update_screens=False)]
 
     timer C1S1_MG_TICK_T action Function(c1s1_mg_tick, _update_screens=False) repeat True modal True
     timer C1S1_MG_POLL_T action Function(c1s1_mg_check_done) repeat True modal True
 
     use c1s1_mg_vitya_bark
 
+    if c1s1_mg_blocked_visible():
+        frame:
+            xalign 0.5
+            yalign 0.985
+            padding (24, 14)
+            background Solid("#17120ef0")
+            text _("Сначала сдвиньте нижнюю щеколду вправо."):
+                id "c1s1_mg_blocked_hint"
+                style "c1s1_mg_step_button_text"
+                color "#f3d9ac"
+
     if persistent.sm_simplified_locks:
         textbutton c1s1_mg_simplified_label():
             style "c1s1_mg_step_button"
             action Function(c1s1_mg_simplified_step)
+            hovered SPlay(C1S1_MG_HOVER_SOUND, ext="ogg")
             default_focus True
             xalign 0.5
             yalign 0.90
@@ -1074,7 +1155,7 @@ style c1s1_mg_step_button_text is c1s1_mg_access_button_text:
 
 label chapter_1_scene_1_minigame_locks:
 
-    ## Камера доводит наезд и остаётся связана с мировой кнопкой.
+    ## Камера доводит наезд; кнопка остаётся в центре экрана.
     camera at c1s1_mg_camera()
 
     ## Runtime стартует до кнопки, чтобы стук не прерывался.
@@ -1130,6 +1211,7 @@ label .play_lock:
     $ c1s1_mg_active = True
     call screen c1s1_locks_minigame
     $ c1s1_mg_active = False
+    $ c1s1_mg_clear_feedback()
 
     $ renpy.transition(Dissolve(C1S1_MG_LOCK_FADE_T), layer="lockgame")
     scene onlayer lockgame

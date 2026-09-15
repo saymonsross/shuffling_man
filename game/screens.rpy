@@ -173,6 +173,7 @@ screen choice(items):
     style_prefix "choice"
 
     vbox:
+        at show_hide(.25)
         for i in items:
             textbutton i.caption action i.action
 
@@ -265,7 +266,7 @@ screen navigation():
 
         if config.developer and renpy.has_screen("dev_scene_navigator"):
 
-            textbutton "Сцены · DEV" action ShowMenu("dev_scene_navigator")
+            textbutton _("Сцены") action ShowMenu("dev_scene_navigator")
 
         textbutton _("Загрузить") action ShowMenu("load")
 

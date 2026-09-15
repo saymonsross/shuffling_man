@@ -18,6 +18,7 @@ image chapter_1_lamp_hand light_pull = "images/1_chapter/chapter_1_lamp_hand lig
 image chapter_1_lamp_hand light_metronome = "images/1_chapter/chapter_1_lamp_hand light_metronome.png"
 
 image chapter_1_metronome_arrow = "images/1_chapter/chapter_1_metronome_arrow.png"
+image chapter_1_metronome_foreground = "images/1_chapter/owner_review/chapter_1_metronome_foreground.png"
 
 image chapter_1_piano_gg = "images/1_chapter/chapter_1_piano_gg.png"
 image chapter_1_piano_hand_left = "images/1_chapter/chapter_1_piano_hand_left.png"
@@ -52,19 +53,30 @@ image chapter_1 scene_1_hall_mess = "images/1_chapter/chapter_1 scene_1_hall_mes
 image chapter_1 scene_1_vitya_door = "images/1_chapter/chapter_1 scene_1_vitya_door.jpg"
 image chapter_1 scene_1_vitya_outcome_fast = "images/1_chapter/chapter_1 scene_1_vitya_outcome_fast.jpg"
 image chapter_1 scene_1_vitya_outcome_normal = "images/1_chapter/chapter_1 scene_1_vitya_outcome_normal.jpg"
-image chapter_1 scene_1_vitya_outcome_timeout = "images/1_chapter/chapter_1 scene_1_vitya_outcome_timeout.jpg"
 image chapter_1 scene_1_sofa_tv = "images/1_chapter/chapter_1 scene_1_sofa_tv.jpg"
-image chapter_1 scene_1_tv_close = "images/1_chapter/chapter_1 scene_1_tv_close.jpg"
-image chapter_1 scene_1_sofa_tv_night = "images/1_chapter/chapter_1 scene_1_sofa_tv_night.jpg"
-image chapter_1 scene_1_tv_close_night = "images/1_chapter/chapter_1 scene_1_tv_close_night.jpg"
+image chapter_1 scene_1_tv_close = sm_tv_scene("images/1_chapter/chapter_1 scene_1_tv_close.jpg",
+    C1S1_TV_NOISE_POS, C1S1_TV_NOISE_SIZE, C1S1_TV_NOISE_CORNERS)
+image chapter_1 scene_1_sofa_tv_night = sm_tv_scene("images/1_chapter/chapter_1 scene_1_sofa_tv_night.jpg",
+    C1S1_TV_WIDE_POS, C1S1_TV_WIDE_SIZE, C1S1_TV_WIDE_CORNERS)
+image chapter_1 scene_1_tv_close_night = sm_tv_scene("images/1_chapter/chapter_1 scene_1_tv_close_night.jpg",
+    C1S1_TV_NOISE_POS, C1S1_TV_NOISE_SIZE, C1S1_TV_NOISE_CORNERS)
 image chapter_1 scene_1_kitchen_sink = "images/1_chapter/chapter_1 scene_1_kitchen_sink.jpg"
-image chapter_1 scene_1_living_room_mess = "images/1_chapter/chapter_1 scene_1_living_room_mess.jpg"
+image chapter_1 scene_1_living_room_mess = "images/1_chapter/cleanup/chapter_1_cleanup_mess.png"
 image chapter_1 scene_1_vitya_sofa = "images/1_chapter/chapter_1 scene_1_vitya_sofa.jpg"
 
 ## Константы сцены
 
-## Порядок слоёв: стрелка за всем, рука под абажуром, абажур, рука поверх.
+## Внутренний проём рамки, а не меньшая белая заглушка PSD Layer 20.
+define C1S1_TV_NOISE_POS = (812, 109)
+define C1S1_TV_NOISE_SIZE = (603, 443)
+define C1S1_TV_NOISE_CORNERS = ((2, 2), (601, 19), (600, 438), (5, 441))
+define C1S1_TV_WIDE_POS = (1228, 118)
+define C1S1_TV_WIDE_SIZE = (404, 284)
+define C1S1_TV_WIDE_CORNERS = ((2, 2), (402, 2), (402, 282), (2, 282))
+
+## Нижняя часть корпуса закрывает пивот стрелки, руки остаются перед метрономом.
 define C1S1_Z_ARROW = 3
+define C1S1_Z_METRONOME_FOREGROUND = 4
 define C1S1_Z_HAND_BEHIND = 5
 define C1S1_Z_SHADE = 10
 define C1S1_Z_HAND_FRONT = 15
@@ -91,13 +103,15 @@ define C1S1_HAND_EXIT_DELAY = 0.5
 define C1S1_HAND_EXIT_T = 1.1
 
 ## Мировые координаты кнопок: сначала лампа, затем метроном.
-define C1S1_LAMP_BTN_POS = (500, 700)
+define C1S1_LAMP_BTN_POS = (475, 530)
 define C1S1_LAMP_BTN_SIZE = (330, 165)
-define C1S1_METRONOME_BTN_POS = (1025, 560)
+define C1S1_METRONOME_BTN_POS = (1005, 530)
 define C1S1_METRONOME_BTN_SIZE = (430, 190)
 
 ## Метроном: пивот стрелки — низ маятника (спрайт 45×368, bbox (985, 292)).
 define C1S1_ARROW_PIVOT_POS = (1007, 660)
+## Точный фрагмент светлого фона ниже прорези: (835, 640, 1171, 777).
+define C1S1_METRONOME_FOREGROUND_POS = (835, 640)
 define C1S1_ARROW_AMP = 20.0     # градусы
 define C1S1_ARROW_HALF_T = 0.75  # полкачания между щелчками ≈ 80 BPM
 define C1S1_TICKS_BEFORE_PIANO = 4
@@ -200,7 +214,7 @@ define C1S1_Z_DOOR_BAG = 5
 ## После реза камера возвращается к спокойному параллаксу и едет к замкам.
 define C1S1_LOCKS_FOCUS = (0.50, 0.32)
 define C1S1_LOCKS_Z1 = 1.16
-define C1S1_LOCKS_PUSH_T = 22.0
+define C1S1_LOCKS_PUSH_T = 8.8
 
 ## Индексы [0..2] — первая серия, [3..4] — усиленная вторая.
 define C1S1_LOCKS_FLASH_PEAKS = (0.22, 0.26, 0.30, 0.38, 0.44)
@@ -212,7 +226,6 @@ define C1S1_LOCKS_SERIES_GAP_T = 1.4
 define C1S1_LOCKS_BAG_TREMBLE = (2.0, 2.6, 3.2, 4.0, 4.8)  # px
 define C1S1_LOCKS_BAG_CALM = 0.8
 define C1S1_LOCKS_SETTLE_T = 1.6
-define C1S1_LOCKS_HOLD_T = 2.5
 
 define c1s1_locks_knock_punch = Move((0, 16), (0, -16), 0.08, bounce=True, repeat=True, delay=0.26)
 define c1s1_locks_knock_punch_hard = Move((0, 22), (0, -22), 0.08, bounce=True, repeat=True, delay=0.24)
@@ -372,6 +385,7 @@ label chapter_1_scene_1:
     ## TODO(звук): splay щелчка выключателя.
     scene chapter_1 lamp_light
     show chapter_1_metronome_arrow zorder C1S1_Z_ARROW at c1s1_arrow_rest()
+    show chapter_1_metronome_foreground zorder C1S1_Z_METRONOME_FOREGROUND at placed(C1S1_METRONOME_FOREGROUND_POS)
     show chapter_1_lampshade light zorder C1S1_Z_SHADE at placed(C1S1_LAMPSHADE_POS)
     show chapter_1_lamp_hand light_pull zorder C1S1_Z_HAND_BEHIND at c1s1_hand_release(C1S1_HAND_PULL_POS)
     $ pause(C1S1_RELEASE_T + C1S1_SETTLE_T)
@@ -555,7 +569,6 @@ label chapter_1_scene_1:
     show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_CALM, jitter_key="c1s1_door_bag")
     $ pause(C1S1_LOCKS_SETTLE_T)
     show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=0.0, jitter_key="c1s1_door_bag")
-    $ pause(C1S1_LOCKS_HOLD_T)
 
     ## Переход к мини-игре с замками.
     call chapter_1_scene_1_minigame_locks from _call_c1s1_minigame_locks
@@ -570,6 +583,9 @@ label .after_locks:
 
     camera
 
+    if c1s1_locks_outcome == "timeout":
+        $ c1s1_locks_outcome = "normal"
+
     if c1s1_locks_outcome == "fast":
         scene chapter_1 scene_1_vitya_outcome_fast
 
@@ -583,7 +599,7 @@ label .after_locks:
 
         "Ничего серьёзного: какие-то банальности, быт... И эти его дурацкие, неискоренимые привычки."
 
-    elif c1s1_locks_outcome == "normal":
+    else:
         scene chapter_1 scene_1_vitya_outcome_normal
 
         vit "Ну наконец-то, бля."
@@ -596,30 +612,22 @@ label .after_locks:
 
         "Ничего серьёзного: какие-то банальности, быт... И эти его дурацкие, неискоренимые привычки."
 
-    else:
-        scene chapter_1 scene_1_vitya_outcome_timeout
-
-        vit "Отлично. Теперь ещё и замок менять... Ты в порядке?"
-        mar "Что делаешь? Совсем ненормальный?!"
-        vit "Ясно."
-
-        "Витя всегда был таким. Злым, нетерпеливым."
-        "Раздражённым всем и всегда. Пленник своих грёбаных привычек."
-
     "Раньше мне хватало сил их не замечать. Терпеть."
 
-    if c1s1_locks_outcome == "timeout":
-        scene chapter_1 scene_1_sofa_tv
+label .tv:
+    camera
+    scene chapter_1 scene_1_tv_close
 
-        vit "Чуть не пропустил..."
-    else:
-        scene chapter_1 scene_1_tv_close
+label .tv_dialogue:
+    vit "Наконец-то..."
 
-        vit "Наконец-то..."
-
+label .cleanup:
+    camera
     scene chapter_1 scene_1_living_room_mess
 
     "Разбросанные носки, не опускающийся стульчак, как типично!"
+
+    call chapter_1_scene_1_minigame_cleanup from _call_c1s1_household_cleanup
 
     scene chapter_1 scene_1_kitchen_sink
 

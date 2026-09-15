@@ -11,6 +11,9 @@ image chapter_1 scene_2_marina_hands = "images/1_chapter/chapter_1 scene_2_marin
 image chapter_1 scene_2_dark = "images/1_chapter/chapter_1 scene_2_dark.jpg"
 image chapter_1 scene_2_kitchen = "images/1_chapter/chapter_1 scene_2_kitchen.jpg"
 image chapter_1 scene_2_sandwiches = "images/1_chapter/chapter_1 scene_2_sandwiches.jpg"
+image chapter_1 scene_2_sandwiches_1 = At("images/1_chapter/owner_review/chapter_1_review_sandwiches stage_1.png", xysize(1920, 1080))
+image chapter_1 scene_2_sandwiches_2 = At("images/1_chapter/owner_review/chapter_1_review_sandwiches stage_2.png", xysize(1920, 1080))
+image chapter_1 scene_2_sandwiches_3 = At("images/1_chapter/owner_review/chapter_1_review_sandwiches stage_3.png", xysize(1920, 1080))
 
 label chapter_1_scene_2:
 
@@ -40,15 +43,19 @@ label chapter_1_scene_2:
     vit "Сумасшедший дом. Только решёток на окнах нет. А стоило бы, да?"
     vit "Тамара не помогает! Не знал, что на болтовню с подружкой можно сжечь столько денег..."
     mar "Это терапия! У меня есть диагноз!"
-    vit "Какой? Тоска гробовая? Выйди на улицу. Перестань копаться в себе. Поговори с дочкой в конце концов!"
+    vit "Какой? Тоска гробовая?"
+    vit "Выйди на улицу. Перестань копаться в себе. Поговори с дочкой в конце концов!"
 
     scene chapter_1 scene_2_marina_hands
 
-    "Мы ещё не заходили так далеко. Впервые за восемь лет брака. Трещина между нами росла, дна не видно..."
-    vit "Какой пример ты подаёшь Насте? Я тяну наше семейство, как могу. За всё плачу, всё покупаю, всё дома есть."
+    "Мы ещё не заходили так далеко. Впервые за восемь лет брака."
+    "Трещина между нами росла, дна не видно..."
+    vit "Какой пример ты подаёшь Насте?"
+    vit "Я тяну наше семейство, как могу. За всё плачу, всё покупаю, всё дома есть."
     vit "И прошу совсем немного! Здоровой атмосферы, счастливых лиц!"
     vit "Ты же знаешь... Я очень вас люблю..."
-    "И я тебя, Вить. До сих пор. А тогда я не смогла тебе ответить: меня ломало изнутри, я пряталась в собственных ладонях, как хочется спрятаться и сейчас."
+    "И я тебя, Вить. До сих пор."
+    "А тогда я не смогла тебе ответить: меня ломало изнутри, я пряталась в собственных ладонях, как хочется спрятаться и сейчас."
 
     scene chapter_1 scene_2_dark
 
@@ -64,9 +71,25 @@ label chapter_1_scene_2:
     "Наш брак давно был не идеален, понимала ли я это? Не совсем."
     "После каждого такого скандала я старалась притворяться, подыгрывать."
 
+label .sandwiches:
+
     scene chapter_1 scene_2_sandwiches
 
-    "Для него, для Настеньки. Для себя. Трещины можно спрятать. Сделать вид, что их нет. Представить, что процесс разрушения остановлен."
+    "Для него, для Настеньки. Для себя."
+
+    scene chapter_1 scene_2_sandwiches_1
+    with Dissolve(0.22)
+
+    "Трещины можно спрятать. Сделать вид, что их нет."
+
+    scene chapter_1 scene_2_sandwiches_2
+    with Dissolve(0.22)
+
+    "Представить, что процесс разрушения остановлен."
+
+    scene chapter_1 scene_2_sandwiches_3
+    with Dissolve(0.22)
+
     "Все люди притворяются. Почему мы не могли?.."
 
     return

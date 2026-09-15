@@ -18,6 +18,19 @@ init python:
             - (getattr(widget, prop) or 0.0)) < 0.00001
             for prop in ("zoom", "rotate", "xoffset", "yoffset"))
 
+    def sm_test_door_prompt_parts():
+        prompt = renpy.get_displayable("c1s1_locks_open_door", "door_prompt")
+        buttons, rattles = [], []
+        def collect(displayable):
+            if isinstance(displayable, renpy.display.behavior.Button):
+                buttons.append(displayable)
+            if getattr(displayable, "atl", None) is c1s1_mg_button_rattle.atl:
+                rattles.append(displayable)
+            assert getattr(displayable, "atl", None) is not follow_camera.atl
+        prompt.visit_all(collect)
+        assert len(buttons) == len(rattles) == 1
+        return buttons[0], rattles[0]
+
 testcase fx_smoothing_frame_time:
     python hide:
         original_clock = _fx_frame_time
@@ -132,5 +145,28 @@ testcase c1s1_camera_ui_alignment:
     skip fast
     assert screen "c1s1_locks_open_door" timeout 15.0
     pause 0.1
-    assert eval (sm_test_camera_matches_ui("c1s1_locks_open_door", "door_world"))
+    python hide:
+        button, rattle = sm_test_door_prompt_parts()
+        assert button.get_placement()[:4] == (
+            config.screen_width // 2, config.screen_height // 2, 0.5, 0.5)
+        assert button.window_size == C1S1_LOCKS_BTN_SIZE
+        assert rattle.transform_anchor
+
+    ## Настоящий удар двигает только внутренний визуал; хит-зона остаётся в центре.
+    assert eval (_mg_get("shake_a") > 0.0) timeout 3.0
+    if eval (reduce_motion):
+        assert eval (all(abs(getattr(sm_test_door_prompt_parts()[1], prop) or 0.0) < 0.00001
+            for prop in ("xoffset", "yoffset", "rotate")))
+    else:
+        assert eval (abs(sm_test_door_prompt_parts()[1].xoffset or 0.0) >= 1.0) timeout 3.0
+    move pos (960, 540)
+    pause 0.15
+    python hide:
+        button, rattle = sm_test_door_prompt_parts()
+        assert button.get_placement()[:4] == (
+            config.screen_width // 2, config.screen_height // 2, 0.5, 0.5)
+        assert button.window_size == C1S1_LOCKS_BTN_SIZE
+    click pos (960, 540)
+    assert screen "c1s1_locks_minigame" timeout 10.0
+    assert eval (c1s1_mg_active and c1s1_mg_knocking)
     run MainMenu(confirm=False)

@@ -79,7 +79,7 @@ style glow_button_text is default:
     outlines GLOW_TEXT_OUTLINES
     textalign 0.5
 
-screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), size=None, text_size=None, hovered=None, unhovered=None, sensitive=True, pulse="breath"):
+screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), size=None, text_size=None, hovered=None, unhovered=None, sensitive=True, pulse="breath", visual_at=None):
 
     $ _g_w, _g_h = size or GLOW_BASE_SIZE
     $ _g_xz = _g_w / float(GLOW_BASE_SIZE[0])
@@ -90,6 +90,7 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
     $ _g_hover = GLOW_ON_LIGHT_HOVER if _g_on_light else GLOW_ON_DARK_HOVER
 
     button:
+        at show_hide(.25)
         xysize (_g_w, _g_h)
         xpos pos[0]
         ypos pos[1]
@@ -103,6 +104,7 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
         unhovered (unhovered or NullAction())
 
         fixed:
+            at (visual_at if visual_at is not None else [])
             xysize (_g_w, _g_h)
             ## Отдельный add сохраняет ATL-состояние и не масштабирует текст.
             if sm_reduced_motion() or sm_flashes_disabled():
