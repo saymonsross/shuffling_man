@@ -101,6 +101,8 @@ init -200 python:
         else:
             # A full pool must release its victim immediately, otherwise play queues behind its fade.
             renpy.music.stop(channel=target, fadeout=0)
+            # A channel's effect belongs to its handle, not to the next sound using that slot.
+            renpy.music.set_audio_filter(target, None, replace=True, duration=0)
             serial += 1
             handle = (target, serial)
         renpy.music.set_volume(volume, channel=target)
@@ -147,6 +149,17 @@ init -200 python:
         slots = dict(saved_slots)
         slots[slot["channel"]] = dict(slot, volume=volume)
         _sm_audio_store(serial, slots)
+        return True
+
+    def sm_audio_set_filter(handle, audio_filter, duration=0.016):
+        duration = _sm_audio_number(duration, "duration")
+        serial, slots = _sm_audio_state()
+        slot = next((slot for slot in slots.values()
+            if slot["handle"] == handle and slot["active"]), None)
+        if slot is None or not _sm_audio_busy(slot["channel"]):
+            return False
+        renpy.music.set_audio_filter(slot["channel"], audio_filter,
+            replace=True, duration=duration)
         return True
 
     def sm_audio_snapshot(line=None):
@@ -198,3 +211,32 @@ init -200 python:
         _sm_audio_legacy_stop(channel, fadeout, tag, handle)
 
     VStop = renpy.curry(vstop)
+
+## Одиночные звуковые эффекты сцен.
+
+init -190 python:
+
+    ## Отсутствующие файлы не должны ронять сцену, пока звук не записан.
+    _sm_sfx_missing = set()
+
+    def sm_sfx(names, volume=1.0, tag=None, ext="ogg"):
+        """Играет один эффект из audio/sfx; кортеж имён = случайный вариант."""
+        if not names:
+            return None
+        if not isinstance(names, str):
+            names = tuple(names)
+            if not names:
+                return None
+            names = renpy.random.choice(names)
+        filename = add_ext(audio_dir + "/" + names, ext)
+        if not renpy.loadable(filename):
+            if filename not in _sm_sfx_missing:
+                _sm_sfx_missing.add(filename)
+                renpy.log("sm_sfx: нет файла {}".format(filename))
+            return None
+        return splay(names, ext=ext, tag=tag, overlap=True, volume=volume)
+
+    def sm_sfx_f(names, volume, trans, st, at):
+        """ATL-колбек: `function renpy.curry(sm_sfx_f)(names, volume)` — один вызов."""
+        sm_sfx(names, volume=volume)
+        return None

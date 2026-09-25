@@ -233,6 +233,45 @@ define c1s1_locks_knock_punch_hard = Move((0, 22), (0, -22), 0.08, bounce=True, 
 define chapter_1_fade_in = Dissolve(2.0)
 define chapter_1_dissolve = Dissolve(1.2)
 
+## Звук сцены. Файлы лежат в game/audio/sfx/c1s1/, кортеж = варианты удара.
+define C1S1_LAMP_SWITCH_SOUND = "c1s1/lamp_switch"
+define C1S1_LAMP_SWITCH_VOL = 0.9
+define C1S1_METRONOME_TICK_VOL = 0.55
+## WAV содержит полпериода тишины перед щелчком; длительность равна C1S1_ARROW_HALF_T.
+define C1S1_METRONOME_LOOP_SOUND = "c1s1/metronome_loop"
+define C1S1_METRONOME_FILTER_T = 7.0
+define C1S1_METRONOME_LOWPASS_HZ = 2200.0
+define C1S1_METRONOME_REVERB_RESONANCE = 0.72
+define C1S1_METRONOME_REVERB_WET = 0.55
+define C1S1_METRONOME_FADEOUT_T = 1.2
+
+default c1s1_metronome_audio = None
+
+init python:
+    def c1s1_metronome_tension():
+        return sm_audio_set_filter(c1s1_metronome_audio, [
+            renpy.audio.filter.Lowpass(C1S1_METRONOME_LOWPASS_HZ),
+            renpy.audio.filter.Reverb(resonance=C1S1_METRONOME_REVERB_RESONANCE,
+                dampening=2400.0, wet=C1S1_METRONOME_REVERB_WET,
+                dry=0.85, delay_multiplier=1.8),
+        ], duration=C1S1_METRONOME_FILTER_T)
+
+## Стук за стеной у пианино: по одной громкости на каждый из шести ударов.
+define C1S1_KNOCK_SOUNDS = ("c1s1/knock_far_1", "c1s1/knock_far_2", "c1s1/knock_far_3")
+define C1S1_KNOCK_SFX_VOL = (0.58, 0.66, 0.74, 0.86, 0.93, 1.0)
+
+## Стук, слышный из прихожей.
+define C1S1_HALL_KNOCK_SOUNDS = ("c1s1/knock_hall_1", "c1s1/knock_hall_2", "c1s1/knock_hall_3")
+define C1S1_HALL_KNOCK_SFX_VOL = 0.85
+
+## Удар по двери крупным планом снаружи.
+define C1S1_DOOR_KNOCK_SOUNDS = ("c1s1/knock_door_1", "c1s1/knock_door_2", "c1s1/knock_door_3")
+define C1S1_DOOR_KNOCK_SFX_VOL = 1.0
+
+## Тот же стук, услышанный изнутри квартиры; индексы совпадают с FLASH_PEAKS.
+define C1S1_LOCKS_KNOCK_SOUNDS = ("c1s1/knock_inside_1", "c1s1/knock_inside_2", "c1s1/knock_inside_3")
+define C1S1_LOCKS_KNOCK_SFX_VOL = (0.82, 0.88, 0.94, 1.0, 1.0)
+
 ## Трансформы сцены
 
 transform c1s1_hand_pull(pos_xy, dy=C1S1_PULL_DY, t=C1S1_PULL_T):
@@ -279,7 +318,7 @@ transform c1s1_arrow_rest(pos_xy=C1S1_ARROW_PIVOT_POS):
     rotate 0.0
 
 ## Положительный rotate продолжает толчок руки вправо.
-## TODO(звук): щелчки метронома.
+## Звуковой loop запускается вместе со стрелкой и переживает смену кадра.
 transform c1s1_arrow_swing(pos_xy=C1S1_ARROW_PIVOT_POS, amp=C1S1_ARROW_AMP, half_t=C1S1_ARROW_HALF_T):
     subpixel True
     transform_anchor True
@@ -382,7 +421,7 @@ label chapter_1_scene_1:
     $ pause(C1S1_PULL_T)
 
     ## Щелчок и мгновенная смена освещения без сброса камеры.
-    ## TODO(звук): splay щелчка выключателя.
+    $ sm_sfx(C1S1_LAMP_SWITCH_SOUND, volume=C1S1_LAMP_SWITCH_VOL)
     scene chapter_1 lamp_light
     show chapter_1_metronome_arrow zorder C1S1_Z_ARROW at c1s1_arrow_rest()
     show chapter_1_metronome_foreground zorder C1S1_Z_METRONOME_FOREGROUND at placed(C1S1_METRONOME_FOREGROUND_POS)
@@ -403,6 +442,7 @@ label chapter_1_scene_1:
     $ pause(0.25)
 
     ## Толчок руки и стрелка стартуют в один кадр.
+    $ c1s1_metronome_audio = sfxplay(C1S1_METRONOME_LOOP_SOUND, ext="wav", fadein=0, fadeout=0, tag="c1s1_metronome", volume=C1S1_METRONOME_TICK_VOL)
     show chapter_1_lamp_hand light_metronome as c1s1_hand_metronome at c1s1_hand_poke(C1S1_HAND_METRONOME_POS)
     show chapter_1_metronome_arrow zorder C1S1_Z_ARROW at c1s1_arrow_swing()
     $ pause(C1S1_HAND_EXIT_DELAY)
@@ -434,20 +474,23 @@ label chapter_1_scene_1:
     $ pause(C1S1_KNOCK_HOLD_T)
 
     ## Первый удар запускает завал камеры на обе серии стука.
-    ## TODO(звук): стук в дверь.
+    $ c1s1_metronome_tension()
     camera at uneasy_sway(C1S1_KNOCK_DRIFT, C1S1_KNOCK_SWAY, speed=C1S1_KNOCK_SWAY_SPEED, zoom_pad=C1S1_KNOCK_PAD, base=C1S1_KNOCK_TILT, base_in_t=C1S1_KNOCK_TILT_T, zoom0=C1S1_CAM_Z_REST)
 
     ## Первая серия: три удара; show перед punch синхронизирует скачок дрожи.
+    $ sm_sfx(C1S1_KNOCK_SOUNDS, volume=C1S1_KNOCK_SFX_VOL[0])
     $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[0], fall=C1S1_KNOCK_FLASH_FALL_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[0], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[0], jitter_key="c1s1_hand_r")
     with sm_motion_transition(c1s1_knock_punch)
     $ pause(C1S1_KNOCK_GAP_T)
+    $ sm_sfx(C1S1_KNOCK_SOUNDS, volume=C1S1_KNOCK_SFX_VOL[1])
     $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[1], fall=C1S1_KNOCK_FLASH_FALL_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[1], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[1], jitter_key="c1s1_hand_r")
     with sm_motion_transition(c1s1_knock_punch)
     $ pause(C1S1_KNOCK_GAP_T)
+    $ sm_sfx(C1S1_KNOCK_SOUNDS, volume=C1S1_KNOCK_SFX_VOL[2])
     $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[2], fall=C1S1_KNOCK_FLASH_FALL_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[2], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[2], jitter_key="c1s1_hand_r")
@@ -457,16 +500,19 @@ label chapter_1_scene_1:
     $ pause(C1S1_KNOCK_SERIES_GAP_T)
 
     ## Вторая серия: три усиленных удара.
+    $ sm_sfx(C1S1_KNOCK_SOUNDS, volume=C1S1_KNOCK_SFX_VOL[3])
     $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[3], fall=C1S1_KNOCK_FLASH_FALL2_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[3], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[3], jitter_key="c1s1_hand_r")
     with sm_motion_transition(c1s1_knock_punch_hard)
     $ pause(C1S1_KNOCK_GAP2_T)
+    $ sm_sfx(C1S1_KNOCK_SOUNDS, volume=C1S1_KNOCK_SFX_VOL[4])
     $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[4], fall=C1S1_KNOCK_FLASH_FALL2_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[4], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[4], jitter_key="c1s1_hand_r")
     with sm_motion_transition(c1s1_knock_punch_hard)
     $ pause(C1S1_KNOCK_GAP2_T)
+    $ sm_sfx(C1S1_KNOCK_SOUNDS, volume=C1S1_KNOCK_SFX_VOL[5])
     $ flash_fx(high=C1S1_KNOCK_FLASH_PEAKS[5], fall=C1S1_KNOCK_FLASH_FALL2_T)
     show chapter_1_piano_hand_left at placed_jitter(C1S1_HANDS_LEFT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[5], jitter_key="c1s1_hand_l")
     show chapter_1_piano_hand_right at placed_jitter(C1S1_HANDS_RIGHT_POS, jitter_amp=C1S1_HANDS_TREMBLE_STEPS[5], jitter_key="c1s1_hand_r")
@@ -498,29 +544,32 @@ label chapter_1_scene_1:
     show chapter_1_hall_umbrella_2 zorder C1S1_Z_HALL_GROUP_2 + 1 at placed_jitter(C1S1_HALL_UMBRELLA_2_POS, jitter_amp=C1S1_HALL_OBJ_TREMBLE, jitter_key="hall_umb2")
     show chapter_1_hall_bottles zorder C1S1_Z_HALL_GROUP_1 + 2 at placed_jitter(C1S1_HALL_BOTTLES_POS, jitter_amp=C1S1_HALL_OBJ_TREMBLE, jitter_key="hall_bottles")
 
-    ## TODO(звук): стук в дверь.
+    $ sm_sfx(C1S1_HALL_KNOCK_SOUNDS, volume=C1S1_HALL_KNOCK_SFX_VOL)
     $ flash_fx(high=C1S1_HALL_KNOCK_FLASH, fall=C1S1_HALL_KNOCK_FLASH_FALL_T)
     with sm_motion_transition(c1s1_hall_knock_punch)
     $ pause(C1S1_HALL_KNOCK_GAP_T)
+    $ sm_sfx(C1S1_HALL_KNOCK_SOUNDS, volume=C1S1_HALL_KNOCK_SFX_VOL)
     $ flash_fx(high=C1S1_HALL_KNOCK_FLASH, fall=C1S1_HALL_KNOCK_FLASH_FALL_T)
     with sm_motion_transition(c1s1_hall_knock_punch)
     $ pause(C1S1_HALL_KNOCK_GAP_T)
 
     ## Третий удар склеен с дверью крупным планом.
+    $ sm_sfx(C1S1_HALL_KNOCK_SOUNDS, volume=C1S1_HALL_KNOCK_SFX_VOL)
     $ flash_fx(high=C1S1_HALL_KNOCK_FLASH, fall=C1S1_HALL_KNOCK_FLASH_FALL_T)
     with sm_motion_transition(c1s1_hall_knock_punch)
     $ pause(C1S1_HALL_CUT_T)
 
     ## Вспышка на always_shown-экране досвечивает новый кадр после scene.
     scene chapter_1 door
+    $ sm_sfx(C1S1_DOOR_KNOCK_SOUNDS, volume=C1S1_DOOR_KNOCK_SFX_VOL)
     show chapter_1_door_hand hit at placed(C1S1_DOOR_HAND_HIT_POS)
     with sm_motion_transition(c1s1_door_hit_punch)
 
     ## Ещё два удара с замахом.
-    ## TODO(звук): стук в дверь крупным планом.
     $ pause(C1S1_DOOR_OPEN_HOLD_T)
     show chapter_1_door_hand wind at placed(C1S1_DOOR_HAND_WIND_POS)
     $ pause(C1S1_DOOR_WIND_T)
+    $ sm_sfx(C1S1_DOOR_KNOCK_SOUNDS, volume=C1S1_DOOR_KNOCK_SFX_VOL)
     show chapter_1_door_hand hit at placed(C1S1_DOOR_HAND_HIT_POS)
     with sm_motion_transition(c1s1_door_hit_punch)
 
@@ -529,12 +578,13 @@ label chapter_1_scene_1:
     show chapter_1_door_hand wind at placed(C1S1_DOOR_HAND_WIND_POS)
     $ pause(C1S1_DOOR_WIND_T)
     $ flash_fx(high=C1S1_LOCKS_FLASH_PEAKS[0], fall=C1S1_LOCKS_FLASH_FALL_T)
+    $ sm_sfx(C1S1_DOOR_KNOCK_SOUNDS, volume=C1S1_DOOR_KNOCK_SFX_VOL)
     show chapter_1_door_hand hit at placed(C1S1_DOOR_HAND_HIT_POS)
     with sm_motion_transition(c1s1_door_hit_punch)
     $ pause(C1S1_DOOR_CUT_T)
 
     ## Дверь изнутри: спокойный наезд на замки, сумка дрожит от ударов.
-    ## TODO(звук): стук в дверь изнутри квартиры.
+    ## Третий удар двери крупным планом уже озвучен: рез склеен с ним.
     camera at parallax_push(C1S1_LOCKS_FOCUS, C1S1_CAM_Z_REST, C1S1_LOCKS_Z1, C1S1_LOCKS_PUSH_T, strength=C1S1_SCENE_PARALLAX)
     scene chapter_1 hall_door
     show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_TREMBLE[0], jitter_key="c1s1_door_bag")
@@ -542,10 +592,12 @@ label chapter_1_scene_1:
 
     ## Ещё два удара; show перед punch синхронизирует дрожь сумки.
     $ pause(C1S1_LOCKS_KNOCK_GAP_T)
+    $ sm_sfx(C1S1_LOCKS_KNOCK_SOUNDS, volume=C1S1_LOCKS_KNOCK_SFX_VOL[1])
     $ flash_fx(high=C1S1_LOCKS_FLASH_PEAKS[1], fall=C1S1_LOCKS_FLASH_FALL_T)
     show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_TREMBLE[1], jitter_key="c1s1_door_bag")
     with sm_motion_transition(c1s1_locks_knock_punch)
     $ pause(C1S1_LOCKS_KNOCK_GAP_T)
+    $ sm_sfx(C1S1_LOCKS_KNOCK_SOUNDS, volume=C1S1_LOCKS_KNOCK_SFX_VOL[2])
     $ flash_fx(high=C1S1_LOCKS_FLASH_PEAKS[2], fall=C1S1_LOCKS_FLASH_FALL_T)
     show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_TREMBLE[2], jitter_key="c1s1_door_bag")
     with sm_motion_transition(c1s1_locks_knock_punch)
@@ -556,10 +608,12 @@ label chapter_1_scene_1:
     $ pause(C1S1_LOCKS_SERIES_GAP_T)
 
     ## Стук возвращается двумя усиленными ударами.
+    $ sm_sfx(C1S1_LOCKS_KNOCK_SOUNDS, volume=C1S1_LOCKS_KNOCK_SFX_VOL[3])
     $ flash_fx(high=C1S1_LOCKS_FLASH_PEAKS[3], fall=C1S1_LOCKS_FLASH_FALL2_T)
     show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_TREMBLE[3], jitter_key="c1s1_door_bag")
     with sm_motion_transition(c1s1_locks_knock_punch_hard)
     $ pause(C1S1_LOCKS_KNOCK_GAP2_T)
+    $ sm_sfx(C1S1_LOCKS_KNOCK_SOUNDS, volume=C1S1_LOCKS_KNOCK_SFX_VOL[4])
     $ flash_fx(high=C1S1_LOCKS_FLASH_PEAKS[4], fall=C1S1_LOCKS_FLASH_FALL2_T)
     show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG at placed_jitter(C1S1_DOOR_BAG_POS, anchor_xy=C1S1_DOOR_BAG_ANCHOR, jitter_amp=C1S1_LOCKS_BAG_TREMBLE[4], jitter_key="c1s1_door_bag")
     with sm_motion_transition(c1s1_locks_knock_punch_hard)
@@ -581,6 +635,8 @@ label chapter_1_scene_1:
 
 label .after_locks:
 
+    $ sfxstop(handle=c1s1_metronome_audio, fadeout=C1S1_METRONOME_FADEOUT_T)
+    $ c1s1_metronome_audio = None
     camera
 
     if c1s1_locks_outcome == "timeout":

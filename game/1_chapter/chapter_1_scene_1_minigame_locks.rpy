@@ -165,6 +165,14 @@ define C1S1_MG_POINTER_LOST_T = 0.25  # release вне окна: защита о
 
 define C1S1_MG_HOVER_SOUND = "click"
 define C1S1_MG_BLOCKED_SOUND = "033_denied_03"
+
+## Звук мини-игры; файлы в game/audio/sfx/c1s1/.
+define C1S1_MG_KNOCK_SOUNDS = ("c1s1/knock_inside_1", "c1s1/knock_inside_2", "c1s1/knock_inside_3")
+define C1S1_MG_KNOCK_VOL = (0.70, 1.0)   # слабый и сильный удар волны
+define C1S1_LATCH_OPEN_SOUND = "c1s1/latch_open"
+define C1S1_BIG_LOCK_SOUND = "c1s1/lock_bolt"
+define C1S1_HANDLE_SOUND = "c1s1/handle_click"
+define C1S1_MG_LOCK_VOL = 1.0
 define C1S1_MG_HOVER_GAP_T = 0.15
 define C1S1_MG_BLOCKED_GAP_T = 0.35
 define C1S1_MG_BLOCKED_T = 1.25
@@ -414,7 +422,8 @@ init -5 python:
         gap *= 1.0 + renpy.random.uniform(-C1S1_MG_KNOCK_GAP_NOISE, C1S1_MG_KNOCK_GAP_NOISE)
         _mg_set("knock_next", t + max(0.15, gap))
 
-        ## TODO(звук): удар в дверь.
+        sm_sfx(C1S1_MG_KNOCK_SOUNDS,
+               volume=_mg_lerp(C1S1_MG_KNOCK_VOL[0], C1S1_MG_KNOCK_VOL[1], wave))
         flash_fx(high=_mg_lerp(C1S1_MG_KNOCK_FLASH[0], C1S1_MG_KNOCK_FLASH[1], wave),
                  fall=_mg_lerp(C1S1_MG_KNOCK_FALL[0], C1S1_MG_KNOCK_FALL[1], wave))
         _mg_set("shake_a", _mg_lerp(C1S1_MG_KNOCK_SHAKE[0], C1S1_MG_KNOCK_SHAKE[1], wave))
@@ -580,7 +589,7 @@ init -5 python:
             _mg_set("latch_p", p)
 
             if p >= max_p:
-                ## TODO(звук): лязг отодвинутой щеколды.
+                sm_sfx(C1S1_LATCH_OPEN_SOUND, volume=C1S1_MG_LOCK_VOL)
                 _mg_set("latch_grab", 0.0)
                 store.c1s1_latch_open = True
             return
@@ -674,7 +683,7 @@ init -5 python:
 
         _mg_set("big_p", p)
         if p >= 2.0:
-            ## TODO(звук): щелчок ригеля большого замка.
+            sm_sfx(C1S1_BIG_LOCK_SOUND, volume=C1S1_MG_LOCK_VOL)
             _mg_set("big_grab", 0.0)
             store.c1s1_big_lock_open = True
 
@@ -752,7 +761,7 @@ init -5 python:
             p = max(0.0, min(1.0, p + da / max(1.0, C1S1_HANDLE_TURN)))
             _mg_set("handle_p", p)
             if p >= 1.0:
-                ## TODO(звук): щелчок дверной ручки.
+                sm_sfx(C1S1_HANDLE_SOUND, volume=C1S1_MG_LOCK_VOL)
                 _mg_set("handle_grab", 0.0)
                 store.c1s1_door_handle_open = True
             return
