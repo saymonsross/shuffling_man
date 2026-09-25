@@ -59,7 +59,8 @@ Ren'Py загружает файлы в следующем порядке бла
 
 - `7dots-reference` — обязательная проверка перед любой реализацией в `.rpy`; `.agents/skills/7dots-reference/SKILL.md`.
 - `renpy-atl-layeredimage` — ATL, transform, анимации и LayeredImage; `.agents/skills/renpy-atl-layeredimage/SKILL.md`.
-- `renpy-vn-toolkit` — готовые модули и паттерны Ren'Py/7dots; `.agents/skills/renpy-vn-toolkit/SKILL.md`. Использовать только для конкретного отсутствующего модуля после проверки `7dots-reference`; перед переносом проверять зависимости, побочные эффекты и целевые пути. В этом репозитории его `sources/core/7DOTS.rpy` — только справочная upstream-копия: не копировать её в `game/`, не создавать вторую библиотеку и не перезаписывать `game/libs/7dots.rpy`.
+- `renpy-minigame` — мини-игры и интерактивы: архитектура цикла, состояние, ввод, время, пропуск/откат/сейв, доступность и регрессионные тесты; `.agents/skills/renpy-minigame/SKILL.md`. Обязателен перед реализацией или правкой любой мини-игры, после проверки `7dots-reference`; для мини-игр имеет приоритет над `renpy-vn-toolkit`.
+- `renpy-vn-toolkit` — готовые модули и паттерны Ren'Py/7dots; `.agents/skills/renpy-vn-toolkit/SKILL.md`. Использовать только для конкретного отсутствующего модуля после проверки `7dots-reference`; перед переносом проверять зависимости, побочные эффекты и целевые пути. Модули мини-игр (BALANCE, pipes, dungeon) — только справочник механик: строить мини-игру по `renpy-minigame`. В этом репозитории его `sources/core/7DOTS.rpy` — только справочная upstream-копия: не копировать её в `game/`, не создавать вторую библиотеку и не перезаписывать `game/libs/7dots.rpy`.
 
 ## Рабочая среда
 
