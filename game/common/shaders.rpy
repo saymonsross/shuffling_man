@@ -65,6 +65,43 @@ init python:
         gl_FragColor = u_glow_color * a;
         """)
 
+init python:
+    ## Формула Unity floor(c*s)/(s-1) + clamp: при c == 1 она даёт s/(s-1).
+    ## Текстуры premultiplied: квантуется чистый цвет, альфа сохраняется.
+    ## gamma > 1 отдаёт больше ступеней теням; при gamma == 1 pow обходится:
+    ## его exp2/log2 сдвигал бы границы ступеней относительно Unity.
+    renpy.register_shader("sm.posterize",
+        variables="""
+        uniform float u_posterize_steps;
+        uniform float u_posterize_mix;
+        uniform float u_posterize_gamma;
+        """,
+        fragment_400="""
+        vec4 c = gl_FragColor;
+        if (c.a > 0.0) {
+            vec3 rgb = clamp(c.rgb / c.a, 0.0, 1.0);
+            float s = max(u_posterize_steps, 2.0);
+            float g = max(u_posterize_gamma, 0.01);
+            bool exact = abs(g - 1.0) < 0.0001;
+            vec3 base = exact ? rgb : pow(rgb, vec3(1.0 / g));
+            vec3 q = min(floor(base * s) / (s - 1.0), 1.0);
+            q = exact ? q : pow(q, vec3(g));
+            gl_FragColor = vec4(mix(rgb, q, clamp(u_posterize_mix, 0.0, 1.0)) * c.a, c.a);
+        }
+        """)
+
+transform posterize(steps=5, mix=1.0, gamma=1.0):
+    mesh True
+    shader "sm.posterize"
+    u_posterize_steps float(steps)
+    u_posterize_mix float(mix)
+    u_posterize_gamma float(gamma)
+
+## show … at снова наследует mesh/shader прошлого трансформа — снимать явно.
+transform posterize_off:
+    mesh False
+    shader None
+
 transform outline_hover(width=5.0, color_=(1.0, 0.97, 0.85, 1.0)):
     mesh True
     shader "sm.outline"

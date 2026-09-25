@@ -24,10 +24,13 @@ testsuite global:
     before testcase:
         $ renpy.session["_sm_test_preferences"] = (persistent.sm_reduce_motion, persistent.sm_simplified_locks, persistent.sm_disable_flashes)
         $ renpy.session["_sm_test_get_mouse_pos"] = renpy.get_mouse_pos
+        ## Реестр FX живёт вне rollback: упавший тест не должен оставить эффект включённым.
+        $ renpy.session["_sm_test_fx"] = sm_test_fx_snapshot()
 
     after testcase:
         $ persistent.sm_reduce_motion, persistent.sm_simplified_locks, persistent.sm_disable_flashes = renpy.session.pop("_sm_test_preferences")
         $ renpy.get_mouse_pos = renpy.session.pop("_sm_test_get_mouse_pos")
+        $ sm_test_fx_restore(renpy.session.pop("_sm_test_fx"))
 
     teardown:
         exit

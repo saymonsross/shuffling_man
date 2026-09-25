@@ -264,6 +264,82 @@ screen fx_noise_screen():
 init python:
     config.always_shown_screens.append("fx_noise_screen")
 
+## Постеризация: вид задаёт fx_config.yaml (F10), интенсивность по сюжету —
+## fx_posterize_strength (0..1); после сцены вернуть к FX_POSTERIZE_DEFAULT.
+define FX_POSTERIZE_DEFAULT = 1.0
+default fx_posterize_strength = FX_POSTERIZE_DEFAULT
+
+## Охват scene — все слои config.layers, кроме UI: новый слой мира (как lockgame
+## у мини-игры замков) получает эффект сам, если добавлен в init.
+## forever — экраны 7dots show_forever, которые не прячутся по H.
+define FX_POSTERIZE_UI_LAYERS = ("transient", "screens", "overlay", "forever")
+
+init -10 python:
+
+    fx_param("posterize.enabled", False, doc="включить постеризацию")
+    fx_param("posterize.scope", "scene", choices=("scene", "screen"),
+        doc="scene — сцена без UI, screen — весь экран с UI")
+    fx_param("posterize.steps", 5, 2, 32, doc="уровней на канал")
+    fx_param("posterize.mix", 1.0, 0.0, 1.0, doc="сила: смешивание с оригиналом")
+    fx_param("posterize.gamma", 1.0, 0.25, 4.0, step=0.05,
+        doc="больше 1 — больше ступеней в тенях; 1 — как в Unity")
+    fx_param("posterize.relax", 0.04, 0.005, 1.0, step=0.005,
+        doc="плавность смены fx_posterize_strength")
+
+    def _fx_posterize_level():
+        """(сглаженная сила от сцены, цель); превью тюнера подменяет цель полной."""
+        if fx_cfg_runtime["preview"]:
+            target = 1.0
+        else:
+            target = _fx_num(getattr(store, "fx_posterize_strength", FX_POSTERIZE_DEFAULT),
+                FX_POSTERIZE_DEFAULT, 0.0, 1.0)
+        ## Один накопитель на все слои намеренно: цель у них общая, а _fx_step
+        ## делает не больше одного шага за кадр, поэтому слои не тянут его друг у друга.
+        return _fx_step("posterize_level", target, fx_cfg("posterize.relax"), start=target), target
+
+    ## Трансформ слоя попадает в сейвы вместе со SceneLists: после релиза не
+    ## переименовывать posterize_layer и posterize_layer_f.
+    def posterize_layer_f(scope, trans, st, at):
+        if renpy.predicting():
+            return 1.0 / 60.0
+        level, target = _fx_posterize_level()
+        mix = fx_cfg("posterize.mix") * level
+        active = (fx_cfg("posterize.enabled") and not fx_cfg_bypassed()
+            and fx_cfg("posterize.scope") == scope and mix > 0.001)
+        ## Без эффекта mesh снимается: иначе слой каждый кадр рендерится в лишнюю текстуру.
+        if active:
+            trans.mesh = True
+            trans.shader = "sm.posterize"
+            trans.u_posterize_steps = float(fx_cfg("posterize.steps"))
+            trans.u_posterize_mix = mix
+            trans.u_posterize_gamma = fx_cfg("posterize.gamma")
+            return 1.0 / 60.0
+        trans.mesh = False
+        trans.shader = None
+        ## Правки тюнера и сцены перезапускают интеракцию сами; кадры нужны только затуханию.
+        return 1.0 / 60.0 if abs(level - target) > 0.001 else 0.1
+
+    def fx_posterize_status():
+        strength = getattr(store, "fx_posterize_strength", None)
+        level = _fx_state.get("posterize_level")
+        text = "fx_posterize_strength = %s" % ("—" if strength is None else "%.2f" % strength)
+        if level is not None:
+            text += " · итог %.2f" % (fx_cfg("posterize.mix") * level)
+        return text
+
+    fx_group("posterize", "Постеризация", fx_posterize_status)
+
+transform posterize_layer(scope="scene"):
+    function renpy.curry(posterize_layer_f)(scope)
+
+## init 999 — после всех add_layer. layer_transforms работают снаружи camera,
+## поэтому эффект не спорит с camera at сцен.
+init 999 python hide:
+    for name in config.layers:
+        if name not in FX_POSTERIZE_UI_LAYERS:
+            config.layer_transforms.setdefault(name, []).append(posterize_layer("scene"))
+    config.layer_transforms.setdefault(None, []).append(posterize_layer("screen"))
+
 ## Некратные периоды скрывают цикл покачивания. base/base_in_t задают входной
 ## наклон; zoom0 — плавный вход из другого camera-transform.
 ## Для угла θ: zoom_pad ≥ cos θ + (16/9)·sin θ.
