@@ -37,19 +37,35 @@ define gui.interface_text_color = '#ffffff'
 
 ## Шрифты и их размеры
 
-define gui.text_font = "DejaVuSans.ttf"
+## В LEngineer нет », №, стрелок, знака минус (−) и геометрических фигур (●, ▸) —
+## их рисует DejaVuSans, иначе вместо них пустые квадраты. « берётся оттуда же,
+## чтобы пара кавычек была одного рисунка. Диапазоны не должны задевать
+## собственные глифы LEngineer.
+define gui.text_font = (
+    FontGroup()
+    .add("fonts/lengineer_regular.otf", None, None)
+    .add("DejaVuSans.ttf", 0x00AB, 0x00AB)
+    .add("DejaVuSans.ttf", 0x00BB, 0x00BB)
+    .add("DejaVuSans.ttf", 0x2116, 0x2116)
+    .add("DejaVuSans.ttf", 0x2190, 0x21FF)
+    .add("DejaVuSans.ttf", 0x2212, 0x2212)
+    .add("DejaVuSans.ttf", 0x25A0, 0x25FF)
+    )
 
-define gui.name_text_font = "DejaVuSans.ttf"
+define gui.name_text_font = gui.text_font
 
-define gui.interface_text_font = "DejaVuSans.ttf"
+define gui.interface_text_font = gui.text_font
 
-define gui.text_size = 33
+define gui.text_size = 45
 
-define gui.name_text_size = 45
+## Реплики (say и NVL) мельче text_size; выборы остаются на text_size.
+define gui.dialogue_text_size = 43
 
-define gui.interface_text_size = 33
+define gui.name_text_size = 55
 
-define gui.label_text_size = 36
+define gui.interface_text_size = 50
+
+define gui.label_text_size = 50
 
 define gui.notify_text_size = 24
 
@@ -69,15 +85,15 @@ define gui.textbox_height = 278
 define gui.textbox_yalign = 1.0
 
 
-define gui.name_xpos = 360
-define gui.name_ypos = 0
+define gui.name_xpos = 358
+define gui.name_ypos = -28
 
 define gui.name_xalign = 0.0
 
 define gui.namebox_width = None
 define gui.namebox_height = None
 
-define gui.namebox_borders = Borders(5, 5, 5, 5)
+define gui.namebox_borders = Borders(20, 5, 20, 7)
 
 define gui.namebox_tile = False
 

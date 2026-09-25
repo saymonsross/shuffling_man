@@ -198,25 +198,30 @@ style pt_card is frame:
     padding (10, 8)
     xfill True
 
-style pt_title is text:
+## Шрифт движка, а не игровой gui.text_font: служебная панель читается одинаково
+## при любом оформлении игры.
+style pt_text is text:
+    font "DejaVuSans.ttf"
+
+style pt_title is pt_text:
     size 22
     bold True
     color "#ffffff"
 
-style pt_head is text:
+style pt_head is pt_text:
     size 15
     color "#cccccc"
 
-style pt_info is text:
+style pt_info is pt_text:
     size 17
     color "#ffffff"
     line_spacing 2
 
-style pt_caption is text:
+style pt_caption is pt_text:
     size 13
     color "#888888"
 
-style pt_hint is text:
+style pt_hint is pt_text:
     size 13
     color "#999999"
     line_spacing 2
@@ -228,6 +233,7 @@ style pt_button is button:
     insensitive_background "#ffffff08"
 
 style pt_button_text is button_text:
+    font "DejaVuSans.ttf"
     size 15
     color "#dddddd"
     hover_color "#ffffff"
@@ -248,6 +254,7 @@ style pt_item is button:
     selected_background "#00ff8830"
 
 style pt_item_text is button_text:
+    font "DejaVuSans.ttf"
     size 14
     color "#bbbbbb"
     hover_color "#ffffff"

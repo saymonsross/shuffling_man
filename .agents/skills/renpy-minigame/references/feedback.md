@@ -30,7 +30,8 @@
 | Нужно | Готовое |
 |---|---|
 | Вспышка | `flash_fx(...)`/`flash_off()` — always-shown экран; no-op при «Без вспышек» |
-| Сглаживание, параллакс, дрожь | `_fx_step`, `mouse_parallax`, `follow_camera`, `object_jitter_f`, зерно `fx_noise_strength` (`camera_fx.rpy`) |
+| Сглаживание, параллакс, дрожь | `_fx_step`, `mouse_parallax`, `follow_camera`, `object_jitter_f` (`camera_fx.rpy`) |
+| Зерно-помехи | Один экран `fx_noise_screen` на всю игру, сила — `noise.strength` в `fx_config.yaml` (F10). Сцены и мини-игры зерно не усиливают, не ослабляют и не показывают своё |
 | Кнопка-пятно | `use glow_button(label, action, …, pulse=…, visual_at=…)` |
 | Размещение и движение | `placed` (с `transform_anchor`), `slide_in`, `move_between`, `flag_fade` (`transforms.rpy`) |
 | Шейдеры | `sm.outline`, `sm.oval_glow`, `sm.noise`, `sm.crt_glass` |
@@ -68,7 +69,7 @@
 - **Параллакс.** Проектный `mouse_parallax` + `_fx_step`. Хит-тест по сдвинутому слою учитывает его смещение.
 - **Вспышка молнии как окно обзора.** Дешёвый дождь — несколько маленьких кадров с увеличением; вспышки — через
   `flash_fx`, с учётом «Без вспышек» (не чаще 3 в секунду).
-- **Страх как визуал.** `matrixcolor` на `camera` (дёшево, переживает `scene`), виньетка и зерно шейдером по ОЗ.
+- **Страх как визуал.** `matrixcolor` на `camera` (дёшево, переживает `scene`), виньетка шейдером по ОЗ; общее зерно не трогать.
 - **Слои реальности.** Путь с подстановкой `"[reality]/room.png"` меняет весь набор картинок одной
   `default`-переменной.
 

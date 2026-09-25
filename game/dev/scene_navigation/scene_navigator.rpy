@@ -136,13 +136,16 @@ style dev_scene_nav_card is slot_button:
     ysize 316
     padding (15, 15)
 
+## Карточки — шрифтом движка, как остальные dev-инструменты; рамка меню — игровая.
 style dev_scene_nav_section is gui_text:
+    font "DejaVuSans.ttf"
     color gui.dark_background_accent
     hover_color "#ffffff"
     size 18
     xalign 0.5
 
 style dev_scene_nav_title is gui_text:
+    font "DejaVuSans.ttf"
     color gui.interface_text_color
     hover_color "#ffffff"
     size 26

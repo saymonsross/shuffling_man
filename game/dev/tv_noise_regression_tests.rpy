@@ -140,7 +140,6 @@ testcase dev_tv_noise_mask_and_phases:
 
     run MainMenu(confirm=False)
     assert screen "main_menu" timeout 5.0
-    assert eval (fx_noise_strength == FX_NOISE_DEFAULT)
 
 testcase dev_tv_noise_accessibility:
     parameter flags = [0, 1, 2, 3]

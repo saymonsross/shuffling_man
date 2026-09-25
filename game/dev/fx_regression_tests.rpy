@@ -27,21 +27,20 @@ init python:
         """Снимок реестра и накопителей: rollback и MainMenu их не возвращают."""
         return (python_dict(_fxc_values), python_dict(_fxc_saved), python_dict(_fxc_file),
                 python_list(fx_cfg_warnings), python_dict(fx_cfg_runtime),
-                _fx_state.get("posterize_level"), _fx_state.get("noise_tension"),
+                _fx_state.get("posterize_level"),
                 getattr(store, "fx_posterize_strength", None), fxt_model.status)
 
     def sm_test_fx_restore(snap):
-        values, saved, file_, warnings, runtime, level, noise, strength, status = snap
+        values, saved, file_, warnings, runtime, level, strength, status = snap
         pairs = ((_fxc_values, values), (_fxc_saved, saved), (_fxc_file, file_), (fx_cfg_runtime, runtime))
         for target, source in pairs:
             target.clear()
             target.update(source)
         fx_cfg_warnings[:] = warnings
-        for key, value in (("posterize_level", level), ("noise_tension", noise)):
-            if value is None:
-                _fx_state.pop(key, None)
-            else:
-                _fx_state[key] = value
+        if level is None:
+            _fx_state.pop("posterize_level", None)
+        else:
+            _fx_state["posterize_level"] = level
         if strength is not None:
             store.fx_posterize_strength = strength
         fxt_model.status = status
@@ -321,9 +320,8 @@ testcase fx_posterize_live_frame:
     run Function(dev_scene_nav_start, "sm_test_posterize_scene")
     pause 0.5
     python hide:
-        ## Зерно поверх сцены: для чистых пикселей гасим его накопитель.
-        store.fx_noise_strength = 0.0
-        _fx_state["noise_tension"] = 0.0
+        ## Зерно лежит поверх всего кадра: для чистых пикселей его гасим.
+        fx_cfg_set("noise.strength", 0.0)
         _fx_state["posterize_level"] = 1.0
         fx_cfg_set("posterize.steps", 4)
         fx_cfg_set("posterize.mix", 1.0)
@@ -406,3 +404,80 @@ testcase fx_tuner_error_status:
     assert screen "fx_tuner"
     keysym "K_F10"
     assert not screen "fx_tuner" timeout 1.0
+
+init python:
+
+    def sm_test_noise_single():
+        """Зерно ровно одно и только на top."""
+        if renpy.get_screen("fx_noise_screen", layer="top") is None:
+            return False
+        return all(renpy.get_screen("fx_noise_screen", layer=layer) is None for layer in config.layers)
+
+    def sm_test_noise_probe_deviation():
+        """Разброс яркости по серой плашке самого верхнего экрана UI."""
+        surface = sm_test_screen_surface()
+        scale = surface.get_width() / float(config.screen_width)
+        values = python_list()
+        for y in range(SM_TEST_NOISE_PROBE[1] + 10, SM_TEST_NOISE_PROBE[1] + SM_TEST_NOISE_PROBE[3] - 10, 7):
+            for x in range(SM_TEST_NOISE_PROBE[0] + 10, SM_TEST_NOISE_PROBE[0] + SM_TEST_NOISE_PROBE[2] - 10, 7):
+                values.append(surface.get_at((int(x * scale), int(y * scale)))[0])
+        mean = sum(values) / float(len(values))
+        return (sum((v - mean) ** 2 for v in values) / len(values)) ** 0.5
+
+## Серая плашка над любым UI экрана screens: зерно должно лечь и на неё.
+define SM_TEST_NOISE_PROBE = (200, 200, 300, 300)
+
+screen sm_test_noise_ui_probe():
+    zorder 500
+    add Solid("#808080") pos SM_TEST_NOISE_PROBE[:2] xysize SM_TEST_NOISE_PROBE[2:]
+
+label sm_test_noise_scene:
+    scene black
+    show screen sm_test_noise_ui_probe
+    while True:
+        pause
+
+## Зерно — единственный экран на top в меню, сцене, игровом меню и при H;
+## лежит поверх верхнего UI, а сила задаётся только конфигом.
+testcase fx_noise_single_top_layer:
+    if not screen "main_menu":
+        run MainMenu(confirm=False)
+    assert eval (sm_test_noise_single())
+
+    run Function(dev_scene_nav_start, "sm_test_noise_scene")
+    pause 0.5
+    assert eval (sm_test_noise_single())
+    $ fx_cfg_set("noise.strength", 1.0)
+    pause 0.2
+    assert eval (sm_test_noise_probe_deviation() > 10.0)
+
+    ## Каждый выключатель гасит зерно даже на полной силе; реестр и настройки
+    ## возвращают хуки testsuite global.
+    $ fx_cfg_set("noise.enabled", False)
+    pause 0.2
+    assert eval (sm_test_noise_probe_deviation() < 1.5)
+    $ fx_cfg_set("noise.enabled", True)
+    $ fx_cfg_runtime["bypass"] = True
+    pause 0.2
+    assert eval (sm_test_noise_probe_deviation() < 1.5)
+    $ fx_cfg_runtime["bypass"] = False
+    $ persistent.sm_reduce_motion = True
+    pause 0.2
+    assert eval (sm_test_noise_probe_deviation() < 1.5)
+    $ persistent.sm_reduce_motion = False
+    $ fx_cfg_set("noise.strength", 0.0)
+    pause 0.2
+    assert eval (sm_test_noise_probe_deviation() < 1.5)
+
+    keysym "K_h"
+    pause 0.3
+    assert eval (sm_test_noise_single())
+    keysym "K_h"
+    pause 0.3
+
+    run ShowMenu("preferences")
+    pause 0.5
+    assert eval (sm_test_noise_single())
+    run MainMenu(confirm=False)
+    assert screen "main_menu" timeout 5.0
+    assert eval (sm_test_noise_single())

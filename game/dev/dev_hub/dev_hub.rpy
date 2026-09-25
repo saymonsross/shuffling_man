@@ -33,7 +33,7 @@ define -30 DEV_HUB_BUILTINS = (
     ("Скриншот", "screenshot"),
 )
 
-define -30 DEV_HUB_WATCH = ("PSY_HP", "fx_noise_strength", "fx_posterize_strength")
+define -30 DEV_HUB_WATCH = ("PSY_HP", "fx_posterize_strength")
 
 
 init -5 python:
@@ -228,16 +228,21 @@ style dev_hub_card is frame:
     padding (12, 8)
     xfill True
 
-style dev_hub_title is text:
+## Шрифт движка, а не игровой gui.text_font: служебная панель читается одинаково
+## при любом оформлении игры.
+style dev_hub_text is text:
+    font "DejaVuSans.ttf"
+
+style dev_hub_title is dev_hub_text:
     size 26
     bold True
     color "#ffffff"
 
-style dev_hub_caption is text:
+style dev_hub_caption is dev_hub_text:
     size 13
     color "#888888"
 
-style dev_hub_status is text:
+style dev_hub_status is dev_hub_text:
     size 15
     color "#dddddd"
     line_spacing 3
@@ -249,20 +254,20 @@ style dev_hub_item is button:
     insensitive_background None
     xfill True
 
-style dev_hub_key is text:
+style dev_hub_key is dev_hub_text:
     size 15
     bold True
     color "#9fffcf"
     min_width 200
     insensitive_color "#4a6a5a"
 
-style dev_hub_name is text:
+style dev_hub_name is dev_hub_text:
     size 16
     color "#eeeeee"
     min_width 220
     insensitive_color "#666666"
 
-style dev_hub_about is text:
+style dev_hub_about is dev_hub_text:
     size 13
     color "#8a8a8a"
     yalign 0.5

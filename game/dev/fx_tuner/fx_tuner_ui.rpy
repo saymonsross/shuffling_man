@@ -222,38 +222,43 @@ style fxt_row is frame:
 style fxt_row_selected is fxt_row:
     background "#00ff8818"
 
-style fxt_title is text:
+## Шрифт движка, а не игровой gui.text_font: служебная панель читается одинаково
+## при любом оформлении игры.
+style fxt_text is text:
+    font "DejaVuSans.ttf"
+
+style fxt_title is fxt_text:
     size 22
     bold True
     color "#ffffff"
 
-style fxt_head is text:
+style fxt_head is fxt_text:
     size 15
     color "#cccccc"
 
-style fxt_caption is text:
+style fxt_caption is fxt_text:
     size 13
     color "#888888"
 
-style fxt_group is text:
+style fxt_group is fxt_text:
     size 18
     bold True
     color "#9fffcf"
 
-style fxt_hint is text:
+style fxt_hint is fxt_text:
     size 13
     color "#999999"
     line_spacing 2
 
-style fxt_warn is text:
+style fxt_warn is fxt_text:
     size 13
     color "#ff6b6b"
 
-style fxt_doc is text:
+style fxt_doc is fxt_text:
     size 12
     color "#7a7a7a"
 
-style fxt_value is text:
+style fxt_value is fxt_text:
     size 15
     color "#ffffff"
     min_width 60
@@ -268,6 +273,7 @@ style fxt_button is button:
     yalign 0.5
 
 style fxt_button_text is button_text:
+    font "DejaVuSans.ttf"
     size 15
     color "#dddddd"
     hover_color "#ffffff"
@@ -281,6 +287,7 @@ style fxt_name is button:
     yalign 0.5
 
 style fxt_name_text is button_text:
+    font "DejaVuSans.ttf"
     size 15
     color "#bbbbbb"
     hover_color "#ffffff"

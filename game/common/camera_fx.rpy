@@ -171,14 +171,6 @@ init -10 python:
         trans.yoffset = fy
         return 1.0 / 60.0
 
-    def noise_overlay_f(strength, relax, tension_var, trans, st, at):
-        strength = _fx_num(strength, 0.1, 0.0, 1.0)
-        if sm_reduced_motion():
-            strength = 0.0
-        relax = _fx_num(relax, 0.04, 0.001, 1.0)
-        trans.u_strength = strength * _fx_tension(tension_var, relax, "noise_tension")
-        return 1.0 / 60.0
-
     def object_jitter_f(amp, relax, key, trans, st, at):
         """Аддитивный jitter поверх ATL; key должен быть уникален для объекта."""
         if renpy.predicting():
@@ -244,22 +236,33 @@ transform mouse_follow(rx, ry, smooth=0.12, key="follow"):
     xoffset 0.0 yoffset 0.0
     function renpy.curry(mouse_follow_f)(rx, ry, smooth, key)
 
-## Зерно показано глобально; сцены меняют только fx_noise_strength.
+## Зерно — один экран на всю игру постоянной силы: вид задаёт fx_config.yaml (F10),
+## сцены его не меняют. Слой top лежит поверх всех слоёв и меню и не участвует в
+## переходах, camera и постеризации. Он очищается в каждом новом контексте (меню, H),
+## а always_shown сразу показывает экран снова — копия всегда ровно одна.
+init -10 python:
+
+    fx_param("noise.enabled", True, doc="включить зерно")
+    fx_param("noise.strength", 0.10, 0.0, 1.0, step=0.01, doc="сила зерна поверх всей игры")
+    fx_group("noise", "Зерно")
+
+    def noise_overlay_f(trans, st, at):
+        on = fx_cfg("noise.enabled") and not fx_cfg_bypassed() and not sm_reduced_motion()
+        trans.u_strength = fx_cfg("noise.strength") if on else 0.0
+        ## Кадр нужен каждый раз: u_random шейдера меняется только при перерисовке.
+        return 1.0 / 60.0
+
 image fx_noise = Solid("#FFF")
 
-transform noise_overlay(strength=0.1, relax=0.04, tension_var=None):
+transform noise_overlay():
     mesh True
     shader "sm.noise"
     u_strength 0.0
-    function renpy.curry(noise_overlay_f)(strength, relax, tension_var)
+    function noise_overlay_f
 
-## После сцены возвращать силу зерна к FX_NOISE_DEFAULT.
-define FX_NOISE_DEFAULT = 0.10
-default fx_noise_strength = FX_NOISE_DEFAULT
-
-## always_shown переживает очистку master через scene.
 screen fx_noise_screen():
-    add "fx_noise" at noise_overlay(1.0, tension_var="fx_noise_strength")
+    layer "top"
+    add "fx_noise" at noise_overlay
 
 init python:
     config.always_shown_screens.append("fx_noise_screen")

@@ -48,7 +48,6 @@ define NOTE_HAND_LINE_START_POS = (767, 158)
 define NOTE_HAND_TO_LINE_T = 1.1
 
 define NOTE_HAND_JITTER_AMP = 3.0      # px
-define NOTE_WRITE_TENSION_NOISE = 0.2
 
 define PENCIL_CLOSE_SHAKE_AMP = 1.5
 

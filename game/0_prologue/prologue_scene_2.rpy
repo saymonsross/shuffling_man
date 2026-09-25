@@ -46,7 +46,6 @@ label prologue_scene_2:
 
     ## Общий jitter_key сохраняет непрерывность дрожи между позами.
     $ dismiss_off()
-    $ fx_noise_strength = NOTE_WRITE_TENSION_NOISE
     $ pause(0.5)
     hide prologue_hand_right
     show prologue_hand_right_move at slide_in(NOTE_HAND_RIGHT_POS, NOTE_HAND_AT_PENCIL_POS, t=NOTE_HAND_REACH_T, jitter_amp=NOTE_HAND_JITTER_AMP, jitter_key="note_hand")
@@ -70,7 +69,5 @@ label prologue_scene_2:
     "Я не осмелюсь вернуться к карандашу и бумаге позже."
     "Это будет моя последняя попытка. Спринтерский забег."
     "Я Расскажу всё на одном дыхании. Здесь и сейчас."
-
-    $ fx_noise_strength = FX_NOISE_DEFAULT
 
     return

@@ -27,9 +27,11 @@ init python:
         """)
 
 init python:
+    ## Кадр зерна задаёт u_random: u_time растёт до 86400 во float32 и по мере
+    ## роста теряет точность — рисунок зерна со временем беднел бы.
     renpy.register_shader("sm.noise",
         variables="""
-        uniform float u_time;
+        uniform vec4 u_random;
         uniform float u_strength;
         attribute vec2 a_tex_coord;
         varying vec2 v_tex_coord;
@@ -38,7 +40,7 @@ init python:
         v_tex_coord = a_tex_coord;
         """,
         fragment_300="""
-        vec2 uv = v_tex_coord + fract(u_time * 61.7);
+        vec2 uv = v_tex_coord + u_random.xy;
         float n = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
         float a = u_strength * n;
         gl_FragColor = vec4(vec3(n) * a, a);

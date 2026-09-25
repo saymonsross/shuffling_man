@@ -66,7 +66,6 @@ define C1S1_MG_SETTLE_T = 0.35
 
 define C1S1_MG_OVERLAY_ALPHA = 0.72
 define C1S1_MG_OVERLAY_T = 0.9
-define C1S1_MG_NOISE = 0.34     # выше FX_NOISE_DEFAULT
 
 define C1S1_LOCKS_BTN_POS = (960, 540)
 define C1S1_LOCKS_BTN_SIZE = (430, 190)
@@ -1181,7 +1180,6 @@ label chapter_1_scene_1_minigame_locks:
 
     ## Оверлей отделяет сцену двери от моделей замков.
     show chapter_1_mg_overlay zorder C1S1_Z_MG_OVERLAY at c1s1_mg_overlay_in()
-    $ fx_noise_strength = C1S1_MG_NOISE
     $ pause(C1S1_MG_OVERLAY_T)
 
     ## Замки открываются по C1S1_MG_LOCK_ORDER без остановки часов и стука.
@@ -1194,7 +1192,6 @@ label chapter_1_scene_1_minigame_locks:
 
     ## Возврат к сцене.
     $ c1s1_mg_knocking = False
-    $ fx_noise_strength = FX_NOISE_DEFAULT
     show chapter_1_mg_overlay zorder C1S1_Z_MG_OVERLAY at c1s1_mg_overlay_out()
     $ pause(C1S1_MG_OVERLAY_T)
     hide chapter_1_mg_overlay
