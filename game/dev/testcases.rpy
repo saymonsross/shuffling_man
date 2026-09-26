@@ -41,23 +41,6 @@ testcase c1s1_metronome_motion:
     $ persistent.sm_reduce_motion = reduce_motion
     run Function(dev_scene_nav_start, "chapter_1_scene_1")
     assert screen "c1s1_lamp_switch" timeout 8.0
-    ## Виртуальный курсор тестов не меняет координаты, которые читает GL renderer.
-    python hide:
-        original_mouse_pos = renpy.get_mouse_pos
-        try:
-            for mouse_x, direction in ((100, 1), (1800, -1)):
-                renpy.get_mouse_pos = lambda x=mouse_x: (x, 100)
-                key = "_sm_test_camera_" + str(mouse_x)
-                focus_parallax_f(C1S1_LAMP_FOCUS, None, C1S1_SCENE_PARALLAX,
-                    1.0, key, Transform(zoom=1.0), 0.0, 0.0)
-                offset = _fx_state[key + "_px"]
-                if sm_reduced_motion():
-                    assert offset == 0.0
-                else:
-                    assert offset * direction > 1.0
-        finally:
-            renpy.get_mouse_pos = original_mouse_pos
-
     click "Зажечь свет"
     assert screen "c1s1_metronome_start" timeout 15.0
     click "Завести метроном"

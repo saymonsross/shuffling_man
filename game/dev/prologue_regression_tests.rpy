@@ -13,8 +13,8 @@ testcase prologue_note_start_pickup_restore:
     assert eval (not sprite_showed('prologue_hand_right_write'))
     python hide:
         x, y, w, h = get_sprite_bounds("prologue_note_pencil")
-        assert abs(x + w / 2.0 - NOTE_PENCIL_NEAT_POS[0]) < 2.0
-        assert abs(y + h / 2.0 - NOTE_PENCIL_NEAT_POS[1]) < 2.0
+        assert abs(x + w / 2.0 - 1264) < 2.0
+        assert abs(y + h / 2.0 - 431) < 2.0
 
     move pos (100, 100)
     assert eval (not note_hover_pencil) timeout 1.0

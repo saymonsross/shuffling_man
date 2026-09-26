@@ -71,9 +71,11 @@ testcase fx_smoothing_frame_time:
             rng = sm_visual_rng.getstate()
             renpy.predicting = lambda: True
             _fx_step("sm_test_prediction", lambda: _fx_visual_jitter(4.0), 0.5, 0.0)
-            mouse_parallax_f(10.0, 0.06, 4.0, 0.04, None, "sm_test_prediction", Transform(), 0.0, 0.0)
-            focus_parallax_f((0.44, 0.44), None, 10.0, 0.06, "sm_test_prediction", Transform(zoom=1.14), 0.0, 0.0)
-            c1s1_mg_camera_f(10.0, 0.06, "sm_test_prediction", Transform(), 0.0, 0.0)
+            camera_shake_f(4.0, 0.04, None, "sm_test_prediction", Transform(), 0.0, 0.0)
+            focus_camera_f((0.44, 0.44), None, "sm_test_prediction", Transform(zoom=1.14), 0.0, 0.0)
+            c1s1_mg_camera_f("sm_test_prediction", Transform(), 0.0, 0.0)
+            parallax_bg_f(Transform(), 0.0, 0.0)
+            parallax_near_f(Transform(), 0.0, 0.0)
             object_jitter_f(4.0, 0.5, "sm_test_prediction", Transform(), 0.0, 0.0)
             c1s1_mg_bag_f(Transform(), 0.0, 0.0)
             assert _fx_state == state and sm_visual_rng.getstate() == rng
@@ -96,9 +98,9 @@ testcase fx_camera_snapshot:
             key = "sm_test_snapshot"
             for zoom_value in (1.04, 1.09, 1.14):
                 camera_transform = Transform(zoom=zoom_value, rotate=0.0)
-                focus_parallax_f(C1S1_LAMP_FOCUS, None, 10.0, 0.06, key, camera_transform, 0.0, 0.0)
+                focus_camera_f(C1S1_LAMP_FOCUS, None, key, camera_transform, 0.0, 0.0)
                 widget = Transform(zoom=1.02)
-                follow_camera_f(key, widget, 0.0, 0.0)
+                follow_camera_f(key, 1.02, widget, 0.0, 0.0)
                 bx, by = _focus_offset(C1S1_LAMP_FOCUS, None, zoom_value)
                 assert widget.zoom == zoom_value
                 assert abs(widget.xoffset - bx) < 0.000001
@@ -106,8 +108,8 @@ testcase fx_camera_snapshot:
 
             ## Новая камера двери не должна наследовать zoom/focus из снимка лампы.
             camera_transform = Transform(zoom=C1S1_MG_ZOOM, rotate=0.0)
-            c1s1_mg_camera_f(8.0, 0.06, key, camera_transform, 0.0, 0.0)
-            follow_camera_f(key, widget, 0.0, 0.0)
+            c1s1_mg_camera_f(key, camera_transform, 0.0, 0.0)
+            follow_camera_f(key, 1.02, widget, 0.0, 0.0)
             assert widget.zoom == C1S1_MG_ZOOM
             assert widget.xoffset == camera_transform.xoffset
             assert widget.yoffset == camera_transform.yoffset
@@ -170,3 +172,70 @@ testcase c1s1_camera_ui_alignment:
     assert screen "c1s1_locks_minigame" timeout 10.0
     assert eval (c1s1_mg_active and c1s1_mg_knocking)
     run MainMenu(confirm=False)
+
+## Под test параллакс выключен ради эталонных кадров, поэтому здесь он включается подменой.
+testcase parallax_layer_follow:
+    parameter reduce_motion = [False, True]
+
+    $ persistent.sm_reduce_motion = reduce_motion
+    python hide:
+        original_clock = _fx_frame_time
+        original_active = sm_parallax_active
+        original_mouse_pos = renpy.get_mouse_pos
+        original_state = dict(_fx_state)
+        clock = [0.0]
+        w, h = config.screen_width, config.screen_height
+        try:
+            store._fx_frame_time = lambda value=clock: value[0]
+            store.sm_parallax_active = lambda: True
+            renpy.get_mouse_pos = lambda: (0, 0)
+            for state_key in list(_fx_state):
+                name = state_key[0] if isinstance(state_key, tuple) else state_key
+                if name in ("parallax_level", "parallax_mx", "parallax_my"):
+                    del _fx_state[state_key]
+
+            layer = Transform()
+            for frame in range(120):
+                clock[0] += 1.0 / 60.0
+                parallax_bg_f(layer, 0.0, 0.0)
+                assert w * (layer.zoom - 1.0) / 2.0 >= abs(layer.xoffset) - 0.000001
+                assert h * (layer.zoom - 1.0) / 2.0 >= abs(layer.yoffset) - 0.000001
+            near = Transform()
+            parallax_near_f(near, 0.0, 0.0)
+            if sm_reduced_motion():
+                assert layer.zoom == 1.0 and layer.xoffset == 0.0 and layer.yoffset == 0.0
+                assert near.xoffset == 0.0 and near.yoffset == 0.0
+            else:
+                ## Мышь в левом верхнем углу: слой уходит вправо-вниз, ближний план — дальше.
+                assert layer.zoom > 1.0 and layer.xoffset > 10.0 and layer.yoffset > 5.0
+                assert near.xoffset > 1.0 and near.yoffset > 0.5
+
+            ## World-space UI попадает туда же, куда камера и слой переносят точку мира.
+            key = "sm_test_parallax_cam"
+            camera_transform = Transform(zoom=1.1, rotate=0.0)
+            focus_camera_f(C1S1_LAMP_FOCUS, None, key, camera_transform, 0.0, 0.0)
+            widget = Transform()
+            follow_camera_f(key, 1.02, widget, 0.0, 0.0)
+            for qx, qy in ((300.0, 200.0), (1700.0, 950.0)):
+                sx = w / 2.0 + camera_transform.zoom * (qx - w / 2.0) + camera_transform.xoffset
+                sy = h / 2.0 + camera_transform.zoom * (qy - h / 2.0) + camera_transform.yoffset
+                sx = w / 2.0 + layer.zoom * (sx - w / 2.0) + layer.xoffset
+                sy = h / 2.0 + layer.zoom * (sy - h / 2.0) + layer.yoffset
+                ux = w / 2.0 + widget.zoom * (qx - w / 2.0) + widget.xoffset
+                uy = h / 2.0 + widget.zoom * (qy - h / 2.0) + widget.yoffset
+                assert abs(sx - ux) < 0.001 and abs(sy - uy) < 0.001, (sx, ux, sy, uy)
+
+            ## Выключение гасит сдвиг и зум вместе: край кадра не открывается.
+            store.sm_parallax_active = lambda: False
+            for frame in range(600):
+                clock[0] += 1.0 / 60.0
+                parallax_bg_f(layer, 0.0, 0.0)
+                assert w * (layer.zoom - 1.0) / 2.0 >= abs(layer.xoffset) - 0.000001
+                assert h * (layer.zoom - 1.0) / 2.0 >= abs(layer.yoffset) - 0.000001
+            assert abs(layer.zoom - 1.0) < 0.0001 and abs(layer.xoffset) < 0.01
+        finally:
+            store._fx_frame_time = original_clock
+            store.sm_parallax_active = original_active
+            renpy.get_mouse_pos = original_mouse_pos
+            _fx_state.clear()
+            _fx_state.update(original_state)

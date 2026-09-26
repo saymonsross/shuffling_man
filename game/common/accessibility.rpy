@@ -3,6 +3,8 @@
 default persistent.sm_reduce_motion = False
 default persistent.sm_disable_flashes = False
 default persistent.sm_simplified_locks = False
+## Без мыши курсор прыгает к точке касания — там параллакс по умолчанию выключен.
+default persistent.sm_parallax = bool(renpy.variant("pc") or renpy.variant("web"))
 
 init -20 python:
 

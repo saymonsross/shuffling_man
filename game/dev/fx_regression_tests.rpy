@@ -4,6 +4,12 @@
 ## Однотонные плашки: центры не зависят от масштабирования кадра, поэтому
 ## ожидаемый байт считается по формуле шейдера точно. Цвета не лежат на
 ## границах ступеней для steps 4/5 и gamma 1/2.
+## Накопители и сюжетные переменные эффектов слоя, которые тесты трогают напрямую.
+define SM_TEST_FX_LEVELS = ("posterize_level", "pixelate_level")
+define SM_TEST_FX_STRENGTHS = ("fx_posterize_strength", "fx_pixelate_strength")
+## Детальный фон: у плашек центры однотонные, пикселизация их не меняет.
+define SM_TEST_PIXEL_BG = "images/1_chapter/chapter_1 scene_3_children_room_girl_neutral.jpg"
+
 define SM_TEST_SWATCHES = (
     (0.30, 0.55, 0.90), (0.10, 0.45, 0.70), (0.99, 0.22, 0.62),
     (1.0, 1.0, 1.0), (0.0, 0.0, 0.0), (0.26, 0.74, 0.51),
@@ -27,23 +33,38 @@ init python:
         """Снимок реестра и накопителей: rollback и MainMenu их не возвращают."""
         return (python_dict(_fxc_values), python_dict(_fxc_saved), python_dict(_fxc_file),
                 python_list(fx_cfg_warnings), python_dict(fx_cfg_runtime),
-                _fx_state.get("posterize_level"),
-                getattr(store, "fx_posterize_strength", None), fxt_model.status)
+                python_dict((k, _fx_state.get(k)) for k in SM_TEST_FX_LEVELS),
+                python_dict((v, getattr(store, v, None)) for v in SM_TEST_FX_STRENGTHS),
+                fxt_model.status)
 
     def sm_test_fx_restore(snap):
-        values, saved, file_, warnings, runtime, level, strength, status = snap
+        values, saved, file_, warnings, runtime, levels, strengths, status = snap
         pairs = ((_fxc_values, values), (_fxc_saved, saved), (_fxc_file, file_), (fx_cfg_runtime, runtime))
         for target, source in pairs:
             target.clear()
             target.update(source)
         fx_cfg_warnings[:] = warnings
-        if level is None:
-            _fx_state.pop("posterize_level", None)
-        else:
-            _fx_state["posterize_level"] = level
-        if strength is not None:
-            store.fx_posterize_strength = strength
+        for key, level in levels.items():
+            if level is None:
+                _fx_state.pop(key, None)
+            else:
+                _fx_state[key] = level
+        for var, strength in strengths.items():
+            if strength is not None:
+                setattr(store, var, strength)
         fxt_model.status = status
+
+    def sm_test_cell_pairs(surface, size):
+        """Пары точек внутри одной ячейки пикселизации: ячейки центрированы на k*size."""
+        scale = surface.get_width() / 1920.0
+        d = max(1, int(size * 0.3))
+        pairs = python_list()
+        for cy in range(size * 2, 1080 - size * 2, size * 3):
+            for cx in range(size * 2, 1920 - size * 2, size * 3):
+                a = surface.get_at((int((cx - d) * scale), int((cy - d) * scale)))
+                b = surface.get_at((int((cx + d) * scale), int((cy + d) * scale)))
+                pairs.append(max(abs(i - j) for i, j in zip(a[:3], b[:3])) <= 2)
+        return sum(pairs) / float(len(pairs))
 
     def sm_test_expect_error(text):
         try:
@@ -277,6 +298,7 @@ testcase fx_posterize_layer_modes:
         fixture = sm_test_swatches()
         raw = sm_test_render(fixture)
         _fx_state["posterize_level"] = 1.0
+        fx_cfg_set("pixelate.enabled", False)
         fx_cfg_set("posterize.steps", 4)
         fx_cfg_set("posterize.mix", 1.0)
         fx_cfg_set("posterize.gamma", 1.0)
@@ -284,7 +306,7 @@ testcase fx_posterize_layer_modes:
 
         ## python hide исполняется через exec: вложенным функциям локали передаются явно.
         def errors(scope, steps=None, fixture=fixture, raw=raw):
-            post = sm_test_render(At(fixture, posterize_layer(scope)))
+            post = sm_test_render(At(fixture, fx_layer(scope)))
             return sm_test_swatch_errors(raw, post, steps)
 
         fx_cfg_set("posterize.enabled", False)
@@ -307,11 +329,11 @@ testcase fx_posterize_layer_modes:
         assert not errors("scene", 4), "preview ignored"
 
     python hide:
-        world = [name for name in config.layers if name not in FX_POSTERIZE_UI_LAYERS]
+        world = [name for name in config.layers if name not in FX_LAYER_UI_LAYERS]
         assert "master" in world and "lockgame" in world, world
         for name in world:
             assert config.layer_transforms.get(name), name
-        for name in FX_POSTERIZE_UI_LAYERS:
+        for name in FX_LAYER_UI_LAYERS:
             assert not config.layer_transforms.get(name), name
         assert config.layer_transforms.get(None)
 
@@ -323,6 +345,7 @@ testcase fx_posterize_live_frame:
     python hide:
         ## Зерно лежит поверх всего кадра: для чистых пикселей его гасим.
         fx_cfg_set("noise.strength", 0.0)
+        fx_cfg_set("pixelate.enabled", False)
         _fx_state["posterize_level"] = 1.0
         fx_cfg_set("posterize.steps", 4)
         fx_cfg_set("posterize.mix", 1.0)
@@ -508,3 +531,90 @@ testcase fx_noise_steps:
         assert len(grey) + len(white) > len(values) * 0.98, sorted(set(values))[:40]
         assert grey and white, (len(grey), len(white))
     run MainMenu(confirm=False)
+
+## Пикселизация: внутри ячейки цвет один, исходный детальный фон — нет.
+testcase fx_pixelate_shader:
+    python hide:
+        raw = sm_test_render(SM_TEST_PIXEL_BG)
+        assert sm_test_cell_pairs(raw, 40) < 0.5, "fixture is too flat"
+        cells = sm_test_render(At(SM_TEST_PIXEL_BG, pixelate(40)))
+        assert sm_test_cell_pairs(cells, 40) > 0.95, sm_test_cell_pairs(cells, 40)
+        first = pixelate(40)(child=SM_TEST_PIXEL_BG)
+        sm_test_render(first)
+        off = pixelate_off(child=SM_TEST_PIXEL_BG)
+        off.take_state(first)
+        assert sm_test_cell_pairs(sm_test_render(off), 40) < 0.5, "pixelate_off kept the shader"
+
+testcase fx_pixelate_layer_modes:
+    python hide:
+        _fx_state["pixelate_level"] = 1.0
+        fx_cfg_set("posterize.enabled", False)
+        fx_cfg_set("pixelate.size", 40)
+        fx_cfg_set("pixelate.scope", "scene")
+
+        def share(scope):
+            return sm_test_cell_pairs(sm_test_render(At(SM_TEST_PIXEL_BG, fx_layer(scope))), 40)
+
+        fx_cfg_set("pixelate.enabled", False)
+        assert share("scene") < 0.5, "disabled effect changed the frame"
+        fx_cfg_set("pixelate.enabled", True)
+        assert share("scene") > 0.95, share("scene")
+        assert share("screen") < 0.5, "inactive scope changed the frame"
+
+        fx_cfg_runtime["bypass"] = True
+        assert share("scene") < 0.5, "A/B bypass kept the effect"
+        fx_cfg_runtime["bypass"] = False
+
+        ## Цель 0 при накопителе 0: сглаживание не сдвигает силу между кадрами.
+        store.fx_pixelate_strength = 0.0
+        _fx_state["pixelate_level"] = 0.0
+        assert share("scene") < 0.5, "scene strength 0 kept the effect"
+        store.fx_pixelate_strength = 1.0
+        _fx_state["pixelate_level"] = 1.0
+
+        ## Оба эффекта одного охвата — один проход: ячейки остаются однотонными.
+        _fx_state["posterize_level"] = 1.0
+        fx_cfg_set("posterize.enabled", True)
+        fx_cfg_set("posterize.scope", "scene")
+        fx_cfg_set("posterize.steps", 4)
+        fx_cfg_set("posterize.mix", 1.0)
+        assert share("scene") > 0.95, "pixelate lost in the combined pass"
+
+## Ретушь: центры плашек совпадают с формулой шейдера; нейтральные значения кадр не трогают.
+testcase fx_grade_layer:
+    python hide:
+        fixture = sm_test_swatches()
+        raw = sm_test_render(fixture)
+        fx_cfg_set("posterize.enabled", False)
+        fx_cfg_set("pixelate.enabled", False)
+        fx_cfg_set("grade.enabled", True)
+        fx_cfg_set("grade.scope", "scene")
+        fx_cfg_set("grade.brightness", 0.0)
+        fx_cfg_set("grade.contrast", 1.0)
+        fx_cfg_set("grade.saturation", 1.0)
+        assert not sm_test_swatch_errors(raw, sm_test_render(At(fixture, fx_layer("scene")))), "identity grade changed the frame"
+
+        b, k, sat = 0.1, 1.4, 0.5
+        fx_cfg_set("grade.brightness", b)
+        fx_cfg_set("grade.contrast", k)
+        fx_cfg_set("grade.saturation", sat)
+        post = sm_test_render(At(fixture, fx_layer("scene")))
+        scale = raw.get_width() / 1920.0
+        for x, y in sm_test_swatch_centers():
+            point = (int(x * scale), int(y * scale))
+            src = [c / 255.0 for c in raw.get_at(point)[:3]]
+            rgb = [(c + b - 0.5) * k + 0.5 for c in src]
+            lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+            want = [min(max(lum + (c - lum) * sat, 0.0), 1.0) * 255 for c in rgb]
+            got = post.get_at(point)[:3]
+            assert all(abs(g - w) <= 2 for g, w in zip(got, want)), (point, got, want)
+        assert not sm_test_swatch_errors(raw, sm_test_render(At(fixture, fx_layer("screen")))), "inactive scope changed the frame"
+
+        ## Все эффекты слоя вместе: их части компилируются в один шейдер.
+        fx_cfg_set("pixelate.enabled", True)
+        fx_cfg_set("pixelate.scope", "scene")
+        fx_cfg_set("posterize.enabled", True)
+        fx_cfg_set("posterize.scope", "scene")
+        _fx_state["posterize_level"] = 1.0
+        _fx_state["pixelate_level"] = 1.0
+        sm_test_render(At(fixture, fx_layer("scene")))

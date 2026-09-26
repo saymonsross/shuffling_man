@@ -84,16 +84,18 @@ init python:
         uniform float u_posterize_gamma;
         """,
         fragment_400="""
-        vec4 c = gl_FragColor;
-        if (c.a > 0.0) {
-            vec3 rgb = clamp(c.rgb / c.a, 0.0, 1.0);
-            float s = max(u_posterize_steps, 2.0);
-            float g = max(u_posterize_gamma, 0.01);
-            bool exact = abs(g - 1.0) < 0.0001;
-            vec3 base = exact ? rgb : pow(rgb, vec3(1.0 / g));
-            vec3 q = min(floor(base * s) / (s - 1.0), 1.0);
-            q = exact ? q : pow(q, vec3(g));
-            gl_FragColor = vec4(mix(rgb, q, clamp(u_posterize_mix, 0.0, 1.0)) * c.a, c.a);
+        {
+            vec4 c = gl_FragColor;
+            if (c.a > 0.0) {
+                vec3 rgb = clamp(c.rgb / c.a, 0.0, 1.0);
+                float s = max(u_posterize_steps, 2.0);
+                float g = max(u_posterize_gamma, 0.01);
+                bool exact = abs(g - 1.0) < 0.0001;
+                vec3 base = exact ? rgb : pow(rgb, vec3(1.0 / g));
+                vec3 q = min(floor(base * s) / (s - 1.0), 1.0);
+                q = exact ? q : pow(q, vec3(g));
+                gl_FragColor = vec4(mix(rgb, q, clamp(u_posterize_mix, 0.0, 1.0)) * c.a, c.a);
+            }
         }
         """)
 
@@ -104,8 +106,66 @@ transform posterize(steps=5, mix=1.0, gamma=1.0):
     u_posterize_mix float(mix)
     u_posterize_gamma float(gamma)
 
+init python:
+    ## Порт Pixelate.shader из nubick/unity-utils (MIT, © nubick):
+    ## uv / cell → round → * cell. Ячейка задаётся в пикселях модели, а не в долях
+    ## uv, чтобы на 16:9 она оставалась квадратной; round — floor(x + 0.5), его
+    ## нет в GLSL ES 1.0. Приоритет 250: после renpy.texture и до постеризации.
+    renpy.register_shader("sm.pixelate",
+        variables="""
+        uniform sampler2D tex0;
+        uniform vec2 u_model_size;
+        uniform float u_pixelate_size;
+        attribute vec2 a_tex_coord;
+        varying vec2 v_tex_coord;
+        """,
+        vertex_300="""
+        v_tex_coord = a_tex_coord;
+        """,
+        fragment_250="""
+        {
+            vec2 cell = max(u_pixelate_size, 1.0) / u_model_size;
+            vec2 stepped = floor(v_tex_coord / cell + 0.5) * cell;
+            gl_FragColor = texture2D(tex0, stepped);
+        }
+        """)
+
+init python:
+    ## Тела фрагментов в { }: части шейдеров слоя склеиваются в один main(),
+    ## одноимённые локальные переменные иначе конфликтуют.
+    ## Базовая ретушь: яркость → контраст вокруг 0.5 → насыщенность (яркость по Rec.709).
+    ## Считается по чистому цвету; приоритет 300 — после пикселизации, до постеризации.
+    renpy.register_shader("sm.grade",
+        variables="""
+        uniform float u_grade_brightness;
+        uniform float u_grade_contrast;
+        uniform float u_grade_saturation;
+        """,
+        fragment_300="""
+        {
+            vec4 c = gl_FragColor;
+            if (c.a > 0.0) {
+                vec3 rgb = c.rgb / c.a + u_grade_brightness;
+                rgb = (rgb - 0.5) * u_grade_contrast + 0.5;
+                float lum = dot(rgb, vec3(0.2126, 0.7152, 0.0722));
+                rgb = clamp(mix(vec3(lum), rgb, u_grade_saturation), 0.0, 1.0);
+                gl_FragColor = vec4(rgb * c.a, c.a);
+            }
+        }
+        """)
+
+transform pixelate(size=8):
+    mesh True
+    shader "sm.pixelate"
+    u_pixelate_size float(size)
+
 ## show … at снова наследует mesh/shader прошлого трансформа — снимать явно.
+## Снимает любой шейдер трансформа: и posterize, и pixelate.
 transform posterize_off:
+    mesh False
+    shader None
+
+transform pixelate_off:
     mesh False
     shader None
 

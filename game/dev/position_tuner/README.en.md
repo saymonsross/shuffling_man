@@ -125,9 +125,10 @@ you need and then just waits (see `dev_position_sandbox` in
 ## Limitations
 
 - **Camera.** Outlines and the ghost are drawn in base screen coordinates and
-  do not follow the scene's `camera` transforms (zoom, parallax, frame tilt).
+  do not follow the scene's `camera` transforms (zoom, frame tilt).
   The numbers are still correct — they are exactly what `pos` expects — but the
   drawing can drift from what you see. Use a camera-free sandbox for precision.
+  The `master` layer parallax (`common/parallax.rpy`) is off while the tuner is open.
 - **Animation.** A moving sprite's readout changes every frame. That is honest,
   but there is nothing to tune; stop the scene on the frame you need.
 - **Exotic positioning.** `xalign` / `xcenter` / `xoffset` and friends are

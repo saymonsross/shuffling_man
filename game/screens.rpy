@@ -308,7 +308,7 @@ screen main_menu():
 
     tag menu
 
-    add gui.main_menu_background
+    add gui.main_menu_background at parallax_bg()
 
     frame:
         style "main_menu_frame"
@@ -364,7 +364,7 @@ screen game_menu(title, scroll=None, yinitial=0.0, spacing=0):
     style_prefix "game_menu"
 
     if main_menu:
-        add gui.main_menu_background
+        add gui.main_menu_background at parallax_bg()
     else:
         add gui.game_menu_background
 
@@ -679,6 +679,7 @@ screen preferences():
                 style "sm_accessibility_vbox"
                 label _("Доступность")
                 textbutton _("Меньше движения") action ToggleField(persistent, "sm_reduce_motion")
+                textbutton _("Параллакс") action ToggleField(persistent, "sm_parallax")
                 textbutton _("Без вспышек") action ToggleField(persistent, "sm_disable_flashes")
                 textbutton _("Простые мини-игры") action ToggleField(persistent, "sm_simplified_locks")
                 textbutton _("Текст и синтез речи") action Preference("accessibility menu")

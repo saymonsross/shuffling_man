@@ -1,5 +1,5 @@
 ## Мини-игра «Замки»: щеколда → большой замок → дверная ручка.
-## master продолжает сцену и стук; lockgame изолирует модели от камеры;
+## master продолжает сцену и стук; lockgame изолирует модели от камеры и параллакса;
 ## screens захватывает ввод. Timer меняет default-backed модель, трансформы её читают.
 
 ## Слой мини-игры
@@ -67,7 +67,6 @@ define C1S1_MG_SETTLE_T = 0.35
 define C1S1_MG_OVERLAY_ALPHA = 0.72
 define C1S1_MG_OVERLAY_T = 0.9
 
-define C1S1_LOCKS_BTN_POS = (960, 540)
 define C1S1_LOCKS_BTN_SIZE = (430, 190)
 define C1S1_LOCKS_BTN_RATTLE = (18, 8)
 define C1S1_LOCKS_BTN_TILT = 2.0
@@ -463,35 +462,25 @@ init -5 python:
 
     ## Камера
 
-    def c1s1_mg_camera_f(strength, smooth, key, trans, st, at):
-        """Сводит параллакс и shake в общие _fx_state-ключи камеры двери."""
+    def c1s1_mg_camera_f(key, trans, st, at):
+        """Держит фокус на замках и сводит shake в общие _fx_state-ключи камеры двери."""
         if renpy.predicting():
             return 1.0 / 60.0
-        strength = _fx_num(strength, 10.0, 0.0)
         bx, by = _focus_offset(C1S1_LOCKS_FOCUS, None, trans.zoom or 1.0)
         if sm_reduced_motion():
-            for suffix in ("_px", "_py", "_jx", "_jy"):
+            for suffix in ("_jx", "_jy"):
                 _fx_state[key + suffix] = 0.0
             trans.xoffset = bx
             trans.yoffset = by
             _fx_publish_camera(key, trans)
             return 1.0 / 60.0
-        if not FX_MOUSE_PARALLAX_ON:
-            strength = 0.0
-        smooth = _fx_num(smooth, 0.06, 0.001, 1.0)
-
-        mx, my = renpy.get_mouse_pos()
-        tx = -(mx / float(config.screen_width) - 0.5) * 2.0 * strength
-        ty = -(my / float(config.screen_height) - 0.5) * 2.0 * strength
-        px = _fx_step(key + "_px", tx, smooth, start=0.0)
-        py = _fx_step(key + "_py", ty, smooth, start=0.0)
 
         sy = c1s1_mg_shake_offset()
         _fx_state[key + "_jx"] = 0.0
         _fx_state[key + "_jy"] = sy
 
-        trans.xoffset = bx + px
-        trans.yoffset = by + py + sy
+        trans.xoffset = bx
+        trans.yoffset = by + sy
         _fx_publish_camera(key, trans)
         return 1.0 / 60.0
 
@@ -964,14 +953,14 @@ transform c1s1_mg_button_rattle():
     function c1s1_mg_button_rattle_f
 
 ## Начальный zoom наследуется для плавной склейки; rotate сбрасывается явно.
-transform c1s1_mg_camera(z1=C1S1_MG_ZOOM, t=C1S1_MG_SETTLE_T, strength=8.0, smooth=0.06, key="cam"):
+transform c1s1_mg_camera(z1=C1S1_MG_ZOOM, t=C1S1_MG_SETTLE_T, key="cam"):
     subpixel True
     align (0.5, 0.5)
     rotate 0.0
     parallel:
         ease sm_motion_time(t) zoom z1
     parallel:
-        function renpy.curry(c1s1_mg_camera_f)(strength, smooth, key)
+        function renpy.curry(c1s1_mg_camera_f)(key)
 
 transform c1s1_mg_overlay_in(a=C1S1_MG_OVERLAY_ALPHA, t=C1S1_MG_OVERLAY_T):
     align (0.5, 0.5)
@@ -1069,7 +1058,7 @@ screen c1s1_locks_open_door():
             Return("done"),
             bg="dark",
             pulse="alarm",
-            pos=C1S1_LOCKS_BTN_POS,
+            pos=(960, 540),
             size=C1S1_LOCKS_BTN_SIZE,
             visual_at=c1s1_mg_button_rattle())
 
