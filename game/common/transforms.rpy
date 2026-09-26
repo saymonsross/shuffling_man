@@ -24,6 +24,19 @@ transform placed_jitter(pos_xy, anchor_xy=(0.0, 0.0), jitter_amp=3.0, jitter_key
     xoffset 0.0 yoffset 0.0
     function renpy.curry(object_jitter_f)(jitter_amp, 0.5, jitter_key)
 
+init -10 python:
+
+    def _shake_f(power, trans, st, at):
+        ## Накопитель привязан к картинке спрайта: она живёт, пока спрайт показан,
+        ## а обёртка-трансформ пересоздаётся.
+        return object_jitter_f(power, 0.5, "shake_%d" % id(trans.child or trans), trans, st, at)
+
+## Дрожь спрайта поверх его позиции: `at placed(...), shake(1.5)`; power — размах, px.
+transform shake(power=1.5):
+    subpixel True
+    xoffset 0.0 yoffset 0.0
+    function renpy.curry(_shake_f)(power)
+
 transform move_between(from_xy, to_xy, t=0.8, jitter_amp=0.0, jitter_key="move_between"):
     subpixel True
     anchor (0.0, 0.0)

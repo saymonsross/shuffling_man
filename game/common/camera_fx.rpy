@@ -248,6 +248,10 @@ default fx_posterize_strength = FX_POSTERIZE_DEFAULT
 define FX_PIXELATE_DEFAULT = 1.0
 default fx_pixelate_strength = FX_PIXELATE_DEFAULT
 
+## Аберрация — так же: сила по сюжету fx_chroma_strength (0..1, множитель к смещениям).
+define FX_CHROMA_DEFAULT = 1.0
+default fx_chroma_strength = FX_CHROMA_DEFAULT
+
 ## Охват scene — все слои config.layers, кроме UI: новый слой мира (как lockgame
 ## у мини-игры замков) получает эффекты сам, если добавлен в init.
 ## forever — экраны 7dots show_forever, которые не прячутся по H.
@@ -279,6 +283,15 @@ init -10 python:
     fx_param("grade.contrast", 1.0, 0.0, 2.0, step=0.01, doc="контраст: 1 — без изменений")
     fx_param("grade.saturation", 1.0, 0.0, 2.0, step=0.01, doc="насыщенность: 0 — ч/б, 1 — без изменений")
 
+    fx_param("chroma.enabled", False, doc="включить хроматическую аберрацию")
+    fx_param("chroma.scope", "scene", choices=("scene", "screen"),
+        doc="scene — сцена без UI, screen — весь экран с UI")
+    fx_param("chroma.red", 0.009, -0.05, 0.05, step=0.001, doc="смещение красного от центра; 0 — на месте")
+    fx_param("chroma.green", 0.006, -0.05, 0.05, step=0.001, doc="смещение зелёного от центра")
+    fx_param("chroma.blue", -0.006, -0.05, 0.05, step=0.001, doc="смещение синего от центра")
+    fx_param("chroma.relax", 0.04, 0.005, 1.0, step=0.005,
+        doc="плавность смены fx_chroma_strength")
+
     def _fx_grade_identity():
         return (fx_cfg("grade.brightness") == 0.0 and fx_cfg("grade.contrast") == 1.0
             and fx_cfg("grade.saturation") == 1.0)
@@ -301,19 +314,33 @@ init -10 python:
         return _fx_story_level("pixelate_level", "fx_pixelate_strength",
             FX_PIXELATE_DEFAULT, fx_cfg("pixelate.relax"))
 
+    def _fx_chroma_level():
+        return _fx_story_level("chroma_level", "fx_chroma_strength",
+            FX_CHROMA_DEFAULT, fx_cfg("chroma.relax"))
+
     ## Трансформ слоя попадает в сейвы вместе со SceneLists: после релиза не
     ## переименовывать fx_layer и fx_layer_f.
     def fx_layer_f(scope, trans, st, at):
-        """Все эффекты слоя — один проход в текстуру: пикселизация, ретушь, постеризация."""
+        """Все эффекты слоя — один проход в текстуру: пикселизация, аберрация, ретушь, постеризация."""
         if renpy.predicting():
             return 1.0 / 60.0
         p_level, p_target = _fx_posterize_level()
         x_level, x_target = _fx_pixelate_level()
+        c_level, c_target = _fx_chroma_level()
         shaders = python_list()
         if not fx_cfg_bypassed():
             size = fx_cfg("pixelate.size") * x_level
             ## Ячейка меньше полутора точек неотличима от исходника.
-            if fx_cfg("pixelate.enabled") and fx_cfg("pixelate.scope") == scope and size >= 1.5:
+            pixel = fx_cfg("pixelate.enabled") and fx_cfg("pixelate.scope") == scope and size >= 1.5
+            offsets = tuple(fx_cfg("chroma." + ch) * c_level for ch in ("red", "green", "blue"))
+            chroma = (fx_cfg("chroma.enabled") and fx_cfg("chroma.scope") == scope
+                and max(abs(o) for o in offsets) > 0.0001)
+            ## Аберрация сама снапит выборки к сетке пикселизации — отдельный проход не нужен.
+            if chroma:
+                shaders.append("sm.chroma")
+                trans.u_chroma_offsets = offsets
+                trans.u_chroma_cell = float(size) if pixel else 0.0
+            elif pixel:
                 shaders.append("sm.pixelate")
                 trans.u_pixelate_size = float(size)
             if fx_cfg("grade.enabled") and fx_cfg("grade.scope") == scope and not _fx_grade_identity():
@@ -335,7 +362,8 @@ init -10 python:
         trans.mesh = False
         trans.shader = None
         ## Правки тюнера и сцены перезапускают интеракцию сами; кадры нужны только затуханию.
-        settling = abs(p_level - p_target) > 0.001 or abs(x_level - x_target) > 0.001
+        settling = any(abs(l - t) > 0.001 for l, t in
+            ((p_level, p_target), (x_level, x_target), (c_level, c_target)))
         return 1.0 / 60.0 if settling else 0.1
 
     def _fx_story_status(var, key, value):
@@ -357,6 +385,11 @@ init -10 python:
     fx_group("posterize", "Постеризация", fx_posterize_status)
     fx_group("pixelate", "Пикселизация", fx_pixelate_status)
     fx_group("grade", "Ретушь")
+
+    def fx_chroma_status():
+        return _fx_story_status("fx_chroma_strength", "chroma_level", lambda level: "%.2f" % level)
+
+    fx_group("chroma", "Хроматическая аберрация", fx_chroma_status)
 
 transform fx_layer(scope="scene"):
     function renpy.curry(fx_layer_f)(scope)

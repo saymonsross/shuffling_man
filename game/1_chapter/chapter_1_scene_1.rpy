@@ -480,10 +480,6 @@ label chapter_1_scene_1:
 
     $ dismiss_on()
 
-    call .after_locks from _call_chapter_1_scene_1_after_locks
-
-    return
-
 label .after_locks:
 
     $ sfxstop(handle=c1s1_metronome_audio, fadeout=1.2)
@@ -561,4 +557,4 @@ label .cleanup:
     vit "Ты опять начинаешь?!"
     "И так по кругу. Снова и снова."
 
-    return
+    jump chapter_1_scene_2

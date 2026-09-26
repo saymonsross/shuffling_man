@@ -5,8 +5,8 @@
 ## ожидаемый байт считается по формуле шейдера точно. Цвета не лежат на
 ## границах ступеней для steps 4/5 и gamma 1/2.
 ## Накопители и сюжетные переменные эффектов слоя, которые тесты трогают напрямую.
-define SM_TEST_FX_LEVELS = ("posterize_level", "pixelate_level")
-define SM_TEST_FX_STRENGTHS = ("fx_posterize_strength", "fx_pixelate_strength")
+define SM_TEST_FX_LEVELS = ("posterize_level", "pixelate_level", "chroma_level")
+define SM_TEST_FX_STRENGTHS = ("fx_posterize_strength", "fx_pixelate_strength", "fx_chroma_strength")
 ## Детальный фон: у плашек центры однотонные, пикселизация их не меняет.
 define SM_TEST_PIXEL_BG = "images/1_chapter/chapter_1 scene_3_children_room_girl_neutral.jpg"
 
@@ -618,3 +618,49 @@ testcase fx_grade_layer:
         _fx_state["posterize_level"] = 1.0
         _fx_state["pixelate_level"] = 1.0
         sm_test_render(At(fixture, fx_layer("scene")))
+
+## Аберрация: центр кадра на месте, у края каналы разъезжаются; с пикселизацией
+## ячейки остаются однотонными; все эффекты слоя компилируются вместе.
+testcase fx_chroma_layer:
+    python hide:
+        for key in ("posterize", "pixelate", "grade"):
+            fx_cfg_set(key + ".enabled", False)
+        _fx_state["chroma_level"] = 1.0
+        fx_cfg_set("chroma.enabled", True)
+        fx_cfg_set("chroma.scope", "scene")
+        fx_cfg_set("chroma.red", 0.05)
+        fx_cfg_set("chroma.green", 0.0)
+        fx_cfg_set("chroma.blue", -0.05)
+        raw = sm_test_render(SM_TEST_PIXEL_BG)
+        post = sm_test_render(At(SM_TEST_PIXEL_BG, fx_layer("scene")))
+        scale = raw.get_width() / 1920.0
+
+        def diff(x, y, raw=raw, post=post, scale=scale):
+            a = raw.get_at((int(x * scale), int(y * scale)))
+            b = post.get_at((int(x * scale), int(y * scale)))
+            return max(abs(a[0] - b[0]), abs(a[2] - b[2])), abs(a[1] - b[1])
+
+        rb, g = diff(960, 540)
+        assert rb <= 3 and g <= 3, "center moved"
+        edge = [diff(x, y) for x in range(60, 1860, 90) for y in (60, 1020)]
+        assert sum(1 for rb, g in edge if rb > 6) > len(edge) * 0.5, edge
+        assert all(g <= 3 for rb, g in edge), "zero green offset moved green"
+        still = sm_test_render(At(SM_TEST_PIXEL_BG, fx_layer("screen")))
+        assert all(abs(i - j) <= 1 for i, j in zip(raw.get_at((int(60 * scale), int(60 * scale))),
+            still.get_at((int(60 * scale), int(60 * scale))))), "inactive scope changed the frame"
+
+        fx_cfg_set("pixelate.enabled", True)
+        fx_cfg_set("pixelate.scope", "scene")
+        fx_cfg_set("pixelate.size", 40)
+        _fx_state["pixelate_level"] = 1.0
+        fx_cfg_set("chroma.red", 0.009)
+        fx_cfg_set("chroma.blue", -0.006)
+        cells = sm_test_render(At(SM_TEST_PIXEL_BG, fx_layer("scene")))
+        assert sm_test_cell_pairs(cells, 40) > 0.95, sm_test_cell_pairs(cells, 40)
+
+        fx_cfg_set("grade.enabled", True)
+        fx_cfg_set("grade.contrast", 1.2)
+        fx_cfg_set("posterize.enabled", True)
+        fx_cfg_set("posterize.scope", "scene")
+        _fx_state["posterize_level"] = 1.0
+        sm_test_render(At(SM_TEST_PIXEL_BG, fx_layer("scene")))

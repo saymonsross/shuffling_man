@@ -3,62 +3,54 @@
 
 define DEV_SCENE_NAV_CARDS_PER_ROW = 3
 
-## label — ключ карточки; start — вход в общий маршрут с подготовленным стеком call.
+## label — ключ карточки и точка входа: сцены продолжают маршрут цепочкой jump.
 define DEV_SCENE_NAV_ENTRIES = (
     {
         "section": _("ПРОЛОГ"),
         "title": _("Сцена 1 · Записка"),
         "label": "prologue_scene_1",
-        "start": "start",
         "preview": "dev/scene_navigation/previews/prologue_scene_1.jpg",
     },
     {
         "section": _("ПРОЛОГ"),
         "title": _("Сцена 2 · Начало письма"),
         "label": "prologue_scene_2",
-        "start": "start.prologue_scene_2",
         "preview": "images/0_prologue/prologue pencil_close.jpg",
     },
     {
         "section": _("ГЛАВА 1"),
         "title": _("Сцена 1 · Стук в дверь"),
         "label": "chapter_1_scene_1",
-        "start": "start.chapter_1_scene_1",
         "preview": "dev/scene_navigation/previews/chapter_1_scene_1.jpg",
     },
     {
         "section": _("ГЛАВА 1"),
         "title": _("Телевизор"),
         "label": "chapter_1_scene_1.tv",
-        "start": "start.chapter_1_tv",
         "preview": "images/1_chapter/chapter_1 scene_1_tv_close.jpg",
     },
     {
         "section": _("ГЛАВА 1"),
         "title": _("Уборка"),
         "label": "chapter_1_scene_1.cleanup",
-        "start": "start.chapter_1_cleanup",
         "preview": "images/1_chapter/cleanup/chapter_1_cleanup_mess.png",
     },
     {
         "section": _("ГЛАВА 1"),
         "title": _("Сцена 2 · Ссора"),
         "label": "chapter_1_scene_2",
-        "start": "start.chapter_1_scene_2",
         "preview": "images/1_chapter/chapter_1 scene_2_parents_room_door.jpg",
     },
     {
         "section": _("ГЛАВА 1"),
         "title": _("Бутерброды"),
         "label": "chapter_1_scene_2.sandwiches",
-        "start": "start.chapter_1_sandwiches",
         "preview": "images/1_chapter/chapter_1 scene_2_sandwiches.jpg",
     },
     {
         "section": _("ГЛАВА 1"),
         "title": _("Сцена 3 · Воображаемый друг"),
         "label": "chapter_1_scene_3",
-        "start": "start.chapter_1_scene_3",
         "preview": "images/1_chapter/chapter_1 scene_3_children_room_girl_neutral.jpg",
     },
 )
@@ -108,7 +100,7 @@ screen dev_scene_nav_card(entry, autofocus=False):
     button:
         id entry["label"]
         style "dev_scene_nav_card"
-        action Function(dev_scene_nav_start, entry["start"])
+        action Function(dev_scene_nav_start, entry["label"])
         default_focus autofocus
 
         vbox:

@@ -6,9 +6,12 @@ their exact parameters — position, anchor, rotation, zoom, image size and
 on-screen bounds. The selected sprite can be moved, rotated and re-anchored so
 you can work out numbers and copy them into your code.
 
-**The tool never writes anything and never changes the scene.** It reads the
-scene's live transforms and does the arithmetic; numbers move into the code by
-hand, via the clipboard.
+Numbers move into the code via the clipboard or the **Write to code** button
+(**Ctrl+S**): it finds the `show <sprite> ... at placed(...)` (or
+`placed_jitter(...)`) line holding the scene's current position and rewrites
+its pos/anchor/angle literals. The sprite on screen moves right away. Calls
+with constants or expressions are left alone and the panel says why. Calls and
+their parameters are listed in `PT_WRITE_CALLS` (`position_tuner_write.rpy`).
 
 *Русская версия: [README.ru.md](README.ru.md)*
 
@@ -73,6 +76,7 @@ The resulting archive should contain no files from `game/dev/`.
 | Anchor point | **Tab** forward, **Shift+Tab** back |
 | Undo / redo | **Ctrl+Z** / **Ctrl+Shift+Z** (or Ctrl+Y) |
 | Restore the scene's values | **R** or the "Сбросить" button |
+| Write to code | **Ctrl+S** or the «Записать в код» button |
 | Copy | **Ctrl+C** or the buttons |
 | Get the panel out of the way | **H**, or the left/right buttons |
 

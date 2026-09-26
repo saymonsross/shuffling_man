@@ -154,6 +154,47 @@ init python:
         }
         """)
 
+init python:
+    ## Хроматическая аберрация по статье lettier «3D Game Shaders For Beginners»:
+    ## три выборки кадра, каждая со своим смещением от центра экрана по радиусу.
+    ## Альфа берётся вместе с синим, как в статье. u_chroma_cell > 1 — выборки
+    ## снапятся к сетке пикселизации, иначе аберрация смазала бы её ячейки.
+    renpy.register_shader("sm.chroma",
+        variables="""
+        uniform sampler2D tex0;
+        uniform vec2 u_model_size;
+        uniform vec3 u_chroma_offsets;
+        uniform float u_chroma_cell;
+        attribute vec2 a_tex_coord;
+        varying vec2 v_tex_coord;
+        """,
+        vertex_300="""
+        v_tex_coord = a_tex_coord;
+        """,
+        fragment_260="""
+        {
+            vec2 cell = max(u_chroma_cell, 1.0) / u_model_size;
+            bool snap = u_chroma_cell > 1.0;
+            vec2 base = snap ? floor(v_tex_coord / cell + 0.5) * cell : v_tex_coord;
+            vec2 dir = base - vec2(0.5);
+            vec2 ur = base + dir * u_chroma_offsets.r;
+            vec2 ug = base + dir * u_chroma_offsets.g;
+            vec2 ub = base + dir * u_chroma_offsets.b;
+            if (snap) {
+                ur = floor(ur / cell + 0.5) * cell;
+                ug = floor(ug / cell + 0.5) * cell;
+                ub = floor(ub / cell + 0.5) * cell;
+            }
+            gl_FragColor = vec4(texture2D(tex0, ur).r, texture2D(tex0, ug).g, texture2D(tex0, ub).ba);
+        }
+        """)
+
+transform chroma(red=0.009, green=0.006, blue=-0.006):
+    mesh True
+    shader "sm.chroma"
+    u_chroma_offsets (float(red), float(green), float(blue))
+    u_chroma_cell 0.0
+
 transform pixelate(size=8):
     mesh True
     shader "sm.pixelate"

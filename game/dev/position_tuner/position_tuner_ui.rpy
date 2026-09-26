@@ -94,6 +94,8 @@ screen position_tuner():
     key "anyrepeat_meta_noshift_K_z" action Function(pt_undo)
     key "anyrepeat_meta_shift_K_z" action Function(pt_redo)
 
+    key "ctrl_K_s" action Function(pt_write)
+    key "meta_K_s" action Function(pt_write)
     key "ctrl_K_c" action Function(pt_copy, "atl")
     key "meta_K_c" action Function(pt_copy, "atl")
 
@@ -135,8 +137,14 @@ screen pt_panel(px, pw, ph):
 
             hbox:
                 spacing 6
+                textbutton "Записать в код":
+                    style "pt_button"
+                    action Function(pt_write)
+                    sensitive (pt_dirty_count() > 0)
                 textbutton "Копировать ATL" style "pt_button" action Function(pt_copy, "atl")
                 textbutton "Копировать вызов" style "pt_button" action Function(pt_copy, "call")
+            hbox:
+                spacing 6
                 textbutton "Отменить":
                     style "pt_button"
                     action Function(pt_undo)
@@ -147,7 +155,7 @@ screen pt_panel(px, pw, ph):
                     sensitive (len(pt_model.redo) > 0)
                 textbutton "Сбросить" style "pt_button" action Function(pt_reset)
 
-            text "инструмент только показывает и считает: сцену он не меняет и никуда не пишет" style "pt_hint"
+            text "«Записать в код» (Ctrl+S) переписывает литералы в show ... at placed(...) — остальное только в буфер" style "pt_hint"
 
             null height 4
 
@@ -157,7 +165,7 @@ screen pt_panel(px, pw, ph):
                 viewport:
                     id "pt_vp"
                     xsize (pw - 46)
-                    ysize (ph - 420)
+                    ysize (ph - 460)
                     mousewheel True
                     draggable True
                     vbox:
@@ -171,11 +179,11 @@ screen pt_panel(px, pw, ph):
                 vbar:
                     value YScrollValue("pt_vp")
                     style "pt_vbar"
-                    ysize (ph - 420)
+                    ysize (ph - 460)
 
             null height 4
 
-            text "мышь — взять спрайт и тащить · стрелки ±[PT_STEP] · Shift+стрелки ±[PT_STEP_BIG] · Tab — точка привязки\n[[ и ]] — наклон ±[PT_STEP_ANGLE]° (с Shift ±[PT_STEP_ANGLE_BIG]°) · Ctrl+Z — отменить · Ctrl+C — копировать\nR — вернуть значения сцены · H — свернуть панель · F9/Esc — закрыть" style "pt_hint"
+            text "мышь — взять спрайт и тащить · стрелки ±[PT_STEP] · Shift+стрелки ±[PT_STEP_BIG] · Tab — точка привязки\n[[ и ]] — наклон ±[PT_STEP_ANGLE]° (с Shift ±[PT_STEP_ANGLE_BIG]°) · Ctrl+Z — отменить · Ctrl+S — записать в код · Ctrl+C — копировать\nR — вернуть значения сцены · H — свернуть панель · F9/Esc — закрыть" style "pt_hint"
 
 
 ## zorder выше модальных экранов игры — иначе хоткей глохнет внутри интерактивов.

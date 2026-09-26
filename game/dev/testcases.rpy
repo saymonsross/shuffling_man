@@ -330,7 +330,7 @@ testcase story_full_route:
     advance until "Долго я не находила в себе сил" timeout 10.0
     assert eval (sprite_showed('prologue_head'))
     advance until screen "prologue_note_start" timeout 10.0
-    click "Начать"
+    click "Взять ручку"
     assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0
     assert eval (not note_hover_pencil and can_dismiss)
     advance until "Я Расскажу всё на одном дыхании. Здесь и сейчас." timeout 20.0
@@ -346,7 +346,7 @@ testcase story_full_route:
     assert eval (c1s1_mg_active and c1s1_mg_knocking)
     assert eval (c1s1_mg_vitya_line() == 'Это я, открывай!')
 
-    ## Механику замков проверяют отдельные тесты; здесь важен возврат в общий маршрут.
+    ## Механику замков проверяют отдельные тесты; здесь важен возврат из мини-игры в сцену.
     $ c1s1_mg_open_all()
     assert "Привет." timeout 10.0
     assert eval (c1s1_locks_outcome == 'fast')

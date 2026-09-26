@@ -5,6 +5,9 @@
 ## World-space кнопки повторяют сдвиг через follow_camera или parallax_follow,
 ## ближний план добавляет своё смещение трансформом parallax_near.
 
+## Сцена гасит параллакс локально: $ sm_parallax_off = True … False.
+default sm_parallax_off = False
+
 init -10 python:
 
     fx_param("parallax.amp", 22, 0, 60, doc="сдвиг слоя master при мыши у края экрана, px")
@@ -13,7 +16,7 @@ init -10 python:
     fx_group("parallax", "Параллакс")
 
     def sm_parallax_active():
-        if not persistent.sm_parallax or sm_reduced_motion() or fx_cfg_bypassed():
+        if not persistent.sm_parallax or store.sm_parallax_off or sm_reduced_motion() or fx_cfg_bypassed():
             return False
         ## Автотесты сравнивают кадры с эталонами, Position Tuner рисует в координатах экрана.
         if renpy.game.args.command == "test":

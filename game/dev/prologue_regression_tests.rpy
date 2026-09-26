@@ -6,7 +6,7 @@ testcase prologue_note_start_pickup_restore:
     click "Сцены"
     click id "prologue_scene_2"
     advance until screen "prologue_note_start" timeout 10.0
-    assert "Начать"
+    assert "Взять ручку"
     assert eval (sprite_showed('prologue_note_pencil'))
     assert eval (sprite_showed('prologue_hand_right'))
     assert eval (not sprite_showed('prologue_hand_right_move'))
@@ -38,7 +38,7 @@ testcase prologue_note_start_pickup_restore:
     assert screen "prologue_note_start" timeout 2.0
     assert eval (sprite_showed('prologue_note_pencil'))
     assert eval (not sprite_showed('prologue_hand_right_write'))
-    click "Начать"
+    click "Взять ручку"
     assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0
     assert eval (not note_hover_pencil and can_dismiss)
 
@@ -49,7 +49,7 @@ testcase prologue_note_start_pickup_restore:
     assert eval ('_sm_cleanup_saved_game' not in renpy.session)
     move pos (100, 100)
     assert eval (not note_hover_pencil) timeout 1.0
-    click "Начать"
+    click "Взять ручку"
     assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0
     assert eval (not note_hover_pencil and can_dismiss)
     run MainMenu(confirm=False)
@@ -94,7 +94,7 @@ testcase prologue_head_continues_across_scene_boundary:
 
     advance until screen "prologue_note_start" timeout 8.0
     assert eval (sprite_showed('prologue_note_pencil') and not sprite_showed('prologue_head'))
-    click "Начать"
+    click "Взять ручку"
     assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0
     assert eval (not note_hover_pencil and can_dismiss)
     run MainMenu(confirm=False)

@@ -92,4 +92,4 @@ label .sandwiches:
 
     "Все люди притворяются. Почему мы не могли?.."
 
-    return
+    jump chapter_1_scene_3

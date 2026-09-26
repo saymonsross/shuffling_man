@@ -9,7 +9,7 @@ screen prologue_note_start():
         at parallax_follow()
         xysize (config.screen_width, config.screen_height)
         use glow_button(
-            _("Начать"),
+            _("Взять ручку"),
             Return("done"),
             bg="light",
             pos=(1264, 431),
@@ -23,16 +23,25 @@ label prologue_scene_2:
     ## При продолжении сохраняем тот же кадр и фазу покачивания; каталог входит отдельно.
     if not sprite_showed("prologue_head"):
         camera
-        scene prologue_head at uneasy_sway(12.0, 0.6)
-        with prologue_dissolve
+        
+        show prologue_head_bg:
+            zoom 1.0
+            truecenter
+            subpixel True
+            linear 40.5 zoom 1.2
+        show prologue head
+        with Dissolve(2.0)
 
     "Долго я не находила в себе сил, чтобы записать случившееся. Ушло много попыток."
+
+    show prologue head_blink
+
     "Не было сил вспоминать: меня трясло, рвало, руки непроизвольно тянулись закрыть лицо."
 
     scene prologue_note_bg
     show prologue_note_paper at placed((990, 455), (0.5, 0.5))
     show prologue_note_pencil at placed((1264, 431), (0.5, 0.5))
-    show prologue_hand_left at placed((310, 391))
+    show prologue_hand_left at placed((271, 417))
     show prologue_hand_right at placed((1358, 468))
     with prologue_dissolve
 
@@ -54,30 +63,38 @@ label prologue_scene_2:
         subpixel True
         anchor (0.0, 0.0)
         pos (1358, 468)
-        ease 0.9 pos (1237, 211)
+        linear 0.4 pos (1217, 211)
     hide prologue_hand_right
     with Dissolve(0.1)
-    $ pause(1.0)
+    $ pause(0.2)
 
     ## Позы на разных холстах совмещены по кончику карандаша.
     show prologue_hand_right_write:
         subpixel True
         anchor (0.0, 0.0)
-        pos (1237, 211)
-        pause 1.1
-        linear 1.1 pos (767, 158)
+        pos (1217, 211)
+        linear 0.4 pos (1100, 198)
     hide prologue_hand_right_move
     hide prologue_note_pencil
-    with Dissolve(0.4)
-    $ pause(1.8)
+    with Dissolve(0.2)
+    $ pause(0.1)
     $ dismiss_on()
 
-    camera at camera_rest(shake_amp=1.5)
-    scene prologue_pencil_close
-    with prologue_dissolve
+    # camera at camera_rest(shake_amp=1.5)
+
+    scene black with Dissolve(1.0)
+
+    show prologue_pencil_close 
+    show prologue_pensil_close_hand at shake(1.5)
+    with Dissolve(1.3)
 
     "Я не осмелюсь вернуться к карандашу и бумаге позже."
-    "Это будет моя последняя попытка. Спринтерский забег."
+    "Это будет моя последняя попытка. Так сказать, спринтерский забег."
     "Я Расскажу всё на одном дыхании. Здесь и сейчас."
 
-    return
+    ## Граница между прологом и первой главой.
+    scene black
+    with Dissolve(2.0)
+    $ pause(1.2)
+
+    jump chapter_1_scene_1

@@ -2,9 +2,7 @@
 
 testcase dev_scene_navigator_menu:
     assert eval (all(renpy.has_label(entry['label']) for entry in DEV_SCENE_NAV_ENTRIES))
-    assert eval (all(renpy.has_label(entry['start']) for entry in DEV_SCENE_NAV_ENTRIES))
     assert eval (all(renpy.loadable(entry['preview']) for entry in DEV_SCENE_NAV_ENTRIES))
-    assert eval (all(entry['start'] == 'start' or entry['start'].startswith('start.') for entry in DEV_SCENE_NAV_ENTRIES))
     assert eval (all(not entry['label'].startswith(('dev_', 'sm_test_')) for entry in DEV_SCENE_NAV_ENTRIES))
     assert eval (not renpy.has_label('dev_cleanup_preview') and not renpy.has_label('dev_tv_noise_preview'))
 
@@ -39,7 +37,7 @@ testcase dev_scene_navigator_starts_prologue:
     advance until "Долго я не находила в себе сил" timeout 10.0
     assert eval (sprite_showed('prologue_head'))
     advance until screen "prologue_note_start" timeout 10.0
-    click "Начать"
+    click "Взять ручку"
     assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0
     assert eval (not note_hover_pencil and can_dismiss)
     advance until "Я Расскажу всё на одном дыхании. Здесь и сейчас." timeout 20.0
@@ -115,7 +113,7 @@ testcase dev_scene_navigator_continues_scene_2:
 
     advance until "Моя дочь как раз проходила через сложный период" timeout 3.0
     assert eval (sprite_showed('chapter_1 scene_3_children_room_floor'))
-    assert eval ('_call_chapter_1_scene_3' in renpy.get_return_stack())
+    assert eval (not renpy.get_return_stack())
     run Rollback()
     assert "Все люди притворяются. Почему мы не могли?.." timeout 1.0
     assert eval (sprite_showed('chapter_1 scene_2_sandwiches_3'))
@@ -127,7 +125,7 @@ testcase dev_scene_navigator_continues_scene_2:
     assert eval ('_sm_cleanup_saved_game' not in renpy.session)
     advance until "Моя дочь как раз проходила через сложный период" timeout 3.0
     assert eval (sprite_showed('chapter_1 scene_3_children_room_floor'))
-    assert eval ('_call_chapter_1_scene_3' in renpy.get_return_stack())
+    assert eval (not renpy.get_return_stack())
     advance until screen "choice" timeout 8.0
     click "Очаровашка!"
     advance until "Стоило нам с Витей обоим ненадолго отлучиться" timeout 10.0
