@@ -33,6 +33,7 @@ init python:
         variables="""
         uniform vec4 u_random;
         uniform float u_strength;
+        uniform float u_noise_steps;
         attribute vec2 a_tex_coord;
         varying vec2 v_tex_coord;
         """,
@@ -42,6 +43,10 @@ init python:
         fragment_300="""
         vec2 uv = v_tex_coord + u_random.xy;
         float n = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
+        // Постеризация зерна до расчёта альфы: ступени видны и в цвете, и в прозрачности.
+        if (u_noise_steps >= 2.0) {
+            n = min(floor(n * u_noise_steps) / (u_noise_steps - 1.0), 1.0);
+        }
         float a = u_strength * n;
         gl_FragColor = vec4(vec3(n) * a, a);
         """)

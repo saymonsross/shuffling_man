@@ -244,11 +244,14 @@ init -10 python:
 
     fx_param("noise.enabled", True, doc="включить зерно")
     fx_param("noise.strength", 0.10, 0.0, 1.0, step=0.01, doc="сила зерна поверх всей игры")
+    fx_param("noise.steps", 0, 0, 32, doc="ступеней серого в зерне; 0 — без постеризации, от 2 — ступени")
     fx_group("noise", "Зерно")
 
     def noise_overlay_f(trans, st, at):
         on = fx_cfg("noise.enabled") and not fx_cfg_bypassed() and not sm_reduced_motion()
         trans.u_strength = fx_cfg("noise.strength") if on else 0.0
+        steps = fx_cfg("noise.steps")
+        trans.u_noise_steps = float(steps) if steps >= 2 else 0.0
         ## Кадр нужен каждый раз: u_random шейдера меняется только при перерисовке.
         return 1.0 / 60.0
 
@@ -258,6 +261,7 @@ transform noise_overlay():
     mesh True
     shader "sm.noise"
     u_strength 0.0
+    u_noise_steps 0.0
     function noise_overlay_f
 
 screen fx_noise_screen():

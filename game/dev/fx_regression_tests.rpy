@@ -217,10 +217,11 @@ testcase fx_config_save_roundtrip:
         folder = _sm_test_tempfile.mkdtemp(prefix="sm_fx_")
         try:
             assert fx_cfg_dirty_keys() == []
-            fx_cfg_set("posterize.steps", 7)
-            fx_cfg_set("posterize.mix", 0.35)
-            fx_cfg_set("posterize.scope", "screen")
-            fx_cfg_set("posterize.enabled", True)
+            ## Значения берутся отличными от сохранённых: файл репозитория меняется при настройке.
+            fx_cfg_set("posterize.steps", 7 if fx_cfg_saved("posterize.steps") != 7 else 8)
+            fx_cfg_set("posterize.mix", 0.35 if fx_cfg_saved("posterize.mix") != 0.35 else 0.45)
+            fx_cfg_set("posterize.scope", "screen" if fx_cfg_saved("posterize.scope") != "screen" else "scene")
+            fx_cfg_set("posterize.enabled", not fx_cfg_saved("posterize.enabled"))
             _fxc_file["legacy.old_value"] = 3
             _fxc_file["version"] = 2
             assert set(fx_cfg_dirty_keys()) == {"posterize.steps", "posterize.mix",
@@ -413,14 +414,18 @@ init python:
             return False
         return all(renpy.get_screen("fx_noise_screen", layer=layer) is None for layer in config.layers)
 
-    def sm_test_noise_probe_deviation():
-        """Разброс яркости по серой плашке самого верхнего экрана UI."""
+    def sm_test_noise_probe_values():
+        """Красный канал по серой плашке самого верхнего экрана UI."""
         surface = sm_test_screen_surface()
         scale = surface.get_width() / float(config.screen_width)
         values = python_list()
         for y in range(SM_TEST_NOISE_PROBE[1] + 10, SM_TEST_NOISE_PROBE[1] + SM_TEST_NOISE_PROBE[3] - 10, 7):
             for x in range(SM_TEST_NOISE_PROBE[0] + 10, SM_TEST_NOISE_PROBE[0] + SM_TEST_NOISE_PROBE[2] - 10, 7):
                 values.append(surface.get_at((int(x * scale), int(y * scale)))[0])
+        return values
+
+    def sm_test_noise_probe_deviation():
+        values = sm_test_noise_probe_values()
         mean = sum(values) / float(len(values))
         return (sum((v - mean) ** 2 for v in values) / len(values)) ** 0.5
 
@@ -481,3 +486,25 @@ testcase fx_noise_single_top_layer:
     run MainMenu(confirm=False)
     assert screen "main_menu" timeout 5.0
     assert eval (sm_test_noise_single())
+
+## Постеризация зерна: при двух ступенях n ∈ {0, 1} — пиксель плашки либо
+## нетронут (альфа 0), либо белый (альфа 1), без промежуточных оттенков.
+testcase fx_noise_steps:
+    run Function(dev_scene_nav_start, "sm_test_noise_scene")
+    pause 0.5
+    $ fx_cfg_set("noise.strength", 1.0)
+    $ fx_cfg_set("noise.steps", 0)
+    pause 0.2
+    python hide:
+        values = sm_test_noise_probe_values()
+        middle = [v for v in values if 140 < v < 240]
+        assert len(middle) > len(values) * 0.3, "unquantized grain has no midtones"
+    $ fx_cfg_set("noise.steps", 2)
+    pause 0.2
+    python hide:
+        values = sm_test_noise_probe_values()
+        grey = [v for v in values if abs(v - 128) <= 2]
+        white = [v for v in values if v >= 253]
+        assert len(grey) + len(white) > len(values) * 0.98, sorted(set(values))[:40]
+        assert grey and white, (len(grey), len(white))
+    run MainMenu(confirm=False)
