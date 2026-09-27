@@ -4,7 +4,7 @@ testcase prologue_note_start_pickup_restore:
     assert screen "c1s1_lamp_switch" timeout 8.0
     keysym "game_menu"
     click "Сцены"
-    click id "prologue_scene_2"
+    click id "prologue_scene.letter"
     advance until screen "prologue_note_start" timeout 10.0
     assert "Взять ручку"
     assert eval (sprite_showed('prologue_note_pencil'))
@@ -55,45 +55,19 @@ testcase prologue_note_start_pickup_restore:
     run MainMenu(confirm=False)
 
 
-testcase prologue_head_continues_across_scene_boundary:
+testcase prologue_head_returns_after_fade:
+    ## Голова и её фон гаснут через alpha и остаются на экране; .letter обязан вернуть их видимыми.
     if not screen "main_menu":
         run MainMenu(confirm=False)
     click "Начать"
-    advance until "Это письмо... должно помочь мне пережить произошедшее." timeout 15.0
-    assert eval (sprite_showed('prologue_head'))
-    python hide:
-        entry = next(entry for entry in renpy.scene_lists().layers["master"]
-            if entry.tag == "prologue_head")
-        renpy.session["_sm_prologue_head_before_seam"] = (
-            entry.displayable, entry.show_time, entry.animation_time)
-
-    advance until "Долго я не находила в себе сил" timeout 3.0
-    python hide:
-        entry = next(entry for entry in renpy.scene_lists().layers["master"]
-            if entry.tag == "prologue_head")
-        before = renpy.session.pop("_sm_prologue_head_before_seam")
-        assert entry.displayable is before[0], "Prologue boundary replaced the live background"
-        assert (entry.show_time, entry.animation_time) == before[1:], "Prologue boundary restarted the background animation"
-
-    run Rollback()
-    assert "Это письмо... должно помочь мне пережить произошедшее." timeout 2.0
-    assert eval (sprite_showed('prologue_head'))
-    python hide:
-        entry = next(entry for entry in renpy.scene_lists().layers["master"]
-            if entry.tag == "prologue_head")
-        renpy.session["_sm_prologue_head_before_seam"] = (
-            entry.displayable, entry.show_time, entry.animation_time)
-
-    advance until "Долго я не находила в себе сил" timeout 3.0
-    python hide:
-        entry = next(entry for entry in renpy.scene_lists().layers["master"]
-            if entry.tag == "prologue_head")
-        before = renpy.session.pop("_sm_prologue_head_before_seam")
-        assert entry.displayable is before[0], "Replay of prologue boundary replaced the live background"
-        assert (entry.show_time, entry.animation_time) == before[1:], "Replay of prologue boundary restarted the background animation"
+    advance until "...должно помочь мне пережить произошедшее." timeout 20.0
+    advance until "Долго я не находила в себе сил" timeout 5.0
+    assert eval (renpy.showing('prologue') and renpy.showing('prologue_head_bg'))
+    assert eval (pt_scene_state('prologue')['alpha'] > 0.99) timeout 3.0
+    assert eval (pt_scene_state('prologue_head_bg')['alpha'] > 0.99) timeout 3.0
 
     advance until screen "prologue_note_start" timeout 8.0
-    assert eval (sprite_showed('prologue_note_pencil') and not sprite_showed('prologue_head'))
+    assert eval (sprite_showed('prologue_note_pencil') and not renpy.showing('prologue'))
     click "Взять ручку"
     assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0
     assert eval (not note_hover_pencil and can_dismiss)

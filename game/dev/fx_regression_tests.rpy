@@ -5,6 +5,7 @@
 ## ожидаемый байт считается по формуле шейдера точно. Цвета не лежат на
 ## границах ступеней для steps 4/5 и gamma 1/2.
 ## Накопители и сюжетные переменные эффектов слоя, которые тесты трогают напрямую.
+define SM_TEST_LAYER_FX = ("posterize", "pixelate", "grade", "chroma", "bloom")
 define SM_TEST_FX_LEVELS = ("posterize_level", "pixelate_level", "chroma_level")
 define SM_TEST_FX_STRENGTHS = ("fx_posterize_strength", "fx_pixelate_strength", "fx_chroma_strength")
 ## Детальный фон: у плашек центры однотонные, пикселизация их не меняет.
@@ -65,6 +66,11 @@ init python:
                 b = surface.get_at((int((cx + d) * scale), int((cy + d) * scale)))
                 pairs.append(max(abs(i - j) for i, j in zip(a[:3], b[:3])) <= 2)
         return sum(pairs) / float(len(pairs))
+
+    def sm_test_fx_only(*groups):
+        """Эффекты слоя из fx_config.yaml не мешают проверке: включены только нужные группы."""
+        for group in SM_TEST_LAYER_FX:
+            fx_cfg_set(group + ".enabled", group in groups)
 
     def sm_test_expect_error(text):
         try:
@@ -298,7 +304,7 @@ testcase fx_posterize_layer_modes:
         fixture = sm_test_swatches()
         raw = sm_test_render(fixture)
         _fx_state["posterize_level"] = 1.0
-        fx_cfg_set("pixelate.enabled", False)
+        sm_test_fx_only("posterize")
         fx_cfg_set("posterize.steps", 4)
         fx_cfg_set("posterize.mix", 1.0)
         fx_cfg_set("posterize.gamma", 1.0)
@@ -345,7 +351,7 @@ testcase fx_posterize_live_frame:
     python hide:
         ## Зерно лежит поверх всего кадра: для чистых пикселей его гасим.
         fx_cfg_set("noise.strength", 0.0)
-        fx_cfg_set("pixelate.enabled", False)
+        sm_test_fx_only("posterize")
         _fx_state["posterize_level"] = 1.0
         fx_cfg_set("posterize.steps", 4)
         fx_cfg_set("posterize.mix", 1.0)
@@ -548,7 +554,7 @@ testcase fx_pixelate_shader:
 testcase fx_pixelate_layer_modes:
     python hide:
         _fx_state["pixelate_level"] = 1.0
-        fx_cfg_set("posterize.enabled", False)
+        sm_test_fx_only("pixelate")
         fx_cfg_set("pixelate.size", 40)
         fx_cfg_set("pixelate.scope", "scene")
 
@@ -585,9 +591,7 @@ testcase fx_grade_layer:
     python hide:
         fixture = sm_test_swatches()
         raw = sm_test_render(fixture)
-        fx_cfg_set("posterize.enabled", False)
-        fx_cfg_set("pixelate.enabled", False)
-        fx_cfg_set("grade.enabled", True)
+        sm_test_fx_only("grade")
         fx_cfg_set("grade.scope", "scene")
         fx_cfg_set("grade.brightness", 0.0)
         fx_cfg_set("grade.contrast", 1.0)
@@ -623,10 +627,8 @@ testcase fx_grade_layer:
 ## ячейки остаются однотонными; все эффекты слоя компилируются вместе.
 testcase fx_chroma_layer:
     python hide:
-        for key in ("posterize", "pixelate", "grade"):
-            fx_cfg_set(key + ".enabled", False)
+        sm_test_fx_only("chroma")
         _fx_state["chroma_level"] = 1.0
-        fx_cfg_set("chroma.enabled", True)
         fx_cfg_set("chroma.scope", "scene")
         fx_cfg_set("chroma.red", 0.05)
         fx_cfg_set("chroma.green", 0.0)
@@ -664,3 +666,39 @@ testcase fx_chroma_layer:
         fx_cfg_set("posterize.scope", "scene")
         _fx_state["posterize_level"] = 1.0
         sm_test_render(At(SM_TEST_PIXEL_BG, fx_layer("scene")))
+
+## Bloom: вокруг белого квадрата на чёрном появляется свечение, вдали кадр прежний;
+## порог выше белого свечения не даёт.
+testcase fx_bloom_layer:
+    python hide:
+        sm_test_fx_only()
+        fixture = Fixed(Solid("#000"), Transform(Solid("#fff"), xysize=(80, 80), pos=(920, 500)),
+            xysize=(1920, 1080))
+        raw = sm_test_render(fixture)
+        fx_cfg_set("bloom.enabled", True)
+        fx_cfg_set("bloom.scope", "scene")
+        fx_cfg_set("bloom.threshold", 0.5)
+        fx_cfg_set("bloom.intensity", 1.5)
+        fx_cfg_set("bloom.radius", 32)
+
+        def lum(surface, x, y):
+            s = surface.get_width() / 1920.0
+            return surface.get_at((int(x * s), int(y * s)))[0]
+
+        post = sm_test_render(At(fixture, fx_layer("scene")))
+        assert lum(raw, 1020, 540) <= 2 and lum(post, 1020, 540) > 12, lum(post, 1020, 540)
+        assert lum(post, 200, 200) <= 2, "far pixels glow"
+        assert lum(post, 960, 540) >= 250, "source lost"
+        assert lum(sm_test_render(At(fixture, fx_layer("screen"))), 1020, 540) <= 2, "inactive scope glows"
+        fx_cfg_set("bloom.threshold", 1.0)
+        fx_cfg_set("bloom.knee", 0.0)
+        assert lum(sm_test_render(At(fixture, fx_layer("scene"))), 1020, 540) <= 2, "threshold ignored"
+
+        ## Все эффекты слоя вместе компилируются в один шейдер.
+        for key in ("posterize", "pixelate", "grade", "chroma"):
+            fx_cfg_set(key + ".enabled", True)
+            fx_cfg_set(key + ".scope", "scene")
+        fx_cfg_set("grade.contrast", 1.2)
+        for key in ("posterize_level", "pixelate_level", "chroma_level"):
+            _fx_state[key] = 1.0
+        sm_test_render(At(fixture, fx_layer("scene")))

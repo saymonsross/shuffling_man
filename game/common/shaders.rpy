@@ -195,6 +195,55 @@ transform chroma(red=0.009, green=0.006, blue=-0.006):
     u_chroma_offsets (float(red), float(green), float(blue))
     u_chroma_cell 0.0
 
+init python:
+    ## Bloom — своя реализация: код Unity PostProcessing под Unity Companion License
+    ## (только для Unity-проектов) переносить нельзя. Идея та же: яркое выше порога
+    ## с мягким коленом → размытие → добавка к кадру. Вместо пирамиды проходов —
+    ## один проход: 17 выборок по двум кольцам из mipmap-копии слоя (gl_mipmap).
+    ## Приоритет 270: после пикселизации/аберрации, до ретуши и постеризации.
+    renpy.register_shader("sm.bloom",
+        variables="""
+        uniform sampler2D tex0;
+        uniform vec2 u_model_size;
+        uniform float u_bloom_threshold;
+        uniform float u_bloom_knee;
+        uniform float u_bloom_intensity;
+        uniform float u_bloom_radius;
+        attribute vec2 a_tex_coord;
+        varying vec2 v_tex_coord;
+        """,
+        fragment_functions="""
+        vec3 sm_bloom_prefilter(vec3 c, float threshold, float knee) {
+            float br = max(max(c.r, c.g), c.b);
+            float k = max(knee, 0.0001);
+            float soft = clamp(br - threshold + k, 0.0, 2.0 * k);
+            soft = soft * soft / (4.0 * k);
+            return c * max(soft, br - threshold) / max(br, 0.0001);
+        }
+        """,
+        vertex_300="""
+        v_tex_coord = a_tex_coord;
+        """,
+        fragment_270="""
+        {
+            vec2 px = 1.0 / u_model_size;
+            float lod = max(log2(u_bloom_radius / 8.0), 0.0);
+            vec3 acc = sm_bloom_prefilter(texture2D(tex0, v_tex_coord, lod).rgb, u_bloom_threshold, u_bloom_knee);
+            float total = 1.0;
+            for (int ring = 1; ring <= 2; ring += 1) {
+                float r = u_bloom_radius * float(ring) * 0.5;
+                float w = ring == 1 ? 0.8 : 0.45;
+                for (int i = 0; i < 8; i += 1) {
+                    float a = 6.2831853 * (float(i) + 0.5 * float(ring - 1)) / 8.0;
+                    vec2 uv = v_tex_coord + vec2(cos(a), sin(a)) * r * px;
+                    acc += sm_bloom_prefilter(texture2D(tex0, uv, lod).rgb, u_bloom_threshold, u_bloom_knee) * w;
+                    total += w;
+                }
+            }
+            gl_FragColor.rgb += acc / total * u_bloom_intensity;
+        }
+        """)
+
 transform pixelate(size=8):
     mesh True
     shader "sm.pixelate"

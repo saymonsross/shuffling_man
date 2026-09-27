@@ -292,6 +292,14 @@ init -10 python:
     fx_param("chroma.relax", 0.04, 0.005, 1.0, step=0.005,
         doc="плавность смены fx_chroma_strength")
 
+    fx_param("bloom.enabled", False, doc="включить свечение ярких мест")
+    fx_param("bloom.scope", "scene", choices=("scene", "screen"),
+        doc="scene — сцена без UI, screen — весь экран с UI")
+    fx_param("bloom.threshold", 0.7, 0.0, 1.0, step=0.01, doc="порог яркости, выше которого светится")
+    fx_param("bloom.knee", 0.5, 0.0, 1.0, step=0.01, doc="мягкость порога: 0 — резкая граница")
+    fx_param("bloom.intensity", 0.6, 0.0, 3.0, step=0.05, doc="сила свечения")
+    fx_param("bloom.radius", 24, 4, 128, doc="радиус свечения в точках экрана 1920×1080")
+
     def _fx_grade_identity():
         return (fx_cfg("grade.brightness") == 0.0 and fx_cfg("grade.contrast") == 1.0
             and fx_cfg("grade.saturation") == 1.0)
@@ -321,13 +329,14 @@ init -10 python:
     ## Трансформ слоя попадает в сейвы вместе со SceneLists: после релиза не
     ## переименовывать fx_layer и fx_layer_f.
     def fx_layer_f(scope, trans, st, at):
-        """Все эффекты слоя — один проход в текстуру: пикселизация, аберрация, ретушь, постеризация."""
+        """Все эффекты слоя — один проход в текстуру: пикселизация, аберрация, bloom, ретушь, постеризация."""
         if renpy.predicting():
             return 1.0 / 60.0
         p_level, p_target = _fx_posterize_level()
         x_level, x_target = _fx_pixelate_level()
         c_level, c_target = _fx_chroma_level()
         shaders = python_list()
+        bloom = False
         if not fx_cfg_bypassed():
             size = fx_cfg("pixelate.size") * x_level
             ## Ячейка меньше полутора точек неотличима от исходника.
@@ -343,6 +352,14 @@ init -10 python:
             elif pixel:
                 shaders.append("sm.pixelate")
                 trans.u_pixelate_size = float(size)
+            bloom = (fx_cfg("bloom.enabled") and fx_cfg("bloom.scope") == scope
+                and fx_cfg("bloom.intensity") > 0.001)
+            if bloom:
+                shaders.append("sm.bloom")
+                trans.u_bloom_threshold = fx_cfg("bloom.threshold")
+                trans.u_bloom_knee = fx_cfg("bloom.knee")
+                trans.u_bloom_intensity = fx_cfg("bloom.intensity")
+                trans.u_bloom_radius = float(fx_cfg("bloom.radius"))
             if fx_cfg("grade.enabled") and fx_cfg("grade.scope") == scope and not _fx_grade_identity():
                 shaders.append("sm.grade")
                 trans.u_grade_brightness = fx_cfg("grade.brightness")
@@ -358,6 +375,8 @@ init -10 python:
         if shaders:
             trans.mesh = True
             trans.shader = shaders
+            ## Mipmap-копию слоя читает только bloom; без него её не строим.
+            trans.gl_mipmap = bloom
             return 1.0 / 60.0
         trans.mesh = False
         trans.shader = None
@@ -385,6 +404,7 @@ init -10 python:
     fx_group("posterize", "Постеризация", fx_posterize_status)
     fx_group("pixelate", "Пикселизация", fx_pixelate_status)
     fx_group("grade", "Ретушь")
+    fx_group("bloom", "Bloom")
 
     def fx_chroma_status():
         return _fx_story_status("fx_chroma_strength", "chroma_level", lambda level: "%.2f" % level)

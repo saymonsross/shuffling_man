@@ -8,13 +8,13 @@ define DEV_SCENE_NAV_ENTRIES = (
     {
         "section": _("ПРОЛОГ"),
         "title": _("Сцена 1 · Записка"),
-        "label": "prologue_scene_1",
+        "label": "prologue_scene",
         "preview": "dev/scene_navigation/previews/prologue_scene_1.jpg",
     },
     {
         "section": _("ПРОЛОГ"),
         "title": _("Сцена 2 · Начало письма"),
-        "label": "prologue_scene_2",
+        "label": "prologue_scene.letter",
         "preview": "images/0_prologue/prologue pencil_close.jpg",
     },
     {

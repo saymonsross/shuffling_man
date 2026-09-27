@@ -325,10 +325,10 @@ testcase story_full_route:
     click "Начать"
     $ persistent.sm_reduce_motion = reduce_motion
     advance until "Я здесь после нервного срыва" timeout 10.0
-    assert eval (sprite_showed('prologue_head'))
+    assert eval (renpy.showing('prologue'))
     assert eval (not sprite_showed('prologue_note_bg'))
     advance until "Долго я не находила в себе сил" timeout 10.0
-    assert eval (sprite_showed('prologue_head'))
+    assert eval (renpy.showing('prologue'))
     advance until screen "prologue_note_start" timeout 10.0
     click "Взять ручку"
     assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0

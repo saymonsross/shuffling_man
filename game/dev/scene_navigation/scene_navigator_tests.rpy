@@ -18,24 +18,24 @@ testcase dev_scene_navigator_menu:
     keysym "game_menu"
 
 testcase dev_scene_navigator_starts_prologue:
-    parameter entry_label = ["prologue_scene_1", "prologue_scene_2"]
+    parameter entry_label = ["prologue_scene", "prologue_scene.letter"]
 
     if not screen "main_menu":
         run MainMenu(confirm=False)
     click "Сцены"
-    assert eval (renpy.get_displayable('dev_scene_navigator', 'prologue_scene_1') is not None)
-    assert eval (renpy.get_displayable('dev_scene_navigator', 'prologue_scene_1').is_focused()) timeout 1.0
-    if eval (entry_label == "prologue_scene_1"):
+    assert eval (renpy.get_displayable('dev_scene_navigator', 'prologue_scene') is not None)
+    assert eval (renpy.get_displayable('dev_scene_navigator', 'prologue_scene').is_focused()) timeout 1.0
+    if eval (entry_label == "prologue_scene"):
         keysym "button_select"
         advance until "Чтобы заговорить о чём-то тяжёлом" timeout 8.0
         advance until "Я здесь после нервного срыва" timeout 10.0
-        assert eval (sprite_showed('prologue_head'))
+        assert eval (renpy.showing('prologue'))
         assert eval (not sprite_showed('prologue_note_bg'))
     else:
         click id entry_label
 
     advance until "Долго я не находила в себе сил" timeout 10.0
-    assert eval (sprite_showed('prologue_head'))
+    assert eval (renpy.showing('prologue'))
     advance until screen "prologue_note_start" timeout 10.0
     click "Взять ручку"
     assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0
