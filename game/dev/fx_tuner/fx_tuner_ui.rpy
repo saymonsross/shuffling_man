@@ -41,11 +41,11 @@ init -5 python:
         return Text(fxt_quote(status()), style="fxt_hint", substitute=False), 0.1
 
 
-screen fx_tuner():
+screen fx_tuner(groups=None, title="FX TUNER"):
 
     layer "top"
 
-    on "show" action Function(fxt_open)
+    on "show" action Function(fxt_open, groups)
 
     if fxt_model.collapsed:
         frame:
@@ -54,12 +54,12 @@ screen fx_tuner():
             align (0.5, 0.0)
             hbox:
                 spacing 10
-                text "FX TUNER" style "fxt_title"
+                text title style "fxt_title" substitute False
                 add DynamicDisplayable(fxt_head_dd)
                 textbutton "развернуть" style "fxt_button" action SetField(fxt_model, "collapsed", False)
                 textbutton "закрыть" style "fxt_button" action Hide("fx_tuner")
     else:
-        use fxt_panel()
+        use fxt_panel(title)
 
     ## Клавиши панели перехватываются раньше игры; остальные проходят в игру.
     key "anyrepeat_noshift_K_UP" action Function(fxt_move, -1)
@@ -76,7 +76,7 @@ screen fx_tuner():
     key "K_ESCAPE" action Hide("fx_tuner")
 
 
-screen fxt_panel():
+screen fxt_panel(title="FX TUNER"):
 
     default pw = 600
 
@@ -92,7 +92,7 @@ screen fxt_panel():
 
             hbox:
                 spacing 8
-                text "FX TUNER" style "fxt_title"
+                text title style "fxt_title" substitute False
                 textbutton ("вправо" if fxt_model.side == "left" else "влево"):
                     style "fxt_button"
                     action SetField(fxt_model, "side", "right" if fxt_model.side == "left" else "left")
@@ -118,12 +118,13 @@ screen fxt_panel():
                         xsize (pw - 50)
 
                         for group, info in fx_cfg_groups():
-                            null height 6
-                            text fxt_quote(info["title"]) style "fxt_group" substitute False
-                            if info["status"]:
-                                add DynamicDisplayable(fxt_status_dd, info["status"])
-                            for key in fxt_group_keys(group):
-                                use fxt_row(key)
+                            if fxt_group_shown(group):
+                                null height 6
+                                text fxt_quote(info["title"]) style "fxt_group" substitute False
+                                if info["status"]:
+                                    add DynamicDisplayable(fxt_status_dd, info["status"])
+                                for key in fxt_group_keys(group):
+                                    use fxt_row(key)
 
                 vbar:
                     value YScrollValue("fxt_vp")

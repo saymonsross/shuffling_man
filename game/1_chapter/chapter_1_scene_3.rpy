@@ -82,7 +82,7 @@ label chapter_1_scene_3:
 
     scene chapter_1 scene_3_toys
 
-    menu:
+    menu(screen="textbox"):
         "\"Очаровашка!\"":
             $ c1s3_teaparty_choice = "charming"
             mar "Очень милый медведь! А какие манеры!"
@@ -140,7 +140,7 @@ label chapter_1_scene_3:
 
     scene chapter_1 scene_3_entrance_neighbors
 
-    menu:
+    menu(screen="textbox"):
         "\"Простите...\"":
             $ c1s3_neighbor_choice = "apologize"
             mar "У неё просто тяжёлый возраст. Извините, пожалуйста."

@@ -270,3 +270,33 @@ transform hover_pulse(low=0.45, high=1.0, half=0.7):
         easein half alpha low
         easeout half alpha high
         repeat
+
+init python:
+    ## Медленная смена яркости: 8 бит на канал дают шаг 1/255 сразу на весь кадр, на тёмных
+    ## фонах он виден. Статичный дизеринг в полшага разносит переход по пикселям.
+    renpy.register_shader("sm.breath",
+        variables="""
+        uniform sampler2D tex0;
+        uniform float u_breath_brightness;
+        attribute vec2 a_tex_coord;
+        varying vec2 v_tex_coord;
+        """,
+        vertex_300="""
+        v_tex_coord = a_tex_coord;
+        """,
+        fragment_300="""
+        vec4 c = texture2D(tex0, v_tex_coord);
+        float d = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
+        c.rgb += (u_breath_brightness + d / 255.0) * c.a;
+        gl_FragColor = c;
+        """)
+
+## «Дыхание» яркости lo → hi → lo, по t секунд в каждую сторону.
+transform breath_brightness(lo=-0.01, hi=-0.04, t=6.0):
+    mesh True
+    shader "sm.breath"
+    u_breath_brightness float(lo)
+    block:
+        ease t u_breath_brightness float(hi)
+        ease t u_breath_brightness float(lo)
+        repeat

@@ -71,8 +71,12 @@ define GLOW_TEXT_COLOR = "#f2ece0"
 define GLOW_TEXT_HOVER_COLOR = "#ffffff"
 define GLOW_TEXT_OUTLINES = [(2, "#1a1712d9", 0, 0)]
 
+## Процарапанный штрих подписи (common/scratch_text.rpy); тюнер — Choice Tuner в Dev Hub.
+init -10 python:
+    scratch_params("scene_choice_text", "Текст кнопок в сценах", 2.0, 0.3, 1.0, 0.55)
+
 style glow_button_text is default:
-    font gui.interface_text_font
+    font gui.main_menu_font
     size GLOW_TEXT_SIZE
     color GLOW_TEXT_COLOR
     hover_color GLOW_TEXT_HOVER_COLOR
@@ -99,8 +103,8 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
 
         background None
         sensitive sensitive
-        action action
-        hovered (hovered or NullAction())
+        action [SPlay("click"), action]
+        hovered [SPlay("hover"), (hovered or NullAction())]
         unhovered (unhovered or NullAction())
 
         fixed:
@@ -113,7 +117,9 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
                 add _g_img at glow_alarm, glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
             else:
                 add _g_img at glow_breath, glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
+            ## tint 0: обводка и hover-цвет стиля остаются, шейдер только рвёт штрих.
             text label:
                 style "glow_button_text"
                 align (0.5, 0.5)
                 size (text_size or GLOW_TEXT_SIZE)
+                at scratch("scene_choice_text", tint=0.0), hover_shake(0.51)

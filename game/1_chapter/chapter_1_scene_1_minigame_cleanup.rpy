@@ -17,8 +17,8 @@ define C1S1_CLEANUP_ITEMS = (
 )
 define C1S1_CLEANUP_KEYS = tuple(item[0] for item in C1S1_CLEANUP_ITEMS)
 define C1S1_CLEANUP_DISSOLVE = Dissolve(0.22)
-define C1S1_CLEANUP_HOVER_SOUND = "click"
-define C1S1_CLEANUP_PICKUP_SOUND = "070_equip_10"
+define C1S1_CLEANUP_HOVER_SOUND = "hover"
+define C1S1_CLEANUP_PICKUP_SOUND = "click"
 
 default c1s1_cleanup_collected = ()
 default c1s1_cleanup_outcome = None
@@ -119,7 +119,7 @@ screen c1s1_cleanup_minigame():
                     id "cleanup_continue"
                     xalign 0.5
                     hovered SPlay(C1S1_CLEANUP_HOVER_SOUND, ext="ogg")
-                    action Return("done")
+                    action [SPlay(C1S1_CLEANUP_PICKUP_SOUND, ext="ogg"), Return("done")]
 
 
 style c1s1_cleanup_text is gui_text:

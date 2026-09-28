@@ -15,14 +15,18 @@ define config.check_conflicting_properties = True
 
 define gui.accent_color = '#cc0000'
 
+## Заголовки экранов и разделов — приглушённый красный: чистый accent слишком яркий.
+define gui.header_color = '#8e1414'
+
 ## Фирменный красный для текста на тёмном фоне.
-define gui.dark_background_accent = '#f08080'
+define gui.dark_background_accent = '#b01e1e'
 
 define gui.idle_color = '#888888'
 
 define gui.idle_small_color = '#aaaaaa'
 
-define gui.hover_color = '#e06666'
+## Наведение — тёмно-красный, а не розовый.
+define gui.hover_color = '#b01e1e'
 
 define gui.selected_color = '#ffffff'
 
@@ -53,14 +57,41 @@ init python:
     config.font_replacement_map["fonts/martian_mono_regular.ttf", True, False] = ("fonts/martian_mono_bold.ttf", False, False)
     config.font_replacement_map["fonts/martian_mono_regular.ttf", True, True] = ("fonts/martian_mono_bold.ttf", False, True)
 
+## Реплики (say и NVL) — Fira Sans Condensed Light, {b}/{i} берут настоящие начертания;
+## быстрое меню — Regular того же семейства.
+define gui.dialogue_text_font = "fonts/fira_sans_condensed_light.ttf"
+define gui.quick_button_text_font = "fonts/fira_sans_condensed_regular.ttf"
+
+init python:
+    config.font_replacement_map["fonts/fira_sans_condensed_light.ttf", True, False] = ("fonts/fira_sans_condensed_bold.ttf", False, False)
+    config.font_replacement_map["fonts/fira_sans_condensed_light.ttf", False, True] = ("fonts/fira_sans_condensed_light_italic.ttf", False, False)
+    config.font_replacement_map["fonts/fira_sans_condensed_light.ttf", True, True] = ("fonts/fira_sans_condensed_bold_italic.ttf", False, False)
+
 define gui.name_text_font = gui.text_font
 
-define gui.interface_text_font = gui.text_font
+## Интерфейс (меню игры, настройки, сохранения, история) — Fira Sans Condensed Regular,
+## как быстрое меню. Стрелок кроме ←↑→↓ ⇦–⇪ и фигур (●, ▸) в нём нет — их рисует
+## DejaVuSans; диапазоны обходят собственные глифы Fira (▯ U+25AF, ◊ U+25CA).
+define gui.interface_text_font = (
+    FontGroup()
+    .add("fonts/fira_sans_condensed_regular.ttf", None, None)
+    .add("DejaVuSans.ttf", 0x2194, 0x21E5)
+    .add("DejaVuSans.ttf", 0x21EB, 0x21FF)
+    .add("DejaVuSans.ttf", 0x25A0, 0x25AE)
+    .add("DejaVuSans.ttf", 0x25B0, 0x25C9)
+    .add("DejaVuSans.ttf", 0x25CB, 0x25FF)
+    )
+
+## Заголовки экранов и разделов настроек — тем же шрифтом интерфейса.
+define gui.label_text_font = gui.interface_text_font
 
 define gui.text_size = 32
 
 ## Реплики (say и NVL) мельче text_size; выборы остаются на text_size.
-define gui.dialogue_text_size = 27
+define gui.dialogue_text_size = 31
+
+## Реплики чуть приглушённее чисто белого интерфейса.
+define gui.dialogue_text_color = "#e8e6e1"
 
 define gui.name_text_size = 40
 
@@ -75,8 +106,14 @@ define gui.title_text_size = 54
 
 ## Главное и игровое меню
 
-define gui.main_menu_background = "gui/main_menu.png"
+define gui.main_menu_background = "#000000"
 define gui.game_menu_background = "gui/game_menu.png"
+
+## Логотип с надписью. Для другого языка кладётся game/tl/<язык>/gui/main_menu_logo.png —
+## загрузчик Ren'Py сам подменит файл, код не меняется.
+define gui.main_menu_logo = "gui/main_menu_logo.png"
+
+define gui.main_menu_font = "fonts/oswald_extralight.ttf"
 
 
 ## Диалог
@@ -84,6 +121,35 @@ define gui.game_menu_background = "gui/game_menu.png"
 define gui.textbox_height = 278
 
 define gui.textbox_yalign = 1.0
+
+## Своя полоса быстрого меню под окном диалога; между ними серая линия-разделитель.
+## Окно поднято на высоту полосы и толщину линии.
+define gui.quick_menu_height = 40
+define gui.quick_menu_gap = 2
+define gui.quick_menu_line_color = "#2e2e2eb3"
+
+## Контур всплывающих окон (подтверждение, уведомления, рамки) — плотнее, чем у окна
+## диалога; штрих у них общий (Border Tuner).
+define gui.frame_line_color = "#3d3d3dff"
+
+## Контур окна диалога и полосы тем же цветом и толщиной, что разделитель.
+## sides — какие стороны рисовать: t/b/l/r; углы не перекрываются; color — вместо цвета разделителя.
+init python:
+    def gui_outline(w, h, sides="tblr", color=None, **properties):
+        t = gui.quick_menu_gap
+        c = color or gui.quick_menu_line_color
+        top = t if "t" in sides else 0
+        bottom = t if "b" in sides else 0
+        parts = []
+        if top:
+            parts.append(Solid(c, xsize=w, ysize=t))
+        if bottom:
+            parts.append(Solid(c, ypos=h - t, xsize=w, ysize=t))
+        if "l" in sides:
+            parts.append(Solid(c, ypos=top, xsize=t, ysize=h - top - bottom))
+        if "r" in sides:
+            parts.append(Solid(c, xpos=w - t, ypos=top, xsize=t, ysize=h - top - bottom))
+        return Fixed(*parts, xsize=w, ysize=h, **properties)
 
 
 define gui.name_xpos = 358
@@ -120,7 +186,9 @@ define gui.button_text_font = gui.interface_text_font
 
 define gui.button_text_size = gui.interface_text_size
 
-define gui.button_text_idle_color = gui.idle_color
+## Кнопки интерфейса выглядят как быстрое меню: тот же серый и тонкая тёмная обводка.
+define gui.button_text_idle_color = gui.idle_small_color
+define gui.button_text_outlines = [(1, "#000000cc", 0, 0)]
 define gui.button_text_hover_color = gui.hover_color
 define gui.button_text_selected_color = gui.selected_color
 define gui.button_text_insensitive_color = gui.insensitive_color
@@ -128,16 +196,16 @@ define gui.button_text_insensitive_color = gui.insensitive_color
 define gui.button_text_xalign = 0.0
 
 
-define gui.radio_button_borders = Borders(27, 6, 6, 6)
+define gui.radio_button_borders = Borders(0, 6, 0, 6)
 
-define gui.check_button_borders = Borders(27, 6, 6, 6)
+define gui.check_button_borders = Borders(0, 6, 0, 6)
 
 define gui.confirm_button_text_xalign = 0.5
 
 define gui.page_button_borders = Borders(15, 6, 15, 6)
 
 define gui.quick_button_borders = Borders(15, 6, 15, 0)
-define gui.quick_button_text_size = 15
+define gui.quick_button_text_size = 18
 define gui.quick_button_text_idle_color = gui.idle_small_color
 define gui.quick_button_text_selected_color = gui.dark_background_accent
 
@@ -158,10 +226,11 @@ define gui.choice_button_text_insensitive_color = '#8888887f'
 
 ## Кнопки слотов
 
-define gui.slot_button_width = 414
-define gui.slot_button_height = 309
-define gui.slot_button_borders = Borders(15, 15, 15, 15)
-define gui.slot_button_text_size = 15
+## Слот ровно под скриншот сохранения (config.thumbnail_*), без полей.
+define gui.slot_button_width = 384
+define gui.slot_button_height = 216
+define gui.slot_button_borders = Borders(0, 0, 0, 0)
+define gui.slot_button_text_size = 16
 define gui.slot_button_text_xalign = 0.5
 define gui.slot_button_text_idle_color = gui.idle_small_color
 define gui.slot_button_text_selected_idle_color = gui.selected_color
@@ -192,7 +261,7 @@ define gui.pref_button_spacing = 0
 
 define gui.page_spacing = 0
 
-define gui.slot_spacing = 15
+define gui.slot_spacing = 40
 
 define gui.main_menu_text_xalign = 1.0
 
@@ -235,9 +304,10 @@ define gui.unscrollable = "hide"
 
 define config.history_length = 250
 
-define gui.history_height = 210
+## None — высота записи по тексту: фиксированная давала огромные пустоты между репликами.
+define gui.history_height = None
 
-define gui.history_spacing = 0
+define gui.history_spacing = 28
 
 define gui.history_name_xpos = 233
 define gui.history_name_ypos = 0
@@ -305,6 +375,7 @@ init python:
         gui.label_text_size = 51
 
         gui.textbox_height = 360
+        gui.quick_menu_height = 70
         gui.name_xpos = 120
         gui.dialogue_xpos = 135
         gui.dialogue_width = 1650
@@ -317,7 +388,7 @@ init python:
         gui.navigation_spacing = 30
         gui.pref_button_spacing = 15
 
-        gui.history_height = 285
+        gui.history_height = None
         gui.history_text_width = 1035
 
         gui.quick_button_text_size = 30

@@ -40,9 +40,9 @@ testcase c1s1_metronome_motion:
 
     $ persistent.sm_reduce_motion = reduce_motion
     run Function(dev_scene_nav_start, "chapter_1_scene_1")
-    assert screen "c1s1_lamp_switch" timeout 8.0
+    assert "Зажечь свет" timeout 8.0
     click "Зажечь свет"
-    assert screen "c1s1_metronome_start" timeout 15.0
+    assert "Завести метроном" timeout 15.0
     click "Завести метроном"
     pause 1.5
     assert eval (sprite_showed("chapter_1_metronome_arrow"))
@@ -185,8 +185,8 @@ testcase c1s1_minigame_accessibility:
 testcase c1s1_minigame_pointer_capture:
     ## Проверяем настоящий drag после accessibility-сценария.
     if screen "main_menu":
-        click "Начать" raw
-        assert "Чтобы заговорить о чём-то тяжёлом" raw timeout 8.0
+        click "НОВАЯ ИГРА" raw
+        advance until "Чтобы заговорить о чём-то тяжёлом" timeout 25.0
     $ persistent.sm_simplified_locks = False
     $ quick_menu = True
     $ c1s1_mg_reset()
@@ -228,17 +228,17 @@ testcase c1s1_minigame_pointer_capture:
     run Hide("sm_test_pointer_leak_target")
 
     ## Quick menu скрыто до завершения runtime.
-    assert not "История" raw
+    assert not "ИСТОРИЯ" raw
     assert not "Меню" raw
     run Hide("c1s1_mg_runtime")
-    assert ("История" raw or "Меню" raw) timeout 1.0
+    assert ("ИСТОРИЯ" raw or "Меню" raw) timeout 1.0
     $ c1s1_mg_active = False
     $ c1s1_mg_reset()
 
 testcase c1s1_story_fast_outcome:
     $ c1s1_locks_outcome = "fast"
     $ dismiss_on()
-    run Jump("chapter_1_scene_1.after_locks")
+    run Start("chapter_1_scene_1.after_locks")
     assert "Привет." timeout 10.0
     advance
     advance until "Ничего серьёзного:" timeout 10.0
@@ -249,7 +249,7 @@ testcase c1s1_story_fast_outcome:
 testcase c1s1_story_normal_outcome:
     $ c1s1_locks_outcome = "normal"
     $ dismiss_on()
-    run Jump("chapter_1_scene_1.after_locks")
+    run Start("chapter_1_scene_1.after_locks")
     assert "Ну наконец-то, бля." timeout 10.0
     advance
     advance until "Ничего серьёзного:" timeout 10.0
@@ -260,7 +260,7 @@ testcase c1s1_story_normal_outcome:
 testcase c1s1_story_legacy_timeout_outcome:
     $ c1s1_locks_outcome = "timeout"
     $ dismiss_on()
-    run Jump("chapter_1_scene_1.after_locks")
+    run Start("chapter_1_scene_1.after_locks")
     assert "Ну наконец-то, бля." timeout 10.0
     advance
     advance until "Ничего серьёзного:" timeout 10.0
@@ -272,14 +272,14 @@ testcase c1s3_apologize_branch:
     $ c1s3_teaparty_choice = None
     $ c1s3_neighbor_choice = None
     $ dismiss_on()
-    run Jump("chapter_1_scene_3")
-    advance until screen "choice" timeout 10.0
+    run Start("chapter_1_scene_3")
+    advance until screen "textbox" timeout 10.0
     assert "Очаровашка!"
     assert "Зануда!"
     assert "Странный!"
     assert "А где Полли?"
     click "Очаровашка!"
-    advance until screen "choice" timeout 10.0
+    advance until screen "textbox" timeout 10.0
     assert "Простите..."
     assert "Заткнитесь!"
     assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbors'))
@@ -297,10 +297,10 @@ testcase c1s3_confront_branch:
     $ c1s3_teaparty_choice = None
     $ c1s3_neighbor_choice = None
     $ dismiss_on()
-    run Jump("chapter_1_scene_3")
-    advance until screen "choice" timeout 10.0
+    run Start("chapter_1_scene_3")
+    advance until screen "textbox" timeout 10.0
     click "А где Полли?"
-    advance until screen "choice" timeout 10.0
+    advance until screen "textbox" timeout 10.0
     click "Заткнитесь!"
     advance until "Они не имели права нравоучать нас." timeout 10.0
     advance until "Пусть лучше приглядывают за своими детьми, болтающимися без дела по двору, как оборванцы." timeout 5.0
@@ -310,8 +310,8 @@ testcase c1s3_confront_branch:
 
 testcase c1s3_strange_branch:
     $ dismiss_on()
-    run Jump("chapter_1_scene_3")
-    advance until screen "choice" timeout 10.0
+    run Start("chapter_1_scene_3")
+    advance until screen "textbox" timeout 10.0
     click "Странный!"
     assert "Кажется, он помешан на еловых шишках..." timeout 10.0
     assert eval (c1s3_teaparty_choice == 'strange')
@@ -322,22 +322,22 @@ testcase story_full_route:
 
     if not screen "main_menu":
         run MainMenu(confirm=False)
-    click "Начать"
+    click "НОВАЯ ИГРА"
     $ persistent.sm_reduce_motion = reduce_motion
     advance until "Я здесь после нервного срыва" timeout 10.0
     assert eval (renpy.showing('prologue'))
     assert eval (not sprite_showed('prologue_note_bg'))
     advance until "Долго я не находила в себе сил" timeout 10.0
     assert eval (renpy.showing('prologue'))
-    advance until screen "prologue_note_start" timeout 10.0
+    advance until "Взять ручку" timeout 10.0
     click "Взять ручку"
     assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0
     assert eval (not note_hover_pencil and can_dismiss)
     advance until "Я Расскажу всё на одном дыхании. Здесь и сейчас." timeout 20.0
     assert eval (sprite_showed('prologue_pencil_close'))
-    advance until screen "c1s1_lamp_switch" timeout 15.0
+    advance until "Зажечь свет" timeout 15.0
     click "Зажечь свет"
-    advance until screen "c1s1_metronome_start" timeout 15.0
+    advance until "Завести метроном" timeout 15.0
     click "Завести метроном"
     skip fast
     assert screen "c1s1_locks_open_door" timeout 15.0
@@ -375,7 +375,7 @@ testcase story_full_route:
     assert eval (sprite_showed('chapter_1 scene_3_fridge_new_drawing'))
     advance until "Спасибо, что побыла на нашем чаепитии!" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_children_room_girl_neutral'))
-    advance until screen "choice" timeout 10.0
+    advance until screen "textbox" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_toys'))
     click "Зануда!"
     assert "Его лекция о мёдоведении была совершенно ни к месту!" timeout 10.0
@@ -395,7 +395,7 @@ testcase story_full_route:
     assert eval (sprite_showed('chapter_1 scene_3_daughter_top_close'))
     advance until "Ну наконец-то явились! И что за дела?" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbor'))
-    advance until screen "choice" timeout 10.0
+    advance until screen "textbox" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbors'))
     click "Простите..."
     advance until "Шаркающий человек." timeout 10.0

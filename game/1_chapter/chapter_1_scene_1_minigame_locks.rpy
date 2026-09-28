@@ -161,7 +161,7 @@ define C1S1_MG_POLL_T = 0.15
 define C1S1_MG_TICK_T = 1.0 / 30.0  # 30 обновлений/с
 define C1S1_MG_POINTER_LOST_T = 0.25  # release вне окна: защита от вечного drag
 
-define C1S1_MG_HOVER_SOUND = "click"
+define C1S1_MG_HOVER_SOUND = "hover"
 define C1S1_MG_BLOCKED_SOUND = "033_denied_03"
 
 ## Звук мини-игры; файлы в game/audio/sfx/c1s1/.
@@ -1088,7 +1088,7 @@ screen c1s1_locks_minigame():
     if persistent.sm_simplified_locks:
         textbutton c1s1_mg_simplified_label():
             style "c1s1_mg_step_button"
-            action Function(c1s1_mg_simplified_step)
+            action [SPlay("click"), Function(c1s1_mg_simplified_step)]
             hovered SPlay(C1S1_MG_HOVER_SOUND, ext="ogg")
             default_focus True
             xalign 0.5

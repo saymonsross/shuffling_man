@@ -28,15 +28,19 @@ define config.has_sound = True
 define config.has_music = True
 define config.has_voice = True
 
+## Трек главного меню запускает label main_menu (main_menu.rpy), а не config.main_menu_music:
+## тот заново включается при каждом full_restart, в том числе при входе в сцену из навигатора.
+
 
 ## Переходы
 
 
-define config.enter_transition = dissolve
-define config.exit_transition = dissolve
+## Смена экранов интерфейса (вход в меню, переходы между ними, выход) — одна длительность.
+define config.enter_transition = Dissolve(0.3)
+define config.exit_transition = Dissolve(0.3)
 
 
-define config.intra_transition = dissolve
+define config.intra_transition = Dissolve(0.3)
 
 
 define config.after_load_transition = None

@@ -16,7 +16,7 @@ init -10 python:
     fx_group("parallax", "Параллакс")
 
     def sm_parallax_active():
-        if not persistent.sm_parallax or store.sm_parallax_off or sm_reduced_motion() or fx_cfg_bypassed():
+        if not persistent.sm_parallax or store.sm_parallax_off or store.main_menu or sm_reduced_motion() or fx_cfg_bypassed():
             return False
         ## Автотесты сравнивают кадры с эталонами, Position Tuner рисует в координатах экрана.
         if renpy.game.args.command == "test":
@@ -29,7 +29,8 @@ init -10 python:
         if renpy.predicting():
             return (_fx_state.get("parallax_level", 0.0),
                 _fx_state.get("parallax_mx", 0.0), _fx_state.get("parallax_my", 0.0))
-        if sm_reduced_motion():
+        ## Главное меню и его подменю неподвижны сразу, без затухания после выхода из игры.
+        if sm_reduced_motion() or store.main_menu:
             for name in ("parallax_level", "parallax_mx", "parallax_my"):
                 _fx_state[name] = 0.0
             return 0.0, 0.0, 0.0

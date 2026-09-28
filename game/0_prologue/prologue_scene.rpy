@@ -16,7 +16,6 @@ image prologue head_blink:
 image prologue_note_center = "images/0_prologue/prologue_note center.jpg"
 image prologue_note_bg = "images/0_prologue/prologue_hand anim bg.png"
 image prologue_note_paper = "images/0_prologue/prologue_note_paper.png"
-image prologue_note_pencil = hover_lit("images/0_prologue/prologue_note_pencil.png", "note_hover_pencil", 0.35)
 
 image prologue_pencil_close = "images/0_prologue/prologue pencil_close.png"
 
@@ -28,6 +27,7 @@ image prologue_hand_right_write = "images/0_prologue/prologue_hand_right write.p
 ## Стили, переходы, состояние
 
 style prologue_titles_text is default:
+    font "fonts/roboto_condensed_regular.ttf"
     color "#ff0000"
     outlines [(2, "#1a1712d9", 0, 0)]
     slow_cps 0
@@ -36,31 +36,30 @@ define prologue_dissolve = Dissolve(1.2)
 
 default note_hover_pencil = False
 
-## Экраны
 
-screen prologue_note_start():
-    modal True
-    use sm_skippable_interaction
-    ## Камера здесь сброшена; координаты совпадают с положением карандаша,
-    ## а контейнер повторяет параллакс слоя master.
-    fixed:
-        at parallax_follow()
-        xysize (config.screen_width, config.screen_height)
-        use glow_button(
-            _("Взять ручку"),
-            Return("done"),
-            bg="light",
-            pos=(1264, 431),
-            size=(260, 140),
-            hovered=[SetVariable("note_hover_pencil", True), SPlay("click")],
-            unhovered=SetVariable("note_hover_pencil", False))
+label end_dev_yet:
+    $ quick_menu = False
+    $ sm_parallax_off = True
+
+    scene black with Dissolve(2.0)
+
+    show expression At(sm_font_preview_text(_("ДАЛЬШЕ НЕ ДОДЕЛАНО"), style="prologue_titles_text", size=50), scratch("show_text", tint=0.0)) as prologue_titles_text_2:
+        align (0.5, 0.5)
+        subpixel True
+    with Dissolve(2.0)
+
+    pause
+
+    ## jump main_menu остался бы в игре: флаг main_menu не взводится, параллакс не гаснет.
+    $ MainMenu(confirm=False)()
 
 ## Вступительные титры
 
 label prologue_titles:
 
-    "start"
+    # "start"
 
+    $ fx_vignette = True
     $ quick_menu = False
     $ sm_parallax_off = True
 
@@ -70,7 +69,8 @@ label prologue_titles:
 
     pause 1.0
 
-    show expression Text(_("HINTERLAND MOOD"), style="prologue_titles_text", size=130) as prologue_titles_text:
+    ## Штрих группы show_text; tint 0 — титры остаются своего цвета. Шрифт примеряется F8 (dev).
+    show expression At(sm_font_preview_text(_("HINTERLAND MOOD"), style="prologue_titles_text", size=130), scratch("show_text", tint=0.0)) as prologue_titles_text:
         align (0.5, 0.5)
         subpixel True
     with Dissolve(2.0)
@@ -81,10 +81,10 @@ label prologue_titles:
 
     pause 1.0
 
-    show expression Text(_("ПО РАССКАЗУ РОМАНА ЧЕРНОГО"), style="prologue_titles_text", size=50) as prologue_titles_text_2:
+    show expression At(sm_font_preview_text(_("ПО РАССКАЗУ РОМАНА ЧЕРНОГО"), style="prologue_titles_text", size=50), scratch("show_text", tint=0.0)) as prologue_titles_text_2:
         align (0.5, 0.5)
         subpixel True
-    with Dissolve(3.0)
+    with Dissolve(2.0)
 
     pause 3.0
 
@@ -110,9 +110,7 @@ label prologue_scene:
         parallel:
             linear 30.5 zoom 1.05
         parallel:    
-            linear 6.0 matrixcolor BrightnessMatrix(0.0)
-            linear 6.0 matrixcolor BrightnessMatrix(-0.03)
-            repeat
+            breath_brightness(-0.01, -0.04, 6.0)
 
     $ mplay("opening/prologue_1", fadein=10.0, fadeout=18.0)
 
@@ -133,7 +131,6 @@ label prologue_scene:
 
     ## Новый ATL наследует текущий zoom комнаты: наезд продолжается без скачка.
     show prologue_dark_room:
-        blur 0.0 matrixcolor BrightnessMatrix(0.0)
         parallel:
             linear 25.0 zoom 1.05
         parallel:
@@ -150,6 +147,8 @@ label prologue_scene:
             linear 50.5 zoom 1.2
         parallel:
             linear 4.0 alpha 1.0
+        parallel:
+            breath_brightness(-0.01, -0.04, 6.0)
 
     "Меня зовут Марина Александровна Шрайбер."
     
@@ -192,6 +191,9 @@ label .letter:
 
     $ note_hover_pencil = False
 
+    ## Окно прячется до show: авто-скрытие перед with применило бы show мгновенно и съело Dissolve.
+    window hide
+
     ## Погашенные голова и фон ещё на экране: alpha задаётся явно, иначе новый ATL унаследует 0.
     show prologue_head_bg:
         zoom 1.0 alpha 1.0
@@ -212,20 +214,29 @@ label .letter:
 
     "Не было сил вспоминать: меня трясло, рвало, руки непроизвольно тянулись закрыть лицо."
 
-    scene prologue_note_bg
+    ## Подсветка карандаша при наведении на «ВЗЯТЬ»: последнее число — прибавка яркости.
+    ## image выполняется при запуске игры, здесь он только для удобства правки.
+    image prologue_note_pencil = hover_lit("images/0_prologue/prologue_note_pencil.png", "note_hover_pencil", -0.1)
+
+    scene prologue_note_bg at breath_brightness(-0.01, -0.04, 6.0)
     show prologue_note_paper at placed((990, 455), (0.5, 0.5))
     show prologue_note_pencil at placed((1264, 431), (0.5, 0.5))
     show prologue_hand_left at placed((271, 417))
     show prologue_hand_right at placed((1358, 468))
-    with prologue_dissolve
+    with Dissolve(2.5)
 
     "Обо всём случившемся невыносимо думать."
     "Но я должна излить наружу то, что пожирает меня изнутри."
 
     window hide
 
+    ## Камера здесь сброшена; координаты совпадают с положением карандаша.
     if not renpy.is_skipping():
-        call screen prologue_note_start
+        menu(screen="scene_choice", follow=parallax_follow(), skippable=True):
+            "ВЗЯТЬ" (bg="light", pos=(1264, 431), size=(260, 140),
+                    hovered=SetVariable("note_hover_pencil", True),
+                    unhovered=SetVariable("note_hover_pencil", False)):
+                pass
 
     ## После закрытия экрана unhovered не вызывается.
     $ note_hover_pencil = False
@@ -267,8 +278,10 @@ label .letter:
     "Я Расскажу всё на одном дыхании. Здесь и сейчас."
 
     ## Граница между прологом и первой главой.
-    scene black
-    with Dissolve(2.0)
+    scene black with Dissolve(2.0)
+    $ fx_vignette = False 
     $ pause(1.2)
 
-    jump chapter_1_scene_1
+    jump end_dev_yet
+
+    # jump chapter_1_scene_1

@@ -3,4 +3,7 @@
 
 label start:
 
+    ## Трек главного меню идёт на штатном канале music вне пула 7dots — обёртки его не видят.
+    $ renpy.music.stop(channel="music", fadeout=3.0)
+
     jump prologue_titles

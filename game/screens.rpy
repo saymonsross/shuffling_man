@@ -28,6 +28,11 @@ style button_text is gui_text:
     properties gui.text_properties("button")
     yalign 0.5
 
+## Звуки интерфейса. Кнопки сцен и мини-игр звучат через SPlay: у них своя логика hover.
+style gui_button:
+    hover_sound "audio/sfx/hover.ogg"
+    activate_sound "audio/sfx/click.ogg"
+
 
 style label_text is gui_text:
     properties gui.text_properties("label", accent=True)
@@ -51,10 +56,11 @@ style scrollbar:
     base_bar Frame("gui/scrollbar/horizontal_[prefix_]bar.png", gui.scrollbar_borders, tile=gui.scrollbar_tile)
     thumb Frame("gui/scrollbar/horizontal_[prefix_]thumb.png", gui.scrollbar_borders, tile=gui.scrollbar_tile)
 
+## Тонкая полоса цветом разделителей, бегунок — цветом заголовков.
 style vscrollbar:
-    xsize gui.scrollbar_size
-    base_bar Frame("gui/scrollbar/vertical_[prefix_]bar.png", gui.vscrollbar_borders, tile=gui.scrollbar_tile)
-    thumb Frame("gui/scrollbar/vertical_[prefix_]thumb.png", gui.vscrollbar_borders, tile=gui.scrollbar_tile)
+    xsize 4
+    base_bar Solid(gui.quick_menu_line_color)
+    thumb Solid(gui.header_color)
 
 style slider:
     ysize gui.slider_size
@@ -67,9 +73,10 @@ style vslider:
     thumb "gui/slider/vertical_[prefix_]thumb.png"
 
 
+## Все игровые рамки — как окно диалога: заливка и контур со штрихом (ui_frame_border).
 style frame:
     padding gui.frame_borders.padding
-    background Frame("gui/frame.png", gui.frame_borders, tile=gui.frame_tile)
+    background "ui_frame_bg"
 
 
 ## Внутриигровые экраны
@@ -108,13 +115,49 @@ style namebox is default
 style namebox_label is say_label
 
 
+## Контур окна диалога, полосы быстрого меню и разделитель — с процарапанным штрихом
+## (common/scratch_text.rpy), своя группа параметров; тюнер — Border Tuner в Dev Hub.
+init -5 python:
+    scratch_params("ui_border", "Контур окна диалога", 1.5, 0.3, 1.0, 0.55)
+
+image ui_textbox_border = At(gui_outline(1205, 225, "tlr"), scratch("ui_border", tint=0.0))
+image ui_quick_border = At(gui_outline(1205, gui.quick_menu_height, "lrb"), scratch("ui_border", tint=0.0))
+## Контур любого размера: Frame растягивает рамку 32×32, штрих ложится поверх готового размера.
+image ui_frame_border = At(Frame(gui_outline(32, 32, color=gui.frame_line_color), 4, 4, 4, 4),
+    scratch("ui_border", tint=0.0))
+image ui_frame_bg = Fixed(Solid("#000000c7"), "ui_frame_border")
+## Для окон поверх меню: плотная заливка, чтобы кнопки под окном не просвечивали.
+image ui_frame_bg_solid = Fixed(Solid("#000000f5"), "ui_frame_border")
+## Блёклый контур слотов сохранения — как линии таблицы настроек.
+image ui_slot_border = At(Frame(gui_outline(32, 32), 4, 4, 4, 4), scratch("ui_border", tint=0.0, mix=0.5))
+## Наведение на слот — ярче контура всплывающих окон.
+image ui_slot_border_hover = At(Frame(gui_outline(32, 32, color="#5c5c5cff"), 4, 4, 4, 4), scratch("ui_border", tint=0.0))
+
+## Линии таблицы настроек — штрих контура окна диалога вполсилы (mix 0.5); горизонтальные
+## шире блока на 4 px с каждой стороны.
+image ui_pref_hline = At(Solid(gui.quick_menu_line_color, xsize=1008, ysize=2), scratch("ui_border", tint=0.0, mix=0.5))
+image ui_pref_vline = At(Solid(gui.quick_menu_line_color, xsize=2, ysize=56), scratch("ui_border", tint=0.0, mix=0.5))
+
+## Подчёркивание кнопок подтверждения; картинка по имени — стиль вычисляется раньше scratch.
+image ui_hover_underline = Transform(At(Solid("#F2EFE940", ysize=2), scratch("ui_border", tint=0.0)), yalign=1.0)
+
+image ui_quick_divider = At(Solid(gui.quick_menu_line_color, xsize=1205, ysize=gui.quick_menu_gap),
+    scratch("ui_border", tint=0.0))
+
 style window:
     xalign 0.5
     xfill True
     yalign gui.textbox_yalign
+    yoffset -(gui.quick_menu_height + gui.quick_menu_gap)
     ysize gui.textbox_height
 
-    background Image("gui/textbox.png", xalign=0.5, yalign=1.0)
+    ## Плашка 1205×225 от x 358, прижата к низу окна; заливка как у полосы быстрого меню,
+    ## контур снизу — разделитель. Контур — картинка по имени: стиль вычисляется раньше,
+    ## чем объявлен трансформ scratch.
+    background Fixed(
+        Solid("#000000c7", xpos=358, ypos=gui.textbox_height - 225, xsize=1205, ysize=225),
+        Transform("ui_textbox_border", xpos=358, ypos=gui.textbox_height - 225),
+        )
 
 style namebox:
     xpos gui.name_xpos
@@ -191,9 +234,51 @@ style choice_vbox:
 
 style choice_button is default:
     properties gui.button_properties("choice_button")
+    hover_sound "audio/sfx/hover.ogg"
+    activate_sound "audio/sfx/click.ogg"
 
 style choice_button_text is default:
     properties gui.text_properties("choice_button")
+
+
+## Выбор-реплика в окне диалога: menu(screen="textbox").
+
+screen textbox(items):
+    style_prefix "textbox_choice"
+
+    window:
+        style "window"
+        ## Окно уже нарисовано, если вопрос остался на экране.
+        if renpy.get_screen("say"):
+            background None
+
+        vbox:
+            at show_hide(.25)
+            for i in items:
+                textbutton i.caption action i.action
+
+style textbox_choice_vbox is vbox
+style textbox_choice_button is choice_button
+style textbox_choice_button_text is choice_button_text
+
+## Центр непрозрачной части gui/textbox.png (y 53..278 внутри окна).
+style textbox_choice_vbox:
+    xpos gui.dialogue_xpos
+    xsize gui.dialogue_width
+    ypos 166
+    yanchor 0.5
+    spacing 5
+
+style textbox_choice_button:
+    xsize gui.dialogue_width
+    padding (24, 4)
+    background "#41000079"
+    hover_background "#70000079"
+    insensitive_background gui.insensitive_color
+
+style textbox_choice_button_text:
+    xalign 0.5
+    size gui.dialogue_text_size
 
 
 ## Быстрое меню
@@ -203,20 +288,37 @@ screen quick_menu():
     zorder 100
 
     ## Во время drag-мини-игры меню скрыто во избежание click-through.
-    if quick_menu and not renpy.get_screen("c1s1_mg_runtime"):
+    ## showif, а не if: только он шлёт детям show/hide для растворения.
+    showif quick_menu and not renpy.get_screen("c1s1_mg_runtime"):
 
-        hbox:
-            style_prefix "quick"
-            style "quick_menu"
+        frame:
+            at show_hide(.3)
+            style "quick_menu_frame"
 
-            textbutton _("Назад") action Rollback()
-            textbutton _("История") action ShowMenu('history')
-            textbutton _("Пропуск") action Skip() alternate Skip(fast=True, confirm=True)
-            textbutton _("Авто") action Preference("auto-forward", "toggle")
-            textbutton _("Сохранить") action ShowMenu('save')
-            textbutton _("Б.Сохр") action QuickSave()
-            textbutton _("Б.Загр") action QuickLoad()
-            textbutton _("Опции") action ShowMenu('preferences')
+            hbox:
+                style_prefix "quick"
+                style "quick_menu"
+
+                ## Как кнопки главного меню: штрих (mix 0.65 — мелкий текст), цвет idle/hover и дрожь по наведению.
+                textbutton _("ИСТОРИЯ") action ShowMenu('history') at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
+                textbutton _("ПРОПУСК") action Skip() alternate Skip(fast=True, confirm=True) at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
+                textbutton _("АВТО") action Preference("auto-forward", "toggle") at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
+                textbutton _("СОХРАНИТЬ") action ShowMenu('save') at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
+                textbutton _("ОПЦИИ") action ShowMenu('preferences') at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
+
+            ## В fira_sans_condensed нет ✕ — только ×.
+            textbutton _("×"):
+                style "quick_hide_button"
+                alt _("Скрыть интерфейс")
+                action HideInterface()
+                at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
+
+        ## Разделитель между окном диалога и полосой — общая сторона их контуров.
+        add "ui_quick_divider":
+            at show_hide(.3)
+            xpos 358
+            yalign 1.0
+            yoffset -gui.quick_menu_height
 
 
 init python:
@@ -224,137 +326,151 @@ init python:
 
 default quick_menu = True
 
+style quick_menu_frame is empty
 style quick_menu is hbox
 style quick_button is default
 style quick_button_text is button_text
 
+## Полоса под окном диалога: высота — gui.quick_menu_height, окно поднято на неё
+## и на gui.quick_menu_gap. Ширина — видимая плашка gui/textbox.png (x 358–1563).
+## Заливка как у textbox.png; контур — gui_outline.
+style quick_menu_frame:
+    background Fixed(
+        Solid("#000000c7", xsize=1205, ysize=gui.quick_menu_height),
+        "ui_quick_border",
+        )
+    ## Точный xpos, не xalign: 1205 по центру 1920 — это 357.5, и край уезжает на пиксель.
+    xpos 358
+    xsize 1205
+    ysize gui.quick_menu_height
+    yalign 1.0
+
 style quick_menu:
     xalign 0.5
-    yalign 1.0
+    yalign 0.5
+    yoffset -2
 
 style quick_button:
     properties gui.button_properties("quick_button")
+    hover_sound "audio/sfx/hover.ogg"
+    activate_sound "audio/sfx/click.ogg"
 
+## Без обводки: шейдер заливает текст одним цветом, обводка утолщила бы буквы.
 style quick_button_text:
     properties gui.text_properties("quick_button")
-    outlines [(1, "#000000cc", 0, 0)]
+
+## Во всю высоту полосы с симметричными отступами: у quick_button отступ только сверху.
+style quick_hide_button is quick_button:
+    xalign 1.0
+    ysize gui.quick_menu_height
+    padding (15, 0)
+
+style quick_hide_button_text is quick_button_text:
+    size 28
+    yalign 0.5
 
 
 ## Главное и игровое меню
 
-## Навигация
-
-screen navigation():
-
-    vbox:
-        style_prefix "navigation"
-
-        xpos gui.navigation_xpos
-        yalign 0.5
-
-        spacing gui.navigation_spacing
-
-        if main_menu:
-
-            textbutton _("Начать") action Start()
-
-        else:
-
-            textbutton _("История") action ShowMenu("history")
-
-            textbutton _("Сохранить") action ShowMenu("save")
-
-        if config.developer and renpy.has_screen("dev_scene_navigator"):
-
-            textbutton _("Сцены") action ShowMenu("dev_scene_navigator")
-
-        textbutton _("Загрузить") action ShowMenu("load")
-
-        textbutton _("Настройки") action ShowMenu("preferences")
-
-        if _in_replay:
-
-            textbutton _("Завершить повтор") action EndReplay(confirm=True)
-
-        elif not main_menu:
-
-            textbutton _("Главное меню") action MainMenu()
-
-        textbutton _("Об игре") action ShowMenu("about")
-
-        if renpy.variant("pc") or (renpy.variant("web") and not renpy.variant("mobile")):
-
-            textbutton _("Помощь") action ShowMenu("help")
-
-        if renpy.variant("pc"):
-
-            textbutton _("Выход") action Quit(confirm=not main_menu)
-
-
-style navigation_button is gui_button
-style navigation_button_text is gui_button_text
-
-style navigation_button:
-    size_group "navigation"
-    properties gui.button_properties("navigation_button")
-
-style navigation_button_text:
-    properties gui.text_properties("navigation_button")
-
-
 ## Главное меню
+## Кнопки по центру снизу, как в TVARUK_HD. Задник, логотип и трек ставит label main_menu
+## (main_menu.rpy).
 
 screen main_menu():
 
     tag menu
 
-    add gui.main_menu_background at parallax_bg()
+    ## Отрицательный spacing: зазор даёт поле кнопки, промежуток между ними — сверх него.
+    vbox:
+        align (0.5, 0.85)
+        spacing -4
 
-    frame:
-        style "main_menu_frame"
+        use main_menu_button(_("НОВАЯ ИГРА"), Start())
 
-    use navigation
+        use main_menu_button(_("ЗАГРУЗИТЬ"), ShowMenu("load"))
 
-    if gui.show_name:
+        use main_menu_button(_("НАСТРОЙКИ"), ShowMenu("preferences"))
 
-        vbox:
-            style "main_menu_vbox"
+        use main_menu_button(_("ОБ ИГРЕ"), ShowMenu("about"))
 
-            text "[config.name!t]":
-                style "main_menu_title"
-
-            text "[config.version]":
-                style "main_menu_version"
+        if renpy.variant("pc"):
+            use main_menu_button(_("ВЫХОД"), Quit(confirm=True))
 
 
-style main_menu_frame is empty
-style main_menu_vbox is vbox
-style main_menu_text is gui_text
-style main_menu_title is main_menu_text
-style main_menu_version is main_menu_text
+## label приходит уже помеченным _(): Text переводит его при показе.
+## Шейдер штриха (common/scratch_text.rpy) — только на тексте; hover/idle он получает от кнопки.
+## underline — подчёркивание при наведении (окна подтверждения); button_style — свой стиль кнопки.
+screen main_menu_button(label, action, underline=False, button_style=None):
+    button:
+        style (button_style or ("main_menu_button_underlined" if underline else "main_menu_button"))
+        action action
+        text label:
+            style "main_menu_button_text"
+            at scratch("main_menu_text"), hover_shake(0.77)
 
-style main_menu_frame:
-    xsize 420
-    yfill True
+style main_menu_button is gui_button:
+    xalign 0.5
 
-    background "gui/overlay/main_menu.png"
+## Страница сохранений: открытая подчёркнута красным, как выбранный вариант в настройках.
+style main_menu_page_button is main_menu_button:
+    selected_foreground Fixed(Solid(gui.accent_color, ysize=2, yalign=1.0))
 
-style main_menu_vbox:
-    xalign 1.0
-    xoffset -30
-    xmaximum 1200
-    yalign 1.0
-    yoffset -30
+## При наведении — подчёркивание цветом hover на 25% непрозрачности со штрихом контуров.
+style main_menu_button_underlined is main_menu_button:
+    hover_foreground Fixed("ui_hover_underline")
 
-style main_menu_text:
-    properties gui.text_properties("main_menu", accent=True)
-    color gui.dark_background_accent
+style main_menu_button_text is gui_button_text:
+    font gui.main_menu_font
+    ## Шейдер заливает текст одним цветом: обводка слилась бы с буквами.
+    outlines []
+    xalign 0.5
 
-style main_menu_title:
-    properties gui.text_properties("title")
 
-style main_menu_version:
-    properties gui.text_properties("version")
+## Меню паузы (Esc в игре), как в TVARUK_HD: затемнение и столбик кнопок в стиле
+## главного меню. Подменю, открытые из паузы, возвращаются в неё; открытые из быстрого
+## меню — сразу в игру. Признак живёт в контексте меню: каждый вход в меню — новый контекст.
+
+init python:
+    _game_menu_screen = "pause_menu"
+
+    def _pause_menu_mark():
+        renpy.context().sm_from_pause = True
+
+    def pause_menu_back():
+        if not main_menu and getattr(renpy.context(), "sm_from_pause", False):
+            return ShowMenu("pause_menu")
+        return Return()
+
+screen pause_menu():
+
+    tag menu
+
+    on ("show", "replace") action Function(_pause_menu_mark)
+
+    add Solid("#000000e6")
+
+    vbox:
+        align (0.5, 0.5)
+        spacing 4
+
+        use main_menu_button(_("ИСТОРИЯ"), ShowMenu("history"))
+        use main_menu_button(_("СОХРАНИТЬ"), ShowMenu("save"))
+        use main_menu_button(_("ЗАГРУЗИТЬ"), ShowMenu("load"))
+        use main_menu_button(_("НАСТРОЙКИ"), ShowMenu("preferences"))
+        if _in_replay:
+            use main_menu_button(_("ЗАВЕРШИТЬ ПОВТОР"), EndReplay(confirm=True))
+        else:
+            use main_menu_button(_("ГЛАВНОЕ МЕНЮ"), MainMenu())
+
+        if renpy.variant("pc") or (renpy.variant("web") and not renpy.variant("mobile")):
+            use main_menu_button(_("ПОМОЩЬ"), ShowMenu("help"))
+
+        if renpy.variant("pc"):
+            use main_menu_button(_("ВЫХОД"), Quit(confirm=True))
+
+        null height 60
+
+        use main_menu_button(_("НАЗАД"), Return())
 
 
 ## Игровое меню
@@ -363,18 +479,15 @@ screen game_menu(title, scroll=None, yinitial=0.0, spacing=0):
 
     style_prefix "game_menu"
 
+    ## В игре фоном служит затемнённая сцена, как у меню паузы.
     if main_menu:
         add gui.main_menu_background at parallax_bg()
-    else:
-        add gui.game_menu_background
 
+    ## Без левой навигации, как в TVARUK_HD: содержимое по центру, «НАЗАД» снизу.
     frame:
         style "game_menu_outer_frame"
 
         hbox:
-
-            frame:
-                style "game_menu_navigation_frame"
 
             frame:
                 style "game_menu_content_frame"
@@ -416,21 +529,23 @@ screen game_menu(title, scroll=None, yinitial=0.0, spacing=0):
 
                     transclude
 
-    use navigation
-
-    textbutton _("Вернуться"):
-        style "return_button"
-
-        action Return()
+    vbox:
+        align (0.5, 1.0)
+        yoffset -30
+        use main_menu_button(_("НАЗАД"), pause_menu_back())
 
     label title
 
+    ## Заголовок экрана доступен Font Picker (F8, dev).
+    add sm_font_preview_style("game_menu_label_text")
+
     if main_menu:
         key "game_menu" action ShowMenu("main_menu")
+    else:
+        key "game_menu" action pause_menu_back()
 
 
 style game_menu_outer_frame is empty
-style game_menu_navigation_frame is empty
 style game_menu_content_frame is empty
 style game_menu_viewport is gui_viewport
 style game_menu_side is gui_side
@@ -439,23 +554,22 @@ style game_menu_scrollbar is gui_vscrollbar
 style game_menu_label is gui_label
 style game_menu_label_text is gui_label_text
 
-style return_button is navigation_button
-style return_button_text is navigation_button_text
 
 style game_menu_outer_frame:
-    bottom_padding 45
+    bottom_padding 120
     top_padding 180
 
-    background "gui/overlay/game_menu.png"
-
-style game_menu_navigation_frame:
-    xsize 420
+    ## Затемнение на весь экран, как у меню паузы.
+    background Solid("#000000e6")
+    xfill True
     yfill True
 
+## xfill — содержимое может встать по центру экрана (xalign 0.5), как «НАЗАД» и заголовок.
 style game_menu_content_frame:
-    left_margin 60
-    right_margin 30
+    left_margin 255
+    right_margin 255
     top_margin 15
+    xfill True
 
 style game_menu_viewport:
     xsize 1380
@@ -467,18 +581,15 @@ style game_menu_side:
     spacing 15
 
 style game_menu_label:
-    xpos 75
+    xalign 0.5
     ysize 180
 
+## Заголовок экрана: шрифт и цвет заголовков категорий настроек.
 style game_menu_label_text:
+    font "fonts/sofia_sans_condensed_regular.ttf"
     size 75
-    color gui.dark_background_accent
+    color gui.header_color
     yalign 0.5
-
-style return_button:
-    xpos gui.navigation_xpos
-    yalign 1.0
-    yoffset -45
 
 
 ## Об игре
@@ -487,7 +598,7 @@ screen about():
 
     tag menu
 
-    use game_menu(_("Об игре"), scroll="viewport"):
+    use game_menu(_("ОБ ИГРЕ"), scroll="viewport"):
 
         style_prefix "about"
 
@@ -516,42 +627,32 @@ screen save():
 
     tag menu
 
-    use file_slots(_("Сохранить"))
+    use file_slots(_("СОХРАНИТЬ"))
 
 
 screen load():
 
     tag menu
 
-    use file_slots(_("Загрузить"))
+    use file_slots(_("ЗАГРУЗИТЬ"))
 
 
 screen file_slots(title):
 
-    default page_name_value = FilePageNameInputValue(pattern=_("{} страница"), auto=_("Автосохранения"), quick=_("Быстрые сохранения"))
-
+    ## Подписи страницы нет: открытую страницу показывает подчёркивание в «1 2 3 4 АВТО».
     use game_menu(title):
 
         fixed:
 
             order_reverse True
 
-            button:
-                style "page_label"
-
-                key_events True
-                xalign 0.5
-                action page_name_value.Toggle()
-
-                input:
-                    style "page_label_text"
-                    value page_name_value
-
             grid gui.file_slot_cols gui.file_slot_rows:
                 style_prefix "slot"
 
+                ## От заголовка, как первая категория в настройках: подписи страницы над слотами нет.
                 xalign 0.5
-                yalign 0.5
+                yalign 0.0
+                yoffset 20
 
                 spacing gui.slot_spacing
 
@@ -559,56 +660,47 @@ screen file_slots(title):
 
                     $ slot = i + 1
 
+                    ## Слот — кубик под скриншот; надпись по центру, у сохранения — на чёрной подложке.
                     button:
                         action FileAction(slot)
 
-                        has vbox
+                        fixed:
+                            add FileScreenshot(slot) align (0.5, 0.5)
 
-                        add FileScreenshot(slot) xalign 0.5
-
-                        text FileTime(slot, format=_("{#file_time}%A, %d %B %Y, %H:%M"), empty=_("Пустой слот")):
-                            style "slot_time_text"
-
-                        text FileSaveName(slot):
-                            style "slot_name_text"
+                            if FileLoadable(slot):
+                                frame:
+                                    style "slot_plate"
+                                    text FileTime(slot, format=_("{#file_time}%A, %d %B %Y, %H:%M")):
+                                        style "slot_time_text"
+                            else:
+                                text _("ПУСТОЙ СЛОТ"):
+                                    style "slot_time_text"
+                                    align (0.5, 0.5)
 
                         key "save_delete" action FileDelete(slot)
 
+            ## Сразу под сеткой слотов: отступ сетки 20 + её высота + 40.
             vbox:
                 style_prefix "page"
 
                 xalign 0.5
-                yalign 1.0
+                ypos (20 + gui.file_slot_rows * gui.slot_button_height + (gui.file_slot_rows - 1) * gui.slot_spacing + 40)
 
                 hbox:
                     xalign 0.5
 
-                    spacing gui.page_spacing
+                    spacing 24
 
-                    textbutton _("<") alt _("Предыдущая страница") action FilePagePrevious()
-                    key "save_page_prev" action FilePagePrevious()
+                    ## Четыре страницы слотов и автосохранения; быстрых сохранений и Sync нет.
+                    ## Как кнопки главного меню; открытая страница подчёркнута красным.
+                    for page in range(1, 5):
+                        use main_menu_button(str(page), FilePage(page), button_style="main_menu_page_button")
 
                     if config.has_autosave:
-                        textbutton _("{#auto_page}А") alt _("Автосохранения") action FilePage("auto")
+                        use main_menu_button(_("АВТО"), FilePage("auto"), button_style="main_menu_page_button")
 
-                    if config.has_quicksave:
-                        textbutton _("{#quick_page}Б") alt _("Быстрые сохранения") action FilePage("quick")
-
-                    for page in range(1, 10):
-                        textbutton "[page]" action FilePage(page)
-
-                    textbutton _(">") alt _("Следующая страница") action FilePageNext()
-                    key "save_page_next" action FilePageNext()
-
-                if config.has_sync:
-                    if CurrentScreenName() == "save":
-                        textbutton _("Загрузить Sync"):
-                            action UploadSync()
-                            xalign 0.5
-                    else:
-                        textbutton _("Скачать Sync"):
-                            action DownloadSync()
-                            xalign 0.5
+                    key "save_page_prev" action FilePagePrevious(max=4, wrap=True, quick=False)
+                    key "save_page_next" action FilePageNext(max=4, wrap=True, quick=False)
 
 
 style page_label is gui_label
@@ -627,6 +719,7 @@ style page_label:
     xalign 0.5
 
 style page_label_text:
+    color gui.header_color
     textalign 0.5
     layout "subtitle"
     hover_color gui.hover_color
@@ -634,11 +727,24 @@ style page_label_text:
 style page_button:
     properties gui.button_properties("page_button")
 
+## Номера страниц — шрифтом кнопок главного меню.
 style page_button_text:
     properties gui.text_properties("page_button")
+    font gui.main_menu_font
 
+## Чёрный кубик; обводка поверх скриншота: блёклая, как линии настроек, при наведении —
+## яркая, как у окон подтверждения.
 style slot_button:
     properties gui.button_properties("slot_button")
+    background Solid("#000000c7")
+    foreground "ui_slot_border"
+    hover_foreground "ui_slot_border_hover"
+    selected_hover_foreground "ui_slot_border_hover"
+
+style slot_plate is empty:
+    background Solid("#000000cc")
+    padding (14, 6)
+    align (0.5, 0.5)
 
 style slot_button_text:
     properties gui.text_properties("slot_button")
@@ -650,90 +756,88 @@ screen preferences():
 
     tag menu
 
-    use game_menu(_("Настройки"), scroll="viewport"):
+    ## Категории с заголовками; настройка — строка «название | варианты». Скорости текста
+    ## и автопрочтения задаются в options.rpy, игроку не показываются.
+    use game_menu(_("НАСТРОЙКИ")):
 
         vbox:
+            xalign 0.5
+            spacing 44
 
-            hbox:
-                box_wrap True
+            if renpy.variant("pc") or renpy.variant("web"):
+                use pref_section(_("ИЗОБРАЖЕНИЕ")):
+                    use pref_row(_("РЕЖИМ ЭКРАНА")):
+                        hbox:
+                            style_prefix "radio"
+                            spacing 40
+                            yalign 0.5
+                            textbutton _("ОКОННЫЙ") action Preference("display", "window")
+                            textbutton _("ПОЛНЫЙ") action Preference("display", "fullscreen")
 
-                if renpy.variant("pc") or renpy.variant("web"):
-
-                    vbox:
+            use pref_section(_("ИГРА")):
+                use pref_row(_("ПРОПУСК")):
+                    hbox:
                         style_prefix "radio"
-                        label _("Режим экрана")
-                        textbutton _("Оконный") action Preference("display", "window")
-                        textbutton _("Полный") action Preference("display", "fullscreen")
+                        spacing 40
+                        yalign 0.5
+                        textbutton _("ПРОЧИТАННЫЙ") action Preference("skip", "seen")
+                        textbutton _("ВЕСЬ ТЕКСТ") action Preference("skip", "all")
 
-                vbox:
-                    style_prefix "check"
-                    label _("Пропуск")
-                    textbutton _("Всего текста") action Preference("skip", "toggle")
-                    textbutton _("После выборов") action Preference("after choices", "toggle")
-                    textbutton _("Переходов") action InvertSelected(Preference("transitions", "toggle"))
-
-            null height gui.pref_spacing
-
-            vbox:
-                style_prefix "check"
-                style "sm_accessibility_vbox"
-                label _("Доступность")
-                textbutton _("Меньше движения") action ToggleField(persistent, "sm_reduce_motion")
-                textbutton _("Параллакс") action ToggleField(persistent, "sm_parallax")
-                textbutton _("Без вспышек") action ToggleField(persistent, "sm_disable_flashes")
-                textbutton _("Простые мини-игры") action ToggleField(persistent, "sm_simplified_locks")
-                textbutton _("Текст и синтез речи") action Preference("accessibility menu")
-
-            null height (4 * gui.pref_spacing)
-
-            hbox:
-                style_prefix "slider"
-                box_wrap True
-
-                vbox:
-
-                    label _("Скорость текста")
-
-                    bar value Preference("text speed")
-
-                    label _("Скорость авточтения")
-
-                    bar value Preference("auto-forward time")
-
-                vbox:
-
+            if config.has_music or config.has_sound or config.has_voice:
+                use pref_section(_("ЗВУК")):
                     if config.has_music:
-                        label _("Громкость музыки")
-
-                        hbox:
-                            bar value Preference("music volume")
-
+                        use pref_row(_("МУЗЫКА")):
+                            bar style "slider_slider" value Preference("music volume")
                     if config.has_sound:
-
-                        label _("Громкость звуков")
-
-                        hbox:
-                            bar value Preference("sound volume")
-
-                            if config.sample_sound:
-                                textbutton _("Тест") action Play("sound", config.sample_sound)
-
-
+                        use pref_row(_("ЗВУКИ")):
+                            bar style "slider_slider" value Preference("sound volume")
                     if config.has_voice:
-                        label _("Громкость голоса")
-
-                        hbox:
-                            bar value Preference("voice volume")
-
-                            if config.sample_voice:
-                                textbutton _("Тест") action Play("voice", config.sample_voice)
-
-                    if config.has_music or config.has_sound or config.has_voice:
-                        null height gui.pref_spacing
-
-                        textbutton _("Без звука"):
+                        use pref_row(_("ГОЛОС")):
+                            bar style "slider_slider" value Preference("voice volume")
+                    use pref_row(""):
+                        textbutton _("БЕЗ ЗВУКА"):
                             action Preference("all mute", "toggle")
                             style "mute_all_button"
+                            yalign 0.5
+
+
+## Категория настроек: заголовок, линия цветом разделителя быстрого меню, строки.
+screen pref_section(title):
+    vbox:
+        style "pref_section_vbox"
+        text title style "pref_section_title"
+        add "ui_pref_hline" xoffset -4
+        ## Строки вплотную: вертикальная черта колонки идёт без разрывов.
+        vbox:
+            transclude
+        add "ui_pref_hline" xoffset -4
+
+## Строка настройки: название | черта цветом разделителя | варианты.
+## Колонка названий 180 + черта 2 + отступ 18 = 200 — начало вариантов.
+screen pref_row(label):
+    hbox:
+        style "pref_row"
+        text label style "pref_row_label"
+        add "ui_pref_vline"
+        null width 18
+        transclude
+
+style pref_section_vbox is vbox:
+    xsize 1000
+    spacing 10
+
+style pref_section_title is gui_text:
+    size 30
+    color gui.header_color
+
+style pref_row is hbox:
+    ysize 56
+
+style pref_row_label is gui_text:
+    min_width 180
+    size 24
+    color "#8a8784"
+    yalign 0.5
 
 
 style pref_label is gui_label
@@ -766,37 +870,44 @@ style pref_label:
     top_margin gui.pref_spacing
     bottom_margin 3
 
+## Настройки компактнее остального интерфейса: всё умещается на экране без прокрутки.
 style pref_label_text:
     yalign 1.0
+    size 24
 
 style pref_vbox:
-    xsize 338
-
-style sm_accessibility_vbox is pref_vbox:
-    xsize 760
+    xsize 340
 
 style radio_vbox:
     spacing gui.pref_button_spacing
 
+## Выбранный вариант подчёркнут красной линией вместо маркера слева.
 style radio_button:
     properties gui.button_properties("radio_button")
-    foreground "gui/button/radio_[prefix_]foreground.png"
+    foreground None
+    selected_foreground Fixed(Solid(gui.accent_color, ysize=2, yalign=1.0))
 
 style radio_button_text:
     properties gui.text_properties("radio_button")
+    size 26
 
 style check_vbox:
     spacing gui.pref_button_spacing
 
 style check_button:
     properties gui.button_properties("check_button")
-    foreground "gui/button/check_[prefix_]foreground.png"
+    foreground None
+    selected_foreground Fixed(Solid(gui.accent_color, ysize=2, yalign=1.0))
 
 style check_button_text:
     properties gui.text_properties("check_button")
+    size 26
 
+## Высота — по картинке маркера; ширина — до края категории (1000 − колонка названий 200).
 style slider_slider:
-    xsize 525
+    xsize 800
+    ysize gui.slider_size
+    yalign 0.5
 
 style slider_button:
     properties gui.button_properties("slider_button")
@@ -805,9 +916,10 @@ style slider_button:
 
 style slider_button_text:
     properties gui.text_properties("slider_button")
+    size 26
 
 style slider_vbox:
-    xsize 675
+    xsize 560
 
 
 ## История
@@ -819,7 +931,7 @@ screen history():
     ## История не предсказывается: _history_list может быть большим.
     predict False
 
-    use game_menu(_("История"), scroll=("vpgrid" if gui.history_height else "viewport"), yinitial=1.0, spacing=gui.history_spacing):
+    use game_menu(_("ИСТОРИЯ"), scroll=("vpgrid" if gui.history_height else "viewport"), yinitial=1.0, spacing=gui.history_spacing):
 
         style_prefix "history"
 
@@ -844,7 +956,7 @@ screen history():
                     substitute False
 
         if not _history_list:
-            label _("История диалогов пуста.")
+            label _("ИСТОРИЯ ДИАЛОГОВ ПУСТА.")
 
 
 ## В истории разрешены только безопасные текстовые теги.
@@ -875,7 +987,11 @@ style history_name_text:
     min_width gui.history_name_width
     textalign gui.history_name_xalign
 
+## Реплики в истории — шрифтом и цветом окна диалога.
 style history_text:
+    font gui.dialogue_text_font
+    size gui.dialogue_text_size
+    color gui.dialogue_text_color
     xpos gui.history_text_xpos
     ypos gui.history_text_ypos
     xanchor gui.history_text_xalign
@@ -899,7 +1015,7 @@ screen help():
 
     default device = "keyboard"
 
-    use game_menu(_("Помощь"), scroll="viewport"):
+    use game_menu(_("ПОМОЩЬ"), scroll="viewport"):
 
         style_prefix "help"
 
@@ -908,11 +1024,11 @@ screen help():
 
             hbox:
 
-                textbutton _("Клавиатура") action SetScreenVariable("device", "keyboard")
-                textbutton _("Мышь") action SetScreenVariable("device", "mouse")
+                textbutton _("КЛАВИАТУРА") action SetScreenVariable("device", "keyboard")
+                textbutton _("МЫШЬ") action SetScreenVariable("device", "mouse")
 
                 if GamepadExists():
-                    textbutton _("Геймпад") action SetScreenVariable("device", "gamepad")
+                    textbutton _("ГЕЙМПАД") action SetScreenVariable("device", "gamepad")
 
             if device == "keyboard":
                 use keyboard_help
@@ -1022,7 +1138,7 @@ screen gamepad_help():
         label _("Y/Верхняя кнопка")
         text _("Скрывает интерфейс пользователя.")
 
-    textbutton _("Калибровка") action GamepadCalibrate()
+    textbutton _("КАЛИБРОВКА") action GamepadCalibrate()
 
 
 style help_button is gui_button
@@ -1078,8 +1194,8 @@ screen confirm(message, yes_action, no_action):
                 xalign 0.5
                 spacing 150
 
-                textbutton _("Да") action yes_action
-                textbutton _("Нет") action no_action
+                use main_menu_button(_("ДА"), yes_action, underline=True)
+                use main_menu_button(_("НЕТ"), no_action, underline=True)
 
     key "game_menu" action no_action
 
@@ -1091,12 +1207,14 @@ style confirm_button is gui_medium_button
 style confirm_button_text is gui_medium_button_text
 
 style confirm_frame:
-    background Frame([ "gui/confirm_frame.png", "gui/frame.png"], gui.confirm_frame_borders, tile=gui.frame_tile)
+    background "ui_frame_bg_solid"
     padding gui.confirm_frame_borders.padding
     xalign .5
     yalign .5
 
+## Окна поверх игры — шрифтом кнопок главного меню.
 style confirm_prompt_text:
+    font gui.main_menu_font
     textalign 0.5
     layout "subtitle"
 
@@ -1105,6 +1223,7 @@ style confirm_button:
 
 style confirm_button_text:
     properties gui.text_properties("confirm_button")
+    font gui.main_menu_font
 
 
 ## Индикатор пропуска
@@ -1145,11 +1264,12 @@ style skip_triangle is skip_text
 
 style skip_frame:
     ypos gui.skip_ypos
-    background Frame("gui/skip.png", gui.skip_frame_borders, tile=gui.frame_tile)
+    background "ui_frame_bg"
     padding gui.skip_frame_borders.padding
 
 style skip_text:
     size gui.notify_text_size
+    font gui.main_menu_font
 
 style skip_triangle:
     ## Шрифт должен содержать U+25B8.
@@ -1183,11 +1303,12 @@ style notify_text is gui_text
 style notify_frame:
     ypos gui.notify_ypos
 
-    background Frame("gui/notify.png", gui.notify_frame_borders, tile=gui.frame_tile)
+    background "ui_frame_bg"
     padding gui.notify_frame_borders.padding
 
 style notify_text:
     properties gui.text_properties("notify")
+    font gui.main_menu_font
 
 
 ## NVL
@@ -1404,10 +1525,10 @@ screen quick_menu():
             style "quick_menu"
             style_prefix "quick"
 
-            textbutton _("Назад") action Rollback()
-            textbutton _("Пропуск") action Skip() alternate Skip(fast=True, confirm=True)
-            textbutton _("Авто") action Preference("auto-forward", "toggle")
-            textbutton _("Меню") action ShowMenu()
+            textbutton _("НАЗАД") action Rollback()
+            textbutton _("ПРОПУСК") action Skip() alternate Skip(fast=True, confirm=True)
+            textbutton _("АВТО") action Preference("auto-forward", "toggle")
+            textbutton _("МЕНЮ") action ShowMenu()
 
 
 style window:
@@ -1426,17 +1547,9 @@ style nvl_window:
     variant "small"
     background "gui/phone/nvl.png"
 
-style main_menu_frame:
-    variant "small"
-    background "gui/phone/overlay/main_menu.png"
-
 style game_menu_outer_frame:
     variant "small"
     background "gui/phone/overlay/game_menu.png"
-
-style game_menu_navigation_frame:
-    variant "small"
-    xsize 510
 
 style game_menu_content_frame:
     variant "small"

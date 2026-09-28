@@ -8,7 +8,7 @@ testcase dev_scene_navigator_menu:
 
     if not screen "main_menu":
         run MainMenu(confirm=False)
-    click "Сцены"
+    run ShowMenu("dev_scene_navigator")
     assert screen "dev_scene_navigator"
     assert "Сцена 1 · Записка"
     assert "Сцена 2 · Начало письма"
@@ -22,7 +22,7 @@ testcase dev_scene_navigator_starts_prologue:
 
     if not screen "main_menu":
         run MainMenu(confirm=False)
-    click "Сцены"
+    run ShowMenu("dev_scene_navigator")
     assert eval (renpy.get_displayable('dev_scene_navigator', 'prologue_scene') is not None)
     assert eval (renpy.get_displayable('dev_scene_navigator', 'prologue_scene').is_focused()) timeout 1.0
     if eval (entry_label == "prologue_scene"):
@@ -36,26 +36,26 @@ testcase dev_scene_navigator_starts_prologue:
 
     advance until "Долго я не находила в себе сил" timeout 10.0
     assert eval (renpy.showing('prologue'))
-    advance until screen "prologue_note_start" timeout 10.0
+    advance until "Взять ручку" timeout 10.0
     click "Взять ручку"
     assert "Я не осмелюсь вернуться к карандашу и бумаге позже." timeout 10.0
     assert eval (not note_hover_pencil and can_dismiss)
     advance until "Я Расскажу всё на одном дыхании. Здесь и сейчас." timeout 20.0
     assert eval (sprite_showed('prologue_pencil_close'))
-    advance until screen "c1s1_lamp_switch" timeout 15.0
+    advance until "Зажечь свет" timeout 15.0
     assert not screen "main_menu"
     run MainMenu(confirm=False)
 
 testcase dev_scene_navigator_starts_chapter_1:
     if not screen "main_menu":
         run MainMenu(confirm=False)
-    click "Начать"
+    click "НОВАЯ ИГРА"
     advance until "Чтобы заговорить о чём-то тяжёлом" timeout 8.0
     $ c1s3_neighbor_choice = "confront"
     keysym "game_menu"
-    click "Сцены"
+    run ShowMenu("dev_scene_navigator")
     click id "chapter_1_scene_1"
-    advance until screen "c1s1_lamp_switch" timeout 8.0
+    advance until "Зажечь свет" timeout 8.0
     assert eval (c1s3_neighbor_choice is None)
 
     ## Механику замков проверяют отдельно; здесь нужен настоящий возврат в маршрут.
@@ -97,7 +97,7 @@ testcase dev_scene_navigator_continues_scene_2:
 
     if not screen "main_menu":
         run MainMenu(confirm=False)
-    click "Сцены"
+    run ShowMenu("dev_scene_navigator")
     scroll "Bar" until id entry_label timeout 3.0
     click id entry_label
 
@@ -126,7 +126,7 @@ testcase dev_scene_navigator_continues_scene_2:
     advance until "Моя дочь как раз проходила через сложный период" timeout 3.0
     assert eval (sprite_showed('chapter_1 scene_3_children_room_floor'))
     assert eval (not renpy.get_return_stack())
-    advance until screen "choice" timeout 8.0
+    advance until screen "textbox" timeout 8.0
     click "Очаровашка!"
     advance until "Стоило нам с Витей обоим ненадолго отлучиться" timeout 10.0
     assert eval (sm_test_tv_assert_shown('chapter_1 scene_3_sofa_tv_1', wide=True))
@@ -139,7 +139,7 @@ testcase dev_scene_navigator_continues_household:
 
     if not screen "main_menu":
         run MainMenu(confirm=False)
-    click "Сцены"
+    run ShowMenu("dev_scene_navigator")
     scroll "Bar" until id entry_label timeout 3.0
     click id entry_label
 

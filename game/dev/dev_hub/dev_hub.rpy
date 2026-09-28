@@ -5,12 +5,33 @@
 define -30 DEV_HUB_HOTKEY = "K_F12"
 
 ## screen — показать поверх игры, menu — открыть как игровое меню,
-## label — прыгнуть (только внутри игры, не из меню); hotkey — имя константы с keysym.
+## label — прыгнуть (только внутри игры, не из меню); hotkey — имя константы с keysym;
+## args — аргументы экрана screen.
 define -30 DEV_HUB_TOOLS = (
     {"title": "Position Tuner", "hotkey": "PT_HOTKEY", "screen": "position_tuner",
         "about": "позиция, якорь и угол спрайтов → ATL в буфер"},
     {"title": "FX Tuner", "hotkey": "FXT_HOTKEY", "screen": "fx_tuner",
         "about": "эффекты вживую → game/fx_config.yaml"},
+    {"title": "Font Tuner", "screen": "fx_tuner",
+        "args": {"groups": ("main_menu_text",), "title": "FONT TUNER"},
+        "about": "штрих текста кнопок главного меню → game/fx_config.yaml"},
+    {"title": "Logo Tuner", "screen": "fx_tuner",
+        "args": {"groups": ("main_menu_logo",), "title": "LOGO TUNER"},
+        "about": "штрих логотипа главного меню → game/fx_config.yaml"},
+    {"title": "Choice Tuner", "screen": "fx_tuner",
+        "args": {"groups": ("scene_choice_text",), "title": "CHOICE TUNER"},
+        "about": "штрих текста кнопок выбора в сценах → game/fx_config.yaml"},
+    {"title": "Text Tuner", "screen": "fx_tuner",
+        "args": {"groups": ("show_text",), "title": "TEXT TUNER"},
+        "about": "штрих текста, показанного в сценах (титры) → game/fx_config.yaml"},
+    {"title": "Cursor Tuner", "screen": "fx_tuner",
+        "args": {"groups": ("cursor",), "title": "CURSOR TUNER"},
+        "about": "штрих курсора → game/fx_config.yaml"},
+    {"title": "Border Tuner", "screen": "fx_tuner",
+        "args": {"groups": ("ui_border",), "title": "BORDER TUNER"},
+        "about": "штрих контура окна диалога и быстрого меню → game/fx_config.yaml"},
+    {"title": "Font Picker", "hotkey": "FP_HOTKEY", "screen": "dev_font_picker",
+        "about": "←/→ — шрифты game/fonts/ на титрах вживую"},
     {"title": "Сцены", "menu": "dev_scene_navigator",
         "about": "запуск любой сцены с чистым состоянием"},
     {"title": "Заморозить кадр", "label": "dev_hold",
@@ -93,7 +114,7 @@ init -5 python:
 
     def dev_hub_tool_action(entry):
         if "screen" in entry:
-            return [Hide("dev_hub"), Show(entry["screen"])]
+            return [Hide("dev_hub"), Show(entry["screen"], **entry.get("args", {}))]
         if "menu" in entry:
             return [Hide("dev_hub"), ShowMenu(entry["menu"])]
         return [Hide("dev_hub"), Jump(entry["label"])]

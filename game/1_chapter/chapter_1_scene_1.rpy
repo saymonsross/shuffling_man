@@ -206,37 +206,6 @@ transform c1s1_piano_hand_idle(pos_xy, dy=4, t_up=2.9, t_down=3.6):
         ease t_down ypos absolute(pos_xy[1])
         repeat
 
-## Экраны интерактива
-
-## Кнопки используют мировые координаты и следуют за камерой.
-screen c1s1_lamp_switch():
-    modal True
-    use sm_skippable_interaction
-    fixed:
-        id "lamp_world"
-        at follow_camera()
-        xysize (config.screen_width, config.screen_height)
-        use glow_button(
-            _("Зажечь свет"),
-            Return("done"),
-            bg="dark",
-            pos=(475, 530),
-            size=(330, 165))
-
-screen c1s1_metronome_start():
-    modal True
-    use sm_skippable_interaction
-    fixed:
-        id "metronome_world"
-        at follow_camera()
-        xysize (config.screen_width, config.screen_height)
-        use glow_button(
-            _("Завести метроном"),
-            Return("done"),
-            bg="dark",
-            pos=(1005, 530),
-            size=(430, 190))
-
 ## Сцена
 
 label chapter_1_scene_1:
@@ -253,7 +222,9 @@ label chapter_1_scene_1:
 
     ## Интерактивы не создают развилок и пропускаются вместе со сценой.
     if not renpy.is_skipping():
-        call screen c1s1_lamp_switch
+        menu(screen="scene_choice", follow=follow_camera(), skippable=True):
+            "Зажечь свет" (pos=(475, 530), size=(330, 165)):
+                pass
 
     show chapter_1_lamp_hand dark_reach zorder 15 at slide_in((-560, 700), (0, 178), t=1.8)
     $ pause(1.8)
@@ -280,7 +251,9 @@ label chapter_1_scene_1:
 
     ## Метроном доступен только после включения света.
     if not renpy.is_skipping():
-        call screen c1s1_metronome_start
+        menu(screen="scene_choice", follow=follow_camera(), skippable=True):
+            "Завести метроном" (pos=(1005, 530), size=(430, 190)):
+                pass
 
     ## Две позы одновременно образуют кроссфейд в движении.
     show chapter_1_lamp_hand light_pull at c1s1_hand_fade_out((0, 68), (150, 120))

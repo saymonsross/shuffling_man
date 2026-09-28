@@ -109,6 +109,8 @@ init -5 python:
 
         def __init__(self):
             self.key = None
+            ## None — все группы; кортеж имён — тюнер одной темы (Font Tuner в Dev Hub).
+            self.groups = None
             self.side = "right"
             self.collapsed = False
             self.status = ""
@@ -122,16 +124,31 @@ init -5 python:
         """Строка для Text(substitute=False): теги текста в ней не разбираются."""
         return text.replace("{", "{{")
 
-    def fxt_open():
+    def fxt_open(groups=None):
         if not config.developer:
             return
+        fxt_model.groups = groups
         fxt_model.status = ""
         keys = fxt_keys()
         if fxt_model.key not in keys:
             fxt_model.key = keys[0] if keys else None
 
+    def _fxt_dedicated_groups():
+        """Группы со своим тюнером в Dev Hub: полный FX Tuner их не показывает — каждая
+        строка пересчитывается на любой правке, и сотня строк тормозит панель."""
+        out = python_set()
+        for entry in globals().get("DEV_HUB_TOOLS", ()):
+            if entry.get("screen") == "fx_tuner":
+                out.update(entry.get("args", {}).get("groups", ()))
+        return out
+
+    def fxt_group_shown(group):
+        if fxt_model.groups is None:
+            return group not in _fxt_dedicated_groups()
+        return group in fxt_model.groups
+
     def fxt_keys():
-        return [p.key for p in fx_cfg_params()]
+        return [p.key for p in fx_cfg_params() if fxt_group_shown(p.group)]
 
     def fxt_group_keys(group):
         return [p.key for p in fx_cfg_params() if p.group == group]

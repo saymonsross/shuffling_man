@@ -125,24 +125,24 @@ testcase c1s1_camera_ui_alignment:
     $ persistent.sm_reduce_motion = reduce_motion
     $ persistent.sm_disable_flashes = disable_flashes
     run Function(dev_scene_nav_start, "chapter_1_scene_1")
-    assert screen "c1s1_lamp_switch" timeout 8.0
+    assert "Зажечь свет" timeout 8.0
     pause 0.2
-    assert eval (sm_test_camera_matches_ui("c1s1_lamp_switch", "lamp_world"))
+    assert eval (sm_test_camera_matches_ui("scene_choice", "world"))
     $ sm_test_camera_zoom = renpy.scene_lists().camera_transform["master"].zoom
     pause 0.8
-    assert eval (sm_test_camera_matches_ui("c1s1_lamp_switch", "lamp_world"))
+    assert eval (sm_test_camera_matches_ui("scene_choice", "world"))
     pause 0.03
-    assert eval (sm_test_camera_matches_ui("c1s1_lamp_switch", "lamp_world"))
+    assert eval (sm_test_camera_matches_ui("scene_choice", "world"))
     pause 0.03
-    assert eval (sm_test_camera_matches_ui("c1s1_lamp_switch", "lamp_world"))
+    assert eval (sm_test_camera_matches_ui("scene_choice", "world"))
     pause 0.03
-    assert eval (sm_test_camera_matches_ui("c1s1_lamp_switch", "lamp_world"))
+    assert eval (sm_test_camera_matches_ui("scene_choice", "world"))
     if eval (not reduce_motion):
         assert eval (renpy.scene_lists().camera_transform["master"].zoom > sm_test_camera_zoom)
     click "Зажечь свет"
-    assert screen "c1s1_metronome_start" timeout 15.0
+    assert "Завести метроном" timeout 15.0
     pause 0.1
-    assert eval (sm_test_camera_matches_ui("c1s1_metronome_start", "metronome_world"))
+    assert eval (sm_test_camera_matches_ui("scene_choice", "world"))
     click "Завести метроном"
     skip fast
     assert screen "c1s1_locks_open_door" timeout 15.0

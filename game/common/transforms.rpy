@@ -37,6 +37,14 @@ transform shake(power=1.5):
     xoffset 0.0 yoffset 0.0
     function renpy.curry(_shake_f)(power)
 
+## Дрожь по наведению для текста кнопки: hover/idle кнопка передаёт вложенным трансформам.
+transform hover_shake(power=1.0):
+    subpixel True
+    on idle, selected_idle, insensitive:
+        xoffset 0.0 yoffset 0.0
+    on hover, selected_hover:
+        function renpy.curry(_shake_f)(power * sm_motion_scale())
+
 transform move_between(from_xy, to_xy, t=0.8, jitter_amp=0.0, jitter_key="move_between"):
     subpixel True
     anchor (0.0, 0.0)

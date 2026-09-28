@@ -1,0 +1,43 @@
+## Главное меню как сцена (по образцу TVARUK_HD): задник и логотип ставятся обычными
+## scene/show с ATL, экран main_menu (screens.rpy) несёт только кнопки.
+## Ren'Py сам вызывает label main_menu вместо штатного меню, в контексте меню.
+
+image main_menu_bg = gui.main_menu_background
+
+## Процарапанный штрих (common/scratch_text.rpy): текст кнопок заливается цветом idle/hover,
+## логотип сохраняет свой цвет и фактуру. Тюнеры групп — Font / Logo Tuner в Dev Hub.
+init -10 python:
+
+    scratch_params("main_menu_text", "Текст главного меню", 3.0, 0.3, 1.0, 0.55)
+    scratch_params("main_menu_logo", "Логотип главного меню", 2.0, 0.15, 1.5, 0.4)
+
+image main_menu_logo = At(gui.main_menu_logo, scratch("main_menu_logo", tint=0.0, pad=24))
+
+label main_menu:
+    $ quick_menu = False
+    $ parallax_off = True
+
+    ## Штатный канал music вне пула 7dots; label start гасит его при старте игры.
+    $ renpy.music.play("audio/main_menu.ogg", channel="music", if_changed=True, fadein=2.0)
+
+    ## Возврат из подменю через _return снова входит сюда: постановку не повторяем.
+    if not renpy.showing("prologue_head_bgR"):
+        scene prologue_head_bg:
+            zoom 1.0
+            truecenter
+            subpixel True
+            # matrixcolor BrightnessMatrix(-0.1)
+            breath_brightness(-0.11, -0.08, 16.0)
+            linear 100.5 zoom 1.2
+        show main_menu_logo:
+            align (0.5, 0.2)
+            zoom 0.68
+        show screen main_menu
+        with Dissolve(0.3)
+
+label .loop:
+
+    ## Return() из подменю завершает паузу; экран кнопок заменяет подменю по тегу menu.
+    show screen main_menu
+    $ renpy.pause(hard=True)
+    jump .loop

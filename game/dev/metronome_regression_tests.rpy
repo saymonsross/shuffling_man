@@ -51,10 +51,10 @@ testsuite sm_metronome_regression:
 
     testcase production_piano_knocks_and_reveal:
         run Function(dev_scene_nav_start, "chapter_1_scene_1")
-        assert screen "c1s1_lamp_switch" timeout 8.0
+        assert "Зажечь свет" timeout 8.0
         assert eval (c1s1_metronome_audio is None)
         click "Зажечь свет"
-        assert screen "c1s1_metronome_start" timeout 15.0
+        assert "Завести метроном" timeout 15.0
         click "Завести метроном"
         assert eval (sm_test_metronome_playing(c1s1_metronome_audio)) timeout 5.0
         $ sm_test_audio_old = c1s1_metronome_audio
@@ -90,7 +90,7 @@ testsuite sm_metronome_regression:
 
     testcase late_skip_and_main_menu:
         run Function(dev_scene_nav_start, "chapter_1_scene_1")
-        assert screen "c1s1_lamp_switch" timeout 8.0
+        assert "Зажечь свет" timeout 8.0
         skip fast
         assert screen "c1s1_locks_open_door" timeout 15.0
         assert eval (sm_test_metronome_playing(c1s1_metronome_audio)) timeout 3.0
