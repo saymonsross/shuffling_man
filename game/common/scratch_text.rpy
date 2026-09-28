@@ -103,9 +103,10 @@ init -11 python:
         gl_FragColor = mix(src, vec4(col.rgb, 1.0) * col.a * src.a, u_scratch_tint);
         """)
 
-    def scratch_f(group, trans, st, at):
+    ## mix_f — функция без аргументов, множитель силы штриха в рантайме (например, курсор гасит штрих).
+    def scratch_f(group, mix_f, trans, st, at):
         trans.u_scratch_on = 1.0 if fx_cfg(group + ".enabled") and not fx_cfg_bypassed() else 0.0
-        trans.u_scratch_group_mix = float(fx_cfg(group + ".mix"))
+        trans.u_scratch_group_mix = float(fx_cfg(group + ".mix")) * (mix_f() if mix_f else 1.0)
         trans.u_scratch_amp = float(fx_cfg(group + ".amp"))
         trans.u_scratch_jitter_freq = (float(fx_cfg(group + ".jitter_x")), float(fx_cfg(group + ".jitter_y")))
         trans.u_scratch_fiber_freq = (float(fx_cfg(group + ".fiber_x")), float(fx_cfg(group + ".fiber_y")))
@@ -130,7 +131,7 @@ init -10 python:
 ## параметров. pad — запас под дрожание и копии, иначе штрих обрезается по краю текстуры.
 ## Внутри кнопки трансформ получает hover/idle: дрожание +50%, цвет idle → hover при tint 1.
 ## mix — сила штриха у этого места (1 — полный, 0 — исходник); умножается на mix группы из тюнера.
-transform scratch(group, tint=1.0, idle_color="#8A8784", hover_color="#F2EFE9", pad=16, mix=1.0):
+transform scratch(group, tint=1.0, idle_color="#8A8784", hover_color="#F2EFE9", pad=16, mix=1.0, mix_f=None):
     mesh True
     mesh_pad (pad, pad, pad, pad)
     shader "sm.scratch"
@@ -141,7 +142,7 @@ transform scratch(group, tint=1.0, idle_color="#8A8784", hover_color="#F2EFE9", 
     u_scratch_hover_color Color(hover_color).rgba
     u_scratch_hover 0.0
     parallel:
-        function renpy.curry(scratch_f)(group)
+        function renpy.curry(scratch_f)(group, mix_f)
     parallel:
         on idle, selected_idle, insensitive:
             linear 0.12 u_scratch_hover 0.0

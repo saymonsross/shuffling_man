@@ -119,19 +119,22 @@ style namebox_label is say_label
 ## (common/scratch_text.rpy), своя группа параметров; тюнер — Border Tuner в Dev Hub.
 init -5 python:
     scratch_params("ui_border", "Контур окна диалога", 1.5, 0.3, 1.0, 0.55)
+    ## Рамки всплывающих окон, слотов сохранения и подчёркивание «ДА/НЕТ» — Frame Tuner.
+    scratch_params("ui_frame", "Рамки окон", 1.5, 0.3, 1.0, 0.55)
+    scratch_params("quick_menu_text", "Текст быстрого меню", 3.0, 0.3, 1.0, 0.55)
 
 image ui_textbox_border = At(gui_outline(1205, 225, "tlr"), scratch("ui_border", tint=0.0))
 image ui_quick_border = At(gui_outline(1205, gui.quick_menu_height, "lrb"), scratch("ui_border", tint=0.0))
 ## Контур любого размера: Frame растягивает рамку 32×32, штрих ложится поверх готового размера.
 image ui_frame_border = At(Frame(gui_outline(32, 32, color=gui.frame_line_color), 4, 4, 4, 4),
-    scratch("ui_border", tint=0.0))
+    scratch("ui_frame", tint=0.0))
 image ui_frame_bg = Fixed(Solid("#000000c7"), "ui_frame_border")
 ## Для окон поверх меню: плотная заливка, чтобы кнопки под окном не просвечивали.
 image ui_frame_bg_solid = Fixed(Solid("#000000f5"), "ui_frame_border")
 ## Блёклый контур слотов сохранения — как линии таблицы настроек.
-image ui_slot_border = At(Frame(gui_outline(32, 32), 4, 4, 4, 4), scratch("ui_border", tint=0.0, mix=0.5))
+image ui_slot_border = At(Frame(gui_outline(32, 32), 4, 4, 4, 4), scratch("ui_frame", tint=0.0, mix=0.5))
 ## Наведение на слот — ярче контура всплывающих окон.
-image ui_slot_border_hover = At(Frame(gui_outline(32, 32, color="#5c5c5cff"), 4, 4, 4, 4), scratch("ui_border", tint=0.0))
+image ui_slot_border_hover = At(Frame(gui_outline(32, 32, color="#5c5c5cff"), 4, 4, 4, 4), scratch("ui_frame", tint=0.0))
 
 ## Линии таблицы настроек — штрих контура окна диалога вполсилы (mix 0.5); горизонтальные
 ## шире блока на 4 px с каждой стороны.
@@ -139,7 +142,7 @@ image ui_pref_hline = At(Solid(gui.quick_menu_line_color, xsize=1008, ysize=2), 
 image ui_pref_vline = At(Solid(gui.quick_menu_line_color, xsize=2, ysize=56), scratch("ui_border", tint=0.0, mix=0.5))
 
 ## Подчёркивание кнопок подтверждения; картинка по имени — стиль вычисляется раньше scratch.
-image ui_hover_underline = Transform(At(Solid("#F2EFE940", ysize=2), scratch("ui_border", tint=0.0)), yalign=1.0)
+image ui_hover_underline = Transform(At(Solid("#F2EFE940", ysize=2), scratch("ui_frame", tint=0.0)), yalign=1.0)
 
 image ui_quick_divider = At(Solid(gui.quick_menu_line_color, xsize=1205, ysize=gui.quick_menu_gap),
     scratch("ui_border", tint=0.0))
@@ -299,19 +302,19 @@ screen quick_menu():
                 style_prefix "quick"
                 style "quick_menu"
 
-                ## Как кнопки главного меню: штрих (mix 0.65 — мелкий текст), цвет idle/hover и дрожь по наведению.
-                textbutton _("ИСТОРИЯ") action ShowMenu('history') at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
-                textbutton _("ПРОПУСК") action Skip() alternate Skip(fast=True, confirm=True) at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
-                textbutton _("АВТО") action Preference("auto-forward", "toggle") at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
-                textbutton _("СОХРАНИТЬ") action ShowMenu('save') at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
-                textbutton _("ОПЦИИ") action ShowMenu('preferences') at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
+                ## Как кнопки главного меню: штрих (своя группа, Quick Tuner), цвет idle/hover и дрожь по наведению.
+                textbutton _("ИСТОРИЯ") action ShowMenu('history') at scratch("quick_menu_text"), hover_shake(0.77)
+                textbutton _("ПРОПУСК") action Skip() alternate Skip(fast=True, confirm=True) at scratch("quick_menu_text"), hover_shake(0.77)
+                textbutton _("АВТО") action Preference("auto-forward", "toggle") at scratch("quick_menu_text"), hover_shake(0.77)
+                textbutton _("СОХРАНИТЬ") action ShowMenu('save') at scratch("quick_menu_text"), hover_shake(0.77)
+                textbutton _("МЕНЮ") action ShowMenu() at scratch("quick_menu_text"), hover_shake(0.77)
 
             ## В fira_sans_condensed нет ✕ — только ×.
             textbutton _("×"):
                 style "quick_hide_button"
                 alt _("Скрыть интерфейс")
                 action HideInterface()
-                at scratch("main_menu_text", mix=0.65), hover_shake(0.77)
+                at scratch("quick_menu_text"), hover_shake(0.77)
 
         ## Разделитель между окном диалога и полосой — общая сторона их контуров.
         add "ui_quick_divider":
@@ -421,6 +424,7 @@ style main_menu_button_underlined is main_menu_button:
 
 style main_menu_button_text is gui_button_text:
     font gui.main_menu_font
+    size (gui.button_text_size + 3)
     ## Шейдер заливает текст одним цветом: обводка слилась бы с буквами.
     outlines []
     xalign 0.5

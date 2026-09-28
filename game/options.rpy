@@ -11,7 +11,7 @@ define config.name = _("Шаркающий человек")
 define gui.show_name = True
 
 
-define config.version = "1.0"
+define config.version = "0.1.1-demo"
 
 
 define gui.about = _p("""
@@ -54,14 +54,14 @@ define config.end_game_transition = None
 define config.window = "auto"
 
 
-define config.window_show_transition = Dissolve(.2)
-define config.window_hide_transition = Dissolve(.2)
+define config.window_show_transition = Dissolve(0.3)
+define config.window_hide_transition = Dissolve(0.3)
 
 
 ## Стандартные настройки
 
 
-default preferences.text_cps = 0
+default preferences.text_cps = 45
 
 
 default preferences.afm_time = 15

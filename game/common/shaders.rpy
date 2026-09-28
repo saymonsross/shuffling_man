@@ -274,21 +274,15 @@ transform hover_pulse(low=0.45, high=1.0, half=0.7):
 init python:
     ## Медленная смена яркости: 8 бит на канал дают шаг 1/255 сразу на весь кадр, на тёмных
     ## фонах он виден. Статичный дизеринг в полшага разносит переход по пикселям.
+    ## Правит готовый gl_FragColor (после renpy.texture / renpy.blur на 200), а не читает
+    ## tex0 заново — иначе blur того же трансформа терялся бы.
     renpy.register_shader("sm.breath",
         variables="""
-        uniform sampler2D tex0;
         uniform float u_breath_brightness;
-        attribute vec2 a_tex_coord;
-        varying vec2 v_tex_coord;
-        """,
-        vertex_300="""
-        v_tex_coord = a_tex_coord;
         """,
         fragment_300="""
-        vec4 c = texture2D(tex0, v_tex_coord);
         float d = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
-        c.rgb += (u_breath_brightness + d / 255.0) * c.a;
-        gl_FragColor = c;
+        gl_FragColor.rgb += (u_breath_brightness + d / 255.0) * gl_FragColor.a;
         """)
 
 ## «Дыхание» яркости lo → hi → lo, по t секунд в каждую сторону.
@@ -300,3 +294,17 @@ transform breath_brightness(lo=-0.01, hi=-0.04, t=6.0):
         ease t u_breath_brightness float(hi)
         ease t u_breath_brightness float(lo)
         repeat
+
+## Яркость в один конец: → end за t секунд, дальше держится. Старт — текущая яркость
+## картинки (например, с breath_brightness в момент смены ATL): uniform наследуется.
+transform brightness_to(end=-0.04, t=6.0):
+    mesh True
+    shader "sm.breath"
+    ease t u_breath_brightness float(end)
+
+## То же с явным стартом start.
+transform fade_brightness(start=0.0, end=-0.04, t=6.0):
+    mesh True
+    shader "sm.breath"
+    u_breath_brightness float(start)
+    ease t u_breath_brightness float(end)

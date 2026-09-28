@@ -24,11 +24,17 @@ label main_menu:
     if not renpy.showing("prologue_head_bgR"):
         scene prologue_head_bg:
             zoom 1.0
+            rotate 0.0
             truecenter
             subpixel True
             # matrixcolor BrightnessMatrix(-0.1)
-            breath_brightness(-0.11, -0.08, 16.0)
-            linear 100.5 zoom 1.2
+            parallel:
+                breath_brightness(-0.11, -0.08, 16.0)
+            parallel:
+                linear 60.5 zoom 1.15
+            parallel:
+                linear 90.5 rotate 5.0
+            
         show main_menu_logo:
             align (0.5, 0.2)
             zoom 0.68

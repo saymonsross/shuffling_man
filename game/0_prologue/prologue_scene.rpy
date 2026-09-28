@@ -43,7 +43,7 @@ label end_dev_yet:
 
     scene black with Dissolve(2.0)
 
-    show expression At(sm_font_preview_text(_("ДАЛЬШЕ НЕ ДОДЕЛАНО"), style="prologue_titles_text", size=50), scratch("show_text", tint=0.0)) as prologue_titles_text_2:
+    show expression At(sm_font_preview_text(_("пока всё"), style="prologue_titles_text", size=50), scratch("show_text", tint=0.0)) as prologue_titles_text_2:
         align (0.5, 0.5)
         subpixel True
     with Dissolve(2.0)
@@ -64,6 +64,8 @@ label prologue_titles:
     $ sm_parallax_off = True
 
     $ mplay("opening/opening_titles", fadein=4.0)
+
+    $ click_skip_block = True 
 
     scene black with Dissolve(1.0)
 
@@ -98,12 +100,11 @@ label prologue_scene:
 
     scene black with Dissolve(3.0)
 
-    $ quick_menu = True
     $ sm_parallax_off = False
 
     pause 1.0
 
-    scene prologue_dark_room with Dissolve(5.0):
+    scene prologue_dark_room with Dissolve(4.0):
         zoom 1.0
         truecenter
         subpixel True
@@ -113,6 +114,9 @@ label prologue_scene:
             breath_brightness(-0.01, -0.04, 6.0)
 
     $ mplay("opening/prologue_1", fadein=10.0, fadeout=18.0)
+
+    $ click_skip_block = False
+    $ quick_menu = True
 
     "Чтобы заговорить о чём-то тяжёлом, лучше всего для начала представиться."
 
@@ -132,11 +136,14 @@ label prologue_scene:
     ## Новый ATL наследует текущий zoom комнаты: наезд продолжается без скачка.
     show prologue_dark_room:
         parallel:
-            linear 25.0 zoom 1.05
+            linear 25.0 zoom 1.15
         parallel:
-            linear 11.0 blur 3.0 matrixcolor BrightnessMatrix(-0.25)
+            linear 8.0 blur 1.0
+        parallel:
+            brightness_to(-0.07, 7.0)
 
-    "Так сказать.."
+    "Так сказать..."
+    show prologue head_blink
     "...вспомнить, кто ты есть."
 
     # window hide
@@ -158,32 +165,47 @@ label prologue_scene:
 
     "Я нахожусь довольно далеко от места, что называла домом."
 
+    window auto hide
+
+    pause 1.0
+
+    "{cps=5}...{/cps}"
+
     "Сейчас у меня нет дома."
 
     show prologue head_blink
     ## Без стартовых значений: zoom и alpha наследуются, фон не прыгает.
+    hide prologue_dark_room
+    show prologue_note_paper_0 behind prologue_head_bg:
+        truecenter
+        subpixel True
     show prologue_head_bg behind prologue:
         parallel:
             linear 50.5 zoom 1.2
         parallel:
             linear 22.0 alpha 0.0
 
+    "Я нахожусь здесь после нервного срыва, что разрушил мою и без того распадавшуюся на части жизнь и подорванное здоровье."
+
     "Кажется, осталось позади всё, что было мне ценно."
 
-    "Я здесь после нервного срыва, что разрушил мою и без того распадавшуюся на части жизнь и подорванное здоровье."
-
+    window auto hide
+    
     show prologue head:
-        linear 8.0 alpha 0.0
-    show prologue_dark_room:
-        blur 3.0 matrixcolor BrightnessMatrix(-0.25)
+        linear 11.0 alpha 0.0
+    show prologue_note_paper_0:
         parallel:
             linear 25.0 zoom 1.05
         parallel:
-            linear 11.0 blur 0.0 matrixcolor BrightnessMatrix(-0.02)
+            breath_brightness(-0.01, -0.07, 8.0)
     with Dissolve(3.0)
 
     "Это письмо..."
     "...должно помочь мне пережить произошедшее."
+
+    show prologue_note_paper_0:
+        parallel:
+            linear 45.0 zoom 1.15
 
 ## Начало письма; отдельный вход каталога сцен.
 
@@ -191,58 +213,54 @@ label .letter:
 
     $ note_hover_pencil = False
 
-    ## Окно прячется до show: авто-скрытие перед with применило бы show мгновенно и съело Dissolve.
-    window hide
+    window auto hide
 
-    ## Погашенные голова и фон ещё на экране: alpha задаётся явно, иначе новый ATL унаследует 0.
-    show prologue_head_bg:
-        zoom 1.0 alpha 1.0
-        truecenter
-        subpixel True
-        linear 40.5 zoom 1.2
-    ## Ближний план; зум 1.05 — запас под сдвиг parallax.near.
-    show prologue head:
-        zoom 1.05 alpha 1.0
-        truecenter
-        subpixel True
-        function parallax_near_f
-    with Dissolve(2.0)
-
-    "Долго я не находила в себе сил, чтобы записать случившееся. Ушло много попыток."
-
-    show prologue head_blink
-
-    "Не было сил вспоминать: меня трясло, рвало, руки непроизвольно тянулись закрыть лицо."
+    "Долго я не находила в себе сил, чтобы записать случившееся."
+    "Ушло много попыток."
+    "{sc=0.3:2}Не было сил вспоминать: меня трясло, рвало, руки непроизвольно тянулись закрыть лицо.{/sc}"
 
     ## Подсветка карандаша при наведении на «ВЗЯТЬ»: последнее число — прибавка яркости.
     ## image выполняется при запуске игры, здесь он только для удобства правки.
     image prologue_note_pencil = hover_lit("images/0_prologue/prologue_note_pencil.png", "note_hover_pencil", -0.1)
 
-    scene prologue_note_bg at breath_brightness(-0.01, -0.04, 6.0)
+    show prologue_note_paper_0:
+        parallel:
+            linear 3.0 blur 7.15
+        parallel:
+            brightness_to(-0.23, 3.0)
+    ## Наезд камерой из camera_fx: кнопка «ВЗЯТЬ» (follow_camera) повторяет её зум.
+    camera at camera_push((0.5, 0.5), 1.0, 1.1, 30.0)
+    scene prologue_note_bg at breath_brightness(-0.01, -0.05, 6.0)
     show prologue_note_paper at placed((990, 455), (0.5, 0.5))
     show prologue_note_pencil at placed((1264, 431), (0.5, 0.5))
     show prologue_hand_left at placed((271, 417))
     show prologue_hand_right at placed((1358, 468))
-    with Dissolve(2.5)
+    with Dissolve(3)
 
     "Обо всём случившемся невыносимо думать."
     "Но я должна излить наружу то, что пожирает меня изнутри."
 
-    window hide
+    window auto hide
 
-    ## Камера здесь сброшена; координаты совпадают с положением карандаша.
+    pause 0.5
+
+    ## Координаты — карандаш в кадре без зума; follow_camera переносит их за камерой.
     if not renpy.is_skipping():
-        menu(screen="scene_choice", follow=parallax_follow(), skippable=True):
+        menu(screen="scene_choice", follow=follow_camera(), skippable=True):
             "ВЗЯТЬ" (bg="light", pos=(1264, 431), size=(260, 140),
                     hovered=SetVariable("note_hover_pencil", True),
                     unhovered=SetVariable("note_hover_pencil", False)):
                 pass
+            with Dissolve(0.2)
 
     ## После закрытия экрана unhovered не вызывается.
     $ note_hover_pencil = False
     window auto
 
     $ dismiss_off()
+
+    show prologue_hand_left:
+        easein 1 placed((261, 427))
 
     show prologue_hand_right_move:
         subpixel True
@@ -253,32 +271,56 @@ label .letter:
     with Dissolve(0.1)
     $ pause(0.2)
 
+
+
     ## Позы на разных холстах совмещены по кончику карандаша.
     show prologue_hand_right_write:
         subpixel True
         anchor (0.0, 0.0)
         pos (1217, 211)
-        linear 0.4 pos (1100, 198)
+        easein 1.2 pos (1050, 198) blur 1.5
     hide prologue_hand_right_move
     hide prologue_note_pencil
-    with Dissolve(0.2)
-    $ pause(0.1)
+    with Dissolve(0.1)
+    # $ pause(0.1)
     $ dismiss_on()
 
     # camera at camera_rest(shake_amp=1.5)
 
-    scene black with Dissolve(1.0)
+    # show black:
+    #     linear 3 alpha 0.5
 
-    show prologue_pencil_close 
-    show prologue_pensil_close_hand at shake(1.5)
+    camera:
+        zoom 1.0
+        truecenter
+        subpixel True
+        linear 30.0 zoom 1.07
+
+    scene prologue_pencil_close:
+        breath_brightness(-0.01, -0.07, 6.0)
+    ## Подъезд — через ypos: shake каждый кадр перезаписывает xoffset/yoffset.
+    show prologue_pensil_close_hand:
+        subpixel True
+        xalign 0.5 yanchor 1.0 ypos 930
+        parallel:
+            shake(1.5)
+        parallel:
+            breath_brightness(-0.01, -0.06, 6.0)
+        parallel:
+            easein 1 xalign 0.5 yanchor 1.0 ypos 980
+            linear 40.0 ypos 1030
     with Dissolve(1.3)
 
     "Я не осмелюсь вернуться к карандашу и бумаге позже."
     "Это будет моя последняя попытка. Так сказать, спринтерский забег."
-    "Я Расскажу всё на одном дыхании. Здесь и сейчас."
+    "Я расскажу всё на одном дыхании. Здесь и сейчас."
 
     ## Граница между прологом и первой главой.
     scene black with Dissolve(2.0)
+    camera:
+        zoom 1.0
+        truecenter
+        subpixel True
     $ fx_vignette = False 
     $ pause(1.2)
 

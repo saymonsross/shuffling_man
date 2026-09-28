@@ -6,4 +6,11 @@ label start:
     ## Трек главного меню идёт на штатном канале music вне пула 7dots — обёртки его не видят.
     $ renpy.music.stop(channel="music", fadeout=3.0)
 
+    ## В меню параллакса нет; без этого он включился бы на растворении и дёрнул кадр меню.
+    $ sm_parallax_off = True
+
+    ## Главное меню растворяется в чёрный: переход берёт последний показанный кадр меню.
+    scene black
+    with Dissolve(0.6)
+
     jump prologue_titles

@@ -6,28 +6,34 @@ define -30 DEV_HUB_HOTKEY = "K_F12"
 
 ## screen — показать поверх игры, menu — открыть как игровое меню,
 ## label — прыгнуть (только внутри игры, не из меню); hotkey — имя константы с keysym;
-## args — аргументы экрана screen.
+## args — аргументы экрана screen; group "scratch" — тюнеры процарапанного штриха, сеткой.
 define -30 DEV_HUB_TOOLS = (
     {"title": "Position Tuner", "hotkey": "PT_HOTKEY", "screen": "position_tuner",
         "about": "позиция, якорь и угол спрайтов → ATL в буфер"},
     {"title": "FX Tuner", "hotkey": "FXT_HOTKEY", "screen": "fx_tuner",
         "about": "эффекты вживую → game/fx_config.yaml"},
-    {"title": "Font Tuner", "screen": "fx_tuner",
+    {"title": "Font Tuner", "group": "scratch", "screen": "fx_tuner",
         "args": {"groups": ("main_menu_text",), "title": "FONT TUNER"},
         "about": "штрих текста кнопок главного меню → game/fx_config.yaml"},
-    {"title": "Logo Tuner", "screen": "fx_tuner",
+    {"title": "Logo Tuner", "group": "scratch", "screen": "fx_tuner",
         "args": {"groups": ("main_menu_logo",), "title": "LOGO TUNER"},
         "about": "штрих логотипа главного меню → game/fx_config.yaml"},
-    {"title": "Choice Tuner", "screen": "fx_tuner",
+    {"title": "Choice Tuner", "group": "scratch", "screen": "fx_tuner",
         "args": {"groups": ("scene_choice_text",), "title": "CHOICE TUNER"},
         "about": "штрих текста кнопок выбора в сценах → game/fx_config.yaml"},
-    {"title": "Text Tuner", "screen": "fx_tuner",
+    {"title": "Text Tuner", "group": "scratch", "screen": "fx_tuner",
         "args": {"groups": ("show_text",), "title": "TEXT TUNER"},
         "about": "штрих текста, показанного в сценах (титры) → game/fx_config.yaml"},
-    {"title": "Cursor Tuner", "screen": "fx_tuner",
+    {"title": "Cursor Tuner", "group": "scratch", "screen": "fx_tuner",
         "args": {"groups": ("cursor",), "title": "CURSOR TUNER"},
         "about": "штрих курсора → game/fx_config.yaml"},
-    {"title": "Border Tuner", "screen": "fx_tuner",
+    {"title": "Quick Tuner", "group": "scratch", "screen": "fx_tuner",
+        "args": {"groups": ("quick_menu_text",), "title": "QUICK TUNER"},
+        "about": "штрих текста быстрого меню → game/fx_config.yaml"},
+    {"title": "Frame Tuner", "group": "scratch", "screen": "fx_tuner",
+        "args": {"groups": ("ui_frame",), "title": "FRAME TUNER"},
+        "about": "штрих рамок окон подтверждения, уведомлений и слотов → game/fx_config.yaml"},
+    {"title": "Border Tuner", "group": "scratch", "screen": "fx_tuner",
         "args": {"groups": ("ui_border",), "title": "BORDER TUNER"},
         "about": "штрих контура окна диалога и быстрого меню → game/fx_config.yaml"},
     {"title": "Font Picker", "hotkey": "FP_HOTKEY", "screen": "dev_font_picker",
@@ -190,15 +196,35 @@ screen dev_hub():
 
             text "ИНСТРУМЕНТЫ ПРОЕКТА" style "dev_hub_caption"
             for entry in DEV_HUB_TOOLS:
-                button:
-                    style "dev_hub_item"
-                    sensitive dev_hub_tool_ok(entry)
-                    action dev_hub_tool_action(entry)
-                    hbox:
-                        spacing 12
-                        text dev_hub_tool_keys(entry) style "dev_hub_key"
+                if not entry.get("group"):
+                    button:
+                        style "dev_hub_item"
+                        sensitive dev_hub_tool_ok(entry)
+                        action dev_hub_tool_action(entry)
+                        hbox:
+                            spacing 12
+                            text dev_hub_tool_keys(entry) style "dev_hub_key"
+                            text entry["title"] style "dev_hub_name"
+                            text entry["about"] style "dev_hub_about"
+
+            null height 4
+            text "ШТРИХ · SCRATCH-ШЕЙДЕР" style "dev_hub_caption"
+            $ scratch_tools = [e for e in DEV_HUB_TOOLS if e.get("group") == "scratch"]
+            $ scratch_rows = (len(scratch_tools) + 3) // 4
+            grid 4 scratch_rows:
+                spacing 2
+                for entry in scratch_tools:
+                    button:
+                        style "dev_hub_item"
+                        xsize 260
+                        sensitive dev_hub_tool_ok(entry)
+                        action dev_hub_tool_action(entry)
+                        tooltip entry["about"]
                         text entry["title"] style "dev_hub_name"
-                        text entry["about"] style "dev_hub_about"
+                for _i in range(scratch_rows * 4 - len(scratch_tools)):
+                    null
+            $ scratch_tip = GetTooltip()
+            text (scratch_tip or " ") style "dev_hub_caption" substitute False
 
             null height 4
             text "ВСТРОЕННОЕ В REN'PY" style "dev_hub_caption"
