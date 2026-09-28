@@ -131,7 +131,8 @@ init -10 python:
 ## параметров. pad — запас под дрожание и копии, иначе штрих обрезается по краю текстуры.
 ## Внутри кнопки трансформ получает hover/idle: дрожание +50%, цвет idle → hover при tint 1.
 ## mix — сила штриха у этого места (1 — полный, 0 — исходник); умножается на mix группы из тюнера.
-transform scratch(group, tint=1.0, idle_color="#8A8784", hover_color="#F2EFE9", pad=16, mix=1.0, mix_f=None):
+## selected_lit — выбранная кнопка (включённый режим) горит цветом hover и без наведения.
+transform scratch(group, tint=1.0, idle_color="#8A8784", hover_color="#F2EFE9", pad=16, mix=1.0, mix_f=None, selected_lit=False):
     mesh True
     mesh_pad (pad, pad, pad, pad)
     shader "sm.scratch"
@@ -144,7 +145,9 @@ transform scratch(group, tint=1.0, idle_color="#8A8784", hover_color="#F2EFE9", 
     parallel:
         function renpy.curry(scratch_f)(group, mix_f)
     parallel:
-        on idle, selected_idle, insensitive:
+        on idle, insensitive:
             linear 0.12 u_scratch_hover 0.0
+        on selected_idle:
+            linear 0.12 u_scratch_hover (1.0 if selected_lit else 0.0)
         on hover, selected_hover:
             linear 0.12 u_scratch_hover 1.0

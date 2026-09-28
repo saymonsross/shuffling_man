@@ -12,8 +12,6 @@ image prologue head_blink:
     pause 0.6
     "prologue head" with Dissolve(0.2)
 
-## prologue_note_center — референс; сцена собирается из отдельных частей.
-image prologue_note_center = "images/0_prologue/prologue_note center.jpg"
 image prologue_note_bg = "images/0_prologue/prologue_hand anim bg.png"
 image prologue_note_paper = "images/0_prologue/prologue_note_paper.png"
 
@@ -32,32 +30,17 @@ style prologue_titles_text is default:
     outlines [(2, "#1a1712d9", 0, 0)]
     slow_cps 0
 
-define prologue_dissolve = Dissolve(1.2)
+## Титр: штрих группы show_text (tint 0 — свой цвет стиля), шрифт примеряется F8 (dev).
+init python:
+    def prologue_title(text, size):
+        return At(sm_font_preview_text(text, style="prologue_titles_text", size=size),
+            scratch("show_text", tint=0.0))
 
 default note_hover_pencil = False
-
-
-label end_dev_yet:
-    $ quick_menu = False
-    $ sm_parallax_off = True
-
-    scene black with Dissolve(2.0)
-
-    show expression At(sm_font_preview_text(_("пока всё"), style="prologue_titles_text", size=50), scratch("show_text", tint=0.0)) as prologue_titles_text_2:
-        align (0.5, 0.5)
-        subpixel True
-    with Dissolve(2.0)
-
-    pause
-
-    ## jump main_menu остался бы в игре: флаг main_menu не взводится, параллакс не гаснет.
-    $ MainMenu(confirm=False)()
 
 ## Вступительные титры
 
 label prologue_titles:
-
-    # "start"
 
     $ fx_vignette = True
     $ quick_menu = False
@@ -65,14 +48,15 @@ label prologue_titles:
 
     $ mplay("opening/opening_titles", fadein=4.0)
 
-    $ click_skip_block = True 
+    $ click_skip_block = True
 
     scene black with Dissolve(1.0)
 
     pause 1.0
 
-    ## Штрих группы show_text; tint 0 — титры остаются своего цвета. Шрифт примеряется F8 (dev).
-    show expression At(sm_font_preview_text(_("HINTERLAND MOOD"), style="prologue_titles_text", size=130), scratch("show_text", tint=0.0)) as prologue_titles_text:
+    show expression prologue_title(_("HINTERLAND MOOD"), 130) as prologue_titles_text:
+        truecenter
+        yoffset -15
         align (0.5, 0.5)
         subpixel True
     with Dissolve(2.0)
@@ -83,7 +67,8 @@ label prologue_titles:
 
     pause 1.0
 
-    show expression At(sm_font_preview_text(_("ПО РАССКАЗУ РОМАНА ЧЕРНОГО"), style="prologue_titles_text", size=50), scratch("show_text", tint=0.0)) as prologue_titles_text_2:
+    show expression prologue_title(_("ПО РАССКАЗУ РОМАНА ЧЕРНОГО"), 50) as prologue_titles_text_2:
+        truecenter
         align (0.5, 0.5)
         subpixel True
     with Dissolve(2.0)
@@ -110,7 +95,7 @@ label prologue_scene:
         subpixel True
         parallel:
             linear 30.5 zoom 1.05
-        parallel:    
+        parallel:
             breath_brightness(-0.01, -0.04, 6.0)
 
     $ mplay("opening/prologue_1", fadein=10.0, fadeout=18.0)
@@ -146,8 +131,6 @@ label prologue_scene:
     show prologue head_blink
     "...вспомнить, кто ты есть."
 
-    # window hide
-
     show prologue_head_bg behind prologue:
         zoom 1.0 alpha 0.0
         parallel:
@@ -158,7 +141,7 @@ label prologue_scene:
             breath_brightness(-0.01, -0.04, 6.0)
 
     "Меня зовут Марина Александровна Шрайбер."
-    
+
     show prologue head_blink
 
     "Я пишу эти строки не в первый раз."
@@ -174,11 +157,11 @@ label prologue_scene:
     "Сейчас у меня нет дома."
 
     show prologue head_blink
-    ## Без стартовых значений: zoom и alpha наследуются, фон не прыгает.
     hide prologue_dark_room
     show prologue_note_paper_0 behind prologue_head_bg:
         truecenter
         subpixel True
+    ## Без стартовых значений: zoom и alpha наследуются, фон не прыгает.
     show prologue_head_bg behind prologue:
         parallel:
             linear 50.5 zoom 1.2
@@ -190,7 +173,7 @@ label prologue_scene:
     "Кажется, осталось позади всё, что было мне ценно."
 
     window auto hide
-    
+
     show prologue head:
         linear 11.0 alpha 0.0
     show prologue_note_paper_0:
@@ -205,7 +188,7 @@ label prologue_scene:
 
     show prologue_note_paper_0:
         parallel:
-            linear 45.0 zoom 1.15
+            linear 45.0 zoom 1.1
 
 ## Начало письма; отдельный вход каталога сцен.
 
@@ -229,13 +212,13 @@ label .letter:
         parallel:
             brightness_to(-0.23, 3.0)
     ## Наезд камерой из camera_fx: кнопка «ВЗЯТЬ» (follow_camera) повторяет её зум.
-    camera at camera_push((0.5, 0.5), 1.0, 1.1, 30.0)
+    camera at camera_push((0.5, 0.5), 1.0, 1.07, 30.0)
     scene prologue_note_bg at breath_brightness(-0.01, -0.05, 6.0)
     show prologue_note_paper at placed((990, 455), (0.5, 0.5))
     show prologue_note_pencil at placed((1264, 431), (0.5, 0.5))
     show prologue_hand_left at placed((271, 417))
     show prologue_hand_right at placed((1358, 468))
-    with Dissolve(3)
+    with Dissolve(3.0)
 
     "Обо всём случившемся невыносимо думать."
     "Но я должна излить наружу то, что пожирает меня изнутри."
@@ -260,7 +243,7 @@ label .letter:
     $ dismiss_off()
 
     show prologue_hand_left:
-        easein 1 placed((261, 427))
+        easein 1.0 placed((261, 427))
 
     show prologue_hand_right_move:
         subpixel True
@@ -271,8 +254,6 @@ label .letter:
     with Dissolve(0.1)
     $ pause(0.2)
 
-
-
     ## Позы на разных холстах совмещены по кончику карандаша.
     show prologue_hand_right_write:
         subpixel True
@@ -282,13 +263,7 @@ label .letter:
     hide prologue_hand_right_move
     hide prologue_note_pencil
     with Dissolve(0.1)
-    # $ pause(0.1)
     $ dismiss_on()
-
-    # camera at camera_rest(shake_amp=1.5)
-
-    # show black:
-    #     linear 3 alpha 0.5
 
     camera:
         zoom 1.0
@@ -299,7 +274,7 @@ label .letter:
     scene prologue_pencil_close:
         breath_brightness(-0.01, -0.07, 6.0)
     ## Подъезд — через ypos: shake каждый кадр перезаписывает xoffset/yoffset.
-    show prologue_pensil_close_hand:
+    show prologue_pencil_close_hand:
         subpixel True
         xalign 0.5 yanchor 1.0 ypos 930
         parallel:
@@ -307,7 +282,7 @@ label .letter:
         parallel:
             breath_brightness(-0.01, -0.06, 6.0)
         parallel:
-            easein 1 xalign 0.5 yanchor 1.0 ypos 980
+            easein 1.0 xalign 0.5 yanchor 1.0 ypos 980
             linear 40.0 ypos 1030
     with Dissolve(1.3)
 
@@ -317,13 +292,27 @@ label .letter:
 
     ## Граница между прологом и первой главой.
     scene black with Dissolve(2.0)
-    camera:
-        zoom 1.0
-        truecenter
-        subpixel True
-    $ fx_vignette = False 
+    camera
+    $ fx_vignette = False
     $ pause(1.2)
 
+    ## Глава 1 ещё не подключена: вместо jump chapter_1_scene_1 — заглушка.
     jump end_dev_yet
 
-    # jump chapter_1_scene_1
+## Конец готовой части: титр-заглушка и выход в главное меню.
+
+label end_dev_yet:
+    $ quick_menu = False
+    $ sm_parallax_off = True
+
+    scene black with Dissolve(2.0)
+
+    show expression prologue_title(_("пока всё"), 50) as prologue_titles_text_2:
+        align (0.5, 0.5)
+        subpixel True
+    with Dissolve(2.0)
+
+    pause
+
+    ## jump main_menu остался бы в игре: флаг main_menu не взводится, параллакс не гаснет.
+    $ MainMenu(confirm=False)()

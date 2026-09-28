@@ -302,19 +302,20 @@ screen quick_menu():
                 style_prefix "quick"
                 style "quick_menu"
 
-                ## Как кнопки главного меню: штрих (своя группа, Quick Tuner), цвет idle/hover и дрожь по наведению.
-                textbutton _("ИСТОРИЯ") action ShowMenu('history') at scratch("quick_menu_text"), hover_shake(0.77)
-                textbutton _("ПРОПУСК") action Skip() alternate Skip(fast=True, confirm=True) at scratch("quick_menu_text"), hover_shake(0.77)
-                textbutton _("АВТО") action Preference("auto-forward", "toggle") at scratch("quick_menu_text"), hover_shake(0.77)
-                textbutton _("СОХРАНИТЬ") action ShowMenu('save') at scratch("quick_menu_text"), hover_shake(0.77)
-                textbutton _("МЕНЮ") action ShowMenu() at scratch("quick_menu_text"), hover_shake(0.77)
+                use quick_menu_button(_("ИСТОРИЯ"), ShowMenu('history'))
+                use quick_menu_button(_("ПРОПУСК"), Skip(), alternate=Skip(fast=True, confirm=True))
+                use quick_menu_button(_("АВТО"), Preference("auto-forward", "toggle"))
+                use quick_menu_button(_("СОХРАНИТЬ"), ShowMenu('save'))
+                use quick_menu_button(_("МЕНЮ"), ShowMenu())
 
             ## В fira_sans_condensed нет ✕ — только ×.
-            textbutton _("×"):
+            button:
                 style "quick_hide_button"
                 alt _("Скрыть интерфейс")
                 action HideInterface()
-                at scratch("quick_menu_text"), hover_shake(0.77)
+                text _("×"):
+                    style "quick_hide_button_text"
+                    at scratch("quick_menu_text"), hover_shake(0.77)
 
         ## Разделитель между окном диалога и полосой — общая сторона их контуров.
         add "ui_quick_divider":
@@ -352,6 +353,37 @@ style quick_menu:
     xalign 0.5
     yalign 0.5
     yoffset -2
+
+## Кнопка быстрого меню: штрих и дрожь на тексте; включённый режим (АВТО, ПРОПУСК)
+## горит цветом наведения и тёмно-красным контуром 2 px, пока включён.
+## Контур — отдельная копия текста под основной: шейдер залил бы обводку цветом текста.
+## Сдвиг основного текста (1, 1) центрирует его в контуре — подобран по скриншоту.
+screen quick_menu_button(label, action, alternate=None):
+    button:
+        style "quick_button"
+        action action
+        alternate alternate
+        fixed:
+            xfit True
+            yfit True
+            at hover_shake(0.77)
+            text label:
+                style "quick_button_text"
+                pos (0, 0) anchor (0, 0)
+                color "#0000"
+                outlines [(2, "#8e1414", 0, 0)]
+                at quick_selected_outline
+            text label:
+                style "quick_button_text"
+                pos (1, 1) anchor (0, 0)
+                at scratch("quick_menu_text", selected_lit=True)
+
+transform quick_selected_outline:
+    alpha 0.0
+    on idle, hover, insensitive:
+        linear 0.12 alpha 0.0
+    on selected_idle, selected_hover:
+        linear 0.12 alpha 1.0
 
 style quick_button:
     properties gui.button_properties("quick_button")
