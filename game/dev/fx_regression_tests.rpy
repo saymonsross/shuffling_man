@@ -9,7 +9,7 @@ define SM_TEST_LAYER_FX = ("posterize", "pixelate", "grade", "chroma", "bloom")
 define SM_TEST_FX_LEVELS = ("posterize_level", "pixelate_level", "chroma_level")
 define SM_TEST_FX_STRENGTHS = ("fx_posterize_strength", "fx_pixelate_strength", "fx_chroma_strength")
 ## Детальный фон: у плашек центры однотонные, пикселизация их не меняет.
-define SM_TEST_PIXEL_BG = "images/1_chapter/chapter_1 scene_3_children_room_girl_neutral.jpg"
+define SM_TEST_PIXEL_BG = "images/1_chapter/chapter_1 scene_3_children_room_girl_neutral.png"
 
 define SM_TEST_SWATCHES = (
     (0.30, 0.55, 0.90), (0.10, 0.45, 0.70), (0.99, 0.22, 0.62),

@@ -114,6 +114,11 @@ init -5 python:
             self.side = "right"
             self.collapsed = False
             self.status = ""
+            ## Пикер цвета: открытый ключ, перетаскивание (ключ, "sv"/"hue") и HSV,
+            ## чтобы оттенок не терялся на сером и чёрном: {ключ: (hex, h, s, v)}.
+            self.color_open = None
+            self.color_drag = None
+            self.hsv = python_dict()
 
     fxt_model = FXTModel()
 
@@ -173,6 +178,10 @@ init -5 python:
         v = fx_cfg(key)
         if p.kind == "bool":
             v = not v
+        elif p.kind == "color":
+            h, s, val = fxt_hsv(key)
+            fxt_set_hsv(key, (h + sign * (0.1 if big else 0.01)) % 1.0, s, val)
+            return
         elif p.kind == "choice":
             v = p.choices[(p.choices.index(v) + sign) % len(p.choices)]
         else:

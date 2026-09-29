@@ -24,6 +24,7 @@ game/
 ├── dev/             — dev-инструменты, из дистрибутива вырезаны
 │   ├── dev_hub/          — Dev Hub (F12): запуск инструментов, хоткеи, статус
 │   ├── fx_tuner/         — FX Tuner (F10): эффекты вживую → fx_config.yaml
+│   ├── path_tuner/       — Path Tuner (F6): spline-траектории мышью → ATL с knot, README.ru.md / README.en.md
 │   ├── position_tuner/  — Position Tuner (F9), README.ru.md / README.en.md
 │   ├── scene_navigation/ — dev-навигация по сценам и превью
 │   ├── testcases.rpy     — тестовые сценарии Ren'Py, testsuite global и его хуки

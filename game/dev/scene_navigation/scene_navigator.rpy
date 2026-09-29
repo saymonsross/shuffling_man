@@ -27,7 +27,7 @@ define DEV_SCENE_NAV_ENTRIES = (
         "section": _("ГЛАВА 1"),
         "title": _("Телевизор"),
         "label": "chapter_1_scene_1.tv",
-        "preview": "images/1_chapter/chapter_1 scene_1_tv_close.jpg",
+        "preview": "images/1_chapter/chapter_1 scene_1_tv_close.png",
     },
     {
         "section": _("ГЛАВА 1"),
@@ -39,19 +39,19 @@ define DEV_SCENE_NAV_ENTRIES = (
         "section": _("ГЛАВА 1"),
         "title": _("Сцена 2 · Ссора"),
         "label": "chapter_1_scene_2",
-        "preview": "images/1_chapter/chapter_1 scene_2_parents_room_door.jpg",
+        "preview": "images/1_chapter/chapter_1 scene_2_parents_room_door.png",
     },
     {
         "section": _("ГЛАВА 1"),
         "title": _("Бутерброды"),
         "label": "chapter_1_scene_2.sandwiches",
-        "preview": "images/1_chapter/chapter_1 scene_2_sandwiches.jpg",
+        "preview": "images/1_chapter/chapter_1 scene_2_sandwiches.png",
     },
     {
         "section": _("ГЛАВА 1"),
         "title": _("Сцена 3 · Воображаемый друг"),
         "label": "chapter_1_scene_3",
-        "preview": "images/1_chapter/chapter_1 scene_3_children_room_girl_neutral.jpg",
+        "preview": "images/1_chapter/chapter_1 scene_3_children_room_girl_neutral.png",
     },
 )
 

@@ -2,15 +2,6 @@
 
 ## Изображения
 
-image chapter_1 scene_2_parents_room_door = "images/1_chapter/chapter_1 scene_2_parents_room_door.jpg"
-image chapter_1 scene_2_parents_room_door_marina = "images/1_chapter/chapter_1 scene_2_parents_room_door_marina.jpg"
-image chapter_1 scene_2_parents_room_vitya_1 = "images/1_chapter/chapter_1 scene_2_parents_room_vitya_1.jpg"
-image chapter_1 scene_2_parents_room_vitya_2 = "images/1_chapter/chapter_1 scene_2_parents_room_vitya_2.jpg"
-image chapter_1 scene_2_marina_close = "images/1_chapter/chapter_1 scene_2_marina_close.jpg"
-image chapter_1 scene_2_marina_hands = "images/1_chapter/chapter_1 scene_2_marina_hands.jpg"
-image chapter_1 scene_2_dark = "images/1_chapter/chapter_1 scene_2_dark.jpg"
-image chapter_1 scene_2_kitchen = "images/1_chapter/chapter_1 scene_2_kitchen.jpg"
-image chapter_1 scene_2_sandwiches = "images/1_chapter/chapter_1 scene_2_sandwiches.jpg"
 image chapter_1 scene_2_sandwiches_1 = At("images/1_chapter/owner_review/chapter_1_review_sandwiches stage_1.png", xysize(1920, 1080))
 image chapter_1 scene_2_sandwiches_2 = At("images/1_chapter/owner_review/chapter_1_review_sandwiches stage_2.png", xysize(1920, 1080))
 image chapter_1 scene_2_sandwiches_3 = At("images/1_chapter/owner_review/chapter_1_review_sandwiches stage_3.png", xysize(1920, 1080))

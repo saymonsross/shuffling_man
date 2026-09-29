@@ -243,6 +243,7 @@ label .letter:
     $ dismiss_off()
 
     show prologue_hand_left:
+        subpixel True
         easein 1.0 placed((261, 427))
 
     show prologue_hand_right_move:
@@ -296,23 +297,4 @@ label .letter:
     $ fx_vignette = False
     $ pause(1.2)
 
-    ## Глава 1 ещё не подключена: вместо jump chapter_1_scene_1 — заглушка.
-    jump end_dev_yet
-
-## Конец готовой части: титр-заглушка и выход в главное меню.
-
-label end_dev_yet:
-    $ quick_menu = False
-    $ sm_parallax_off = True
-
-    scene black with Dissolve(1.0)
-
-    show expression prologue_title(_("пока всё"), 50) as prologue_titles_text_2:
-        align (0.5, 0.5)
-        subpixel True
-    with Dissolve(2.0)
-
-    pause
-
-    ## jump main_menu остался бы в игре: флаг main_menu не взводится, параллакс не гаснет.
-    $ MainMenu(confirm=False)()
+    jump chapter_1_scene_1

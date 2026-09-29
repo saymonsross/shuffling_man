@@ -82,6 +82,7 @@ init -10 python:
 
     def parallax_follow_f(trans, st, at):
         trans.zoom, trans.rotate, trans.xoffset, trans.yoffset = sm_parallax_compose(1.0, 0.0, 0.0, 0.0)
+        _fx_state["ui_follow"] = (trans.zoom, trans.rotate, trans.xoffset, trans.yoffset)
         return 0.0
 
 transform parallax_bg():

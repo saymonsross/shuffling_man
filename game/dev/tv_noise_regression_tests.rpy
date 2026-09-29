@@ -2,7 +2,7 @@ init python:
     def sm_test_tv_assert_scene(image_name, pos, size, displayable=None, animated=None):
         """Проверяет конечный фон, чтобы отдельное превью не скрывало пропуск интеграции."""
         displayable = image_name if displayable is None else displayable
-        background = "images/1_chapter/" + image_name + ".jpg"
+        background = "images/1_chapter/" + image_name + ".png"
         first = renpy.render_to_surface(displayable, width=1920, height=1080,
             st=0.03, resize=True)
         raw = renpy.render_to_surface(background, width=1920, height=1080,

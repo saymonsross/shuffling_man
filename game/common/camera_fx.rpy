@@ -112,6 +112,7 @@ init -10 python:
         """Копирует камеру целиком и добавляет параллакс слоя master."""
         snapshot = _fx_state.get((key, "camera")) or (zoom_pad, 0.0, 0.0, 0.0)
         trans.zoom, trans.rotate, trans.xoffset, trans.yoffset = sm_parallax_compose(*snapshot)
+        _fx_state["ui_follow"] = (trans.zoom, trans.rotate, trans.xoffset, trans.yoffset)
         ## ATL-зум камеры меняется каждый кадр даже при статичном содержимом кнопки.
         return 0.0
 
@@ -352,6 +353,8 @@ init -10 python:
             elif pixel:
                 shaders.append("sm.pixelate")
                 trans.u_pixelate_size = float(size)
+            if scope == "scene" and sm_rift_layer(trans):
+                shaders.append("sm.rift")
             bloom = (fx_cfg("bloom.enabled") and fx_cfg("bloom.scope") == scope
                 and fx_cfg("bloom.intensity") > 0.001)
             if bloom:

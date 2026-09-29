@@ -27,13 +27,13 @@ define GLOW_BREATH_LOW = 0.65
 define GLOW_FADE_T = 0.18
 
 ## Не переносить repeat в on idle: новая интеракция перезапустит цикл.
-transform glow_breath():
+transform glow_breath(t=GLOW_BREATH_T, grow=GLOW_GROW, low=GLOW_BREATH_LOW):
     subpixel True
     alpha 1.0
     zoom 1.0
     block:
-        easeout GLOW_BREATH_T alpha 1.0 zoom GLOW_GROW
-        easein GLOW_BREATH_T alpha GLOW_BREATH_LOW zoom 1.0
+        easeout t alpha 1.0 zoom grow
+        easein t alpha low zoom 1.0
         repeat
 
 define GLOW_ALARM_GROW = 1.10
@@ -67,13 +67,25 @@ transform glow_state(xz, yz, idle_a, hover_a):
         linear GLOW_FADE_T alpha hover_a
 
 define GLOW_TEXT_SIZE = 33
-define GLOW_TEXT_COLOR = "#f2ece0"
+define GLOW_TEXT_COLOR = "#dad4ca"
 define GLOW_TEXT_HOVER_COLOR = "#ffffff"
 define GLOW_TEXT_OUTLINES = [(2, "#1a1712d9", 0, 0)]
 
+## Подчёркивание сценовых кнопок при наведении: цвет, толщина и отступ от текста, px.
+define GLOW_UNDERLINE_COLOR = "#ffffff47"
+define GLOW_UNDERLINE_SIZE = 1
+define GLOW_UNDERLINE_GAP = 2
+
+transform glow_underline_state:
+    alpha 0.0
+    on idle:
+        linear GLOW_FADE_T alpha 0.0
+    on hover:
+        linear GLOW_FADE_T alpha 1.0
+
 ## Процарапанный штрих подписи (common/scratch_text.rpy); тюнер — Choice Tuner в Dev Hub.
 init -10 python:
-    scratch_params("scene_choice_text", "Текст кнопок в сценах", 2.0, 0.3, 1.0, 0.55)
+    scratch_params("scene_choice_text", "Текст кнопок в сценах", 2.0, 0.3, 1.0, 0.55, idle_mix=0.8)
 
 style glow_button_text is default:
     font gui.main_menu_font
@@ -83,7 +95,8 @@ style glow_button_text is default:
     outlines GLOW_TEXT_OUTLINES
     textalign 0.5
 
-screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), size=None, text_size=None, hovered=None, unhovered=None, sensitive=True, pulse="breath", visual_at=None):
+## rift — разлом сцены под кнопкой: "follow" — кнопка едет за камерой, "screen" — стоит на экране.
+screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), size=None, text_size=None, hovered=None, unhovered=None, sensitive=True, pulse="breath", visual_at=None, rift=None):
 
     $ _g_w, _g_h = size or GLOW_BASE_SIZE
     $ _g_xz = _g_w / float(GLOW_BASE_SIZE[0])
@@ -92,9 +105,16 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
     $ _g_img = "glow_oval_on_light" if _g_on_light else "glow_oval_on_dark"
     $ _g_idle = GLOW_ON_LIGHT_IDLE if _g_on_light else GLOW_ON_DARK_IDLE
     $ _g_hover = GLOW_ON_LIGHT_HOVER if _g_on_light else GLOW_ON_DARK_HOVER
+    $ _g_rift = rift is not None and fx_cfg("rift.enabled")
+    $ _g_key = "%s@%s" % (label, pos)
+    $ _g_glow = fx_cfg("rift.glow") if _g_rift else 1.0
+    $ _g_idle, _g_hover = _g_idle * _g_glow, _g_hover * _g_glow
+    if _g_rift:
+        $ _g_img = sm_rift_glow()
+        $ _g_xz, _g_yz = _g_xz * fx_cfg("rift.glow_size"), _g_yz * fx_cfg("rift.glow_size")
 
     button:
-        at show_hide(.25)
+        at show_hide(.3)
         xysize (_g_w, _g_h)
         xpos pos[0]
         ypos pos[1]
@@ -104,22 +124,35 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
         background None
         sensitive sensitive
         action [SPlay("click"), action]
-        hovered [SPlay("hover"), (hovered or NullAction())]
-        unhovered (unhovered or NullAction())
+        hovered [SPlay("hover"), (hovered or NullAction()), Function(sm_rift_hover, _g_key, True)]
+        unhovered [(unhovered or NullAction()), Function(sm_rift_hover, _g_key, False)]
 
         fixed:
             at (visual_at if visual_at is not None else [])
             xysize (_g_w, _g_h)
+            if _g_rift:
+                add Null() at rift_beacon(_g_key, sm_rift_rect(pos, anchor, (_g_w, _g_h)), rift == "follow")
             ## Отдельный add сохраняет ATL-состояние и не масштабирует текст.
-            if sm_reduced_motion() or sm_flashes_disabled():
-                add _g_img at glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
-            elif pulse == "alarm":
-                add _g_img at glow_alarm, glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
-            else:
-                add _g_img at glow_breath, glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
+            if _g_glow > 0.0:
+                if sm_reduced_motion() or sm_flashes_disabled():
+                    add _g_img at glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
+                elif pulse == "alarm":
+                    add _g_img at glow_alarm, glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
+                elif _g_rift:
+                    add _g_img at glow_breath(fx_cfg("rift.glow_breath_t"), fx_cfg("rift.glow_grow"), fx_cfg("rift.glow_low")), glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
+                else:
+                    add _g_img at glow_breath, glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
             ## tint 0: обводка и hover-цвет стиля остаются, шейдер только рвёт штрих.
-            text label:
-                style "glow_button_text"
+            ## fit_first: подчёркивание сценовой кнопки — ровно по ширине надписи.
+            fixed:
+                fit_first True
                 align (0.5, 0.5)
-                size (text_size or GLOW_TEXT_SIZE)
-                at scratch("scene_choice_text", tint=0.0), hover_shake(0.51)
+                text label:
+                    style "glow_button_text"
+                    size (text_size or GLOW_TEXT_SIZE)
+                    at scratch("scene_choice_text", tint=0.0), hover_shake(0.51)
+                if _g_rift:
+                    add At(Solid(GLOW_UNDERLINE_COLOR, ysize=GLOW_UNDERLINE_SIZE), scratch("scene_choice_text", tint=0.0)):
+                        yalign 1.0
+                        yoffset GLOW_UNDERLINE_GAP
+                        at glow_underline_state

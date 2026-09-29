@@ -2,22 +2,8 @@
 
 ## Изображения
 
-image chapter_1 scene_3_daughter_top = "images/1_chapter/chapter_1 scene_3_daughter_top.jpg"
-image chapter_1 scene_3_daughter_top_close = "images/1_chapter/chapter_1 scene_3_daughter_top_close.jpg"
-image chapter_1 scene_3_toys = "images/1_chapter/chapter_1 scene_3_toys.jpg"
-image chapter_1 scene_3_children_room_floor = "images/1_chapter/chapter_1 scene_3_children_room_floor.jpg"
-image chapter_1 scene_3_children_room_girl = "images/1_chapter/chapter_1 scene_3_children_room_girl.jpg"
-image chapter_1 scene_3_children_room_girl_neutral = "images/1_chapter/chapter_1 scene_3_children_room_girl_neutral.jpg"
-image chapter_1 scene_3_children_room_girl_sad = "images/1_chapter/chapter_1 scene_3_children_room_girl_sad.jpg"
-image chapter_1 scene_3_children_room_girl_crying = "images/1_chapter/chapter_1 scene_3_children_room_girl_crying.jpg"
-image chapter_1 scene_3_sofa_tv = "images/1_chapter/chapter_1 scene_3_sofa_tv.jpg"
-image chapter_1 scene_3_sofa_tv_1 = sm_tv_scene("images/1_chapter/chapter_1 scene_3_sofa_tv_1.jpg",
+image chapter_1 scene_3_sofa_tv_1 = sm_tv_scene("images/1_chapter/chapter_1 scene_3_sofa_tv_1.png",
     C1S3_TV_POS, C1S3_TV_SIZE, ((2, 2), (402, 2), (402, 282), (2, 282)))
-image chapter_1 scene_3_sofa_tv_2 = "images/1_chapter/chapter_1 scene_3_sofa_tv_2.jpg"
-image chapter_1 scene_3_sofa_close = "images/1_chapter/chapter_1 scene_3_sofa_close.jpg"
-image chapter_1 scene_3_sofa_marina = "images/1_chapter/chapter_1 scene_3_sofa_marina.jpg"
-image chapter_1 scene_3_sofa_daughter = "images/1_chapter/chapter_1 scene_3_sofa_daughter.jpg"
-image chapter_1 scene_3_tv_curtain = "images/1_chapter/chapter_1 scene_3_tv_curtain.jpg"
 define C1S3_TV_POS = (1228, 118)
 define C1S3_TV_SIZE = (404, 284)
 
@@ -39,9 +25,6 @@ image chapter_1 scene_3_fridge_new_drawing = Composite((1920, 1080),
 
 image chapter_1_fridge_drawing = "images/1_chapter/owner_review/chapter_1_review_fridge new_drawing.png"
 image chapter_1_fridge_magnet = "images/1_chapter/owner_review/chapter_1_review_fridge front_magnet.png"
-image chapter_1 scene_3_entrance = "images/1_chapter/chapter_1 scene_3_entrance.jpg"
-image chapter_1 scene_3_entrance_neighbor = "images/1_chapter/chapter_1 scene_3_entrance_neighbor.jpg"
-image chapter_1 scene_3_entrance_neighbors = "images/1_chapter/chapter_1 scene_3_entrance_neighbors.jpg"
 
 default c1s3_teaparty_choice = None
 default c1s3_neighbor_choice = None
@@ -169,4 +152,23 @@ label chapter_1_scene_3:
     nas "Он не друг... И у него нет имени. Просто..."
     nas "Шаркающий человек."
 
-    return
+    ## Глава 2 ещё не подключена: вместо jump chapter_2_scene_1 — заглушка.
+    jump end_dev_yet
+
+## Конец готовой части: титр-заглушка и выход в главное меню.
+
+label end_dev_yet:
+    $ quick_menu = False
+    $ sm_parallax_off = True
+
+    scene black with Dissolve(1.0)
+
+    show expression prologue_title(_("пока всё"), 50) as prologue_titles_text_2:
+        align (0.5, 0.5)
+        subpixel True
+    with Dissolve(2.0)
+
+    pause
+
+    ## jump main_menu остался бы в игре: флаг main_menu не взводится, параллакс не гаснет.
+    $ MainMenu(confirm=False)()

@@ -1,7 +1,5 @@
 ## Уборка гостиной после реплики о разбросанных носках.
 
-image chapter_1_cleanup_room = "images/1_chapter/cleanup/chapter_1_cleanup_room.png"
-
 define C1S1_CLEANUP_ITEMS = (
     ("blanket", "images/1_chapter/cleanup/chapter_1_cleanup blanket.png", (1158, 640), _("Убрать плед")),
     ("pizza", "images/1_chapter/cleanup/chapter_1_cleanup pizza.png", (1306, 626), _("Убрать коробку пиццы")),

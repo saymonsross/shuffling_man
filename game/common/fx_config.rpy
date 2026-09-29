@@ -13,7 +13,7 @@ init -15 python:
         pass
 
     class FxParam(python_object):
-        """Тип выводится из default: bool, int, float или str с choices."""
+        """Тип выводится из default: bool, int, float, str с choices или цвет "#rrggbb"."""
 
         def __init__(self, key, default, lo, hi, step, choices, doc):
             self.key = key
@@ -23,6 +23,8 @@ init -15 python:
             self.doc = doc
             if isinstance(default, bool):
                 self.kind = "bool"
+            elif isinstance(default, str) and default.startswith("#"):
+                self.kind = "color"
             elif self.choices:
                 self.kind = "choice"
             elif isinstance(default, int):
@@ -53,6 +55,12 @@ init -15 python:
                 if value not in self.choices:
                     raise ValueError("ожидалось одно из: " + ", ".join(self.choices))
                 return value
+            if self.kind == "color":
+                if not isinstance(value, str) or not _FXC_COLOR.match(value):
+                    raise ValueError("ожидался цвет \"#rrggbb\"")
+                value = value.lower()
+                ## #rgb → #rrggbb: в файле и в сравнении «несохранённого» одна запись.
+                return value if len(value) == 7 else "#" + "".join(c * 2 for c in value[1:])
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise ValueError("ожидалось число")
             if not _fxc_math.isfinite(value):
@@ -79,6 +87,7 @@ init -15 python:
 
     _FXC_KEY = _fxc_re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.\-]*$")
     _FXC_INT = _fxc_re.compile(r"^[-+]?[0-9]+$")
+    _FXC_COLOR = _fxc_re.compile(r"^#(?:[0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$")
 
     def _fxc_strip_comment(line):
         quote = None
@@ -250,6 +259,10 @@ init -15 python:
 
     def fx_cfg(key):
         return _fxc_values[key]
+
+    def fx_cfg_rgba(key):
+        """Цветовой параметр как (r, g, b, 1.0) для uniform шейдера."""
+        return Color(_fxc_values[key]).rgb + (1.0,)
 
     def fx_cfg_set(key, value):
         value = _fxc_params[key].coerce(value)

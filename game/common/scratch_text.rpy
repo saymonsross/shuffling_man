@@ -5,9 +5,10 @@
 
 init -11 python:
 
-    def scratch_params(group, title, amp, fiber_cut, spread, copy_alpha):
+    def scratch_params(group, title, amp, fiber_cut, spread, copy_alpha, idle_mix=1.0):
         fx_param(group + ".enabled", True, doc="включить процарапанный штрих")
         fx_param(group + ".mix", 1.0, 0.0, 1.0, step=0.01, doc="сила штриха: 0 — исходник, 1 — полный")
+        fx_param(group + ".idle_mix", idle_mix, 0.0, 1.0, step=0.01, doc="сила без наведения, доля от силы при наведении")
         fx_param(group + ".amp", amp, 0.0, 10.0, step=0.1, doc="дрожание контура, px; при наведении +50%")
         fx_param(group + ".jitter_x", 0.02, 0.0, 2.0, step=0.005, doc="частота шума дрожания по X, 1/px")
         fx_param(group + ".jitter_y", 0.6, 0.0, 2.0, step=0.005, doc="частота шума дрожания по Y, 1/px")
@@ -40,6 +41,7 @@ init -11 python:
         uniform float u_scratch_tint;
         uniform float u_scratch_mix;
         uniform float u_scratch_group_mix;
+        uniform float u_scratch_idle_mix;
         uniform vec4 u_scratch_idle_color;
         uniform vec4 u_scratch_hover_color;
         attribute vec2 a_tex_coord;
@@ -97,7 +99,7 @@ init -11 python:
                     amp, u_scratch_jitter_freq, u_scratch_fiber_freq, u_scratch_fiber_cut);
             }
             // mix < 1 — штрих слабее: смесь с исходником.
-            src = mix(plain, src, u_scratch_mix * u_scratch_group_mix);
+            src = mix(plain, src, u_scratch_mix * u_scratch_group_mix * mix(u_scratch_idle_mix, 1.0, u_scratch_hover));
         }
         vec4 col = mix(u_scratch_idle_color, u_scratch_hover_color, u_scratch_hover);
         gl_FragColor = mix(src, vec4(col.rgb, 1.0) * col.a * src.a, u_scratch_tint);
@@ -107,6 +109,7 @@ init -11 python:
     def scratch_f(group, mix_f, trans, st, at):
         trans.u_scratch_on = 1.0 if fx_cfg(group + ".enabled") and not fx_cfg_bypassed() else 0.0
         trans.u_scratch_group_mix = float(fx_cfg(group + ".mix")) * (mix_f() if mix_f else 1.0)
+        trans.u_scratch_idle_mix = float(fx_cfg(group + ".idle_mix"))
         trans.u_scratch_amp = float(fx_cfg(group + ".amp"))
         trans.u_scratch_jitter_freq = (float(fx_cfg(group + ".jitter_x")), float(fx_cfg(group + ".jitter_y")))
         trans.u_scratch_fiber_freq = (float(fx_cfg(group + ".fiber_x")), float(fx_cfg(group + ".fiber_y")))
@@ -139,6 +142,7 @@ transform scratch(group, tint=1.0, idle_color="#8A8784", hover_color="#F2EFE9", 
     u_scratch_tint float(tint)
     u_scratch_mix float(mix)
     u_scratch_group_mix 1.0
+    u_scratch_idle_mix 1.0
     u_scratch_idle_color Color(idle_color).rgba
     u_scratch_hover_color Color(hover_color).rgba
     u_scratch_hover 0.0
