@@ -43,7 +43,8 @@ testsuite sm_metronome_regression:
                 with wave.open(source, "rb") as sound:
                     assert sound.getsampwidth() == 2
                     rate = sound.getframerate()
-                    assert sound.getnframes() == round(C1S1_ARROW_HALF_T * rate)
+                    ## Loop на две доли: «тик» на половине первой, «ток» — второй.
+                    assert sound.getnframes() == round(2 * C1S1_ARROW_HALF_T * rate)
                     lead_frames = round(C1S1_ARROW_HALF_T * rate / 2.0)
                     assert not any(sound.readframes(lead_frames))
                     assert any(sound.readframes(max(1, round(rate * 0.02))))

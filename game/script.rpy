@@ -13,11 +13,4 @@ label start:
     scene black
     with Dissolve(0.6)
 
-    ## DEV-ЗАГЛУШКА: пока идёт работа над главой 1, в dev-режиме новая игра стартует с неё.
-    ## Убрать перед релизом; в релизе (config.developer = False) всегда идёт пролог.
-    if config.developer:
-        ## Пролог включает параллакс сам; глава 1 рассчитывает, что он уже включён.
-        $ sm_parallax_off = False
-        jump chapter_1_scene_1
-
     jump prologue_titles

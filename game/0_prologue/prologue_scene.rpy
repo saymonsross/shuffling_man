@@ -37,6 +37,9 @@ init python:
             scratch("show_text", tint=0.0))
 
 default note_hover_pencil = False
+default note_eye_crumpled = False
+default note_eye_stack = False
+default note_eye_palms = False
 
 ## Вступительные титры
 
@@ -195,6 +198,9 @@ label prologue_scene:
 label .letter:
 
     $ note_hover_pencil = False
+    $ note_eye_crumpled = False
+    $ note_eye_stack = False
+    $ note_eye_palms = False
 
     window auto hide
 
@@ -220,12 +226,41 @@ label .letter:
     show prologue_hand_right at placed((1358, 468))
     with Dissolve(3.0)
 
-    "Обо всём случившемся невыносимо думать."
-    "Но я должна излить наружу то, что пожирает меня изнутри."
-
     window auto hide
 
     pause 0.5
+
+    ## Осмотр стола: развилки нет, но каждый глазик обязателен кликом.
+    ## Ранний пропуск обходит осмотр целиком; поздний выбирает пункты по очереди,
+    ## непрочитанная реплика останавливает его как обычно.
+    if not renpy.is_skipping():
+        while not (note_eye_crumpled and note_eye_stack and note_eye_palms):
+            menu(screen="scene_choice", follow=follow_camera(), skippable=True):
+                "Скомканная бумажка" (icon=GLOW_ICON_INSPECT, pos=(1774, 353), size=(220, 150)) if not note_eye_crumpled:
+                    $ note_eye_crumpled = True
+                    "Очередной неудачный черновик."
+                    "В перечёркнутых карандашом строках {sc=0.3:2.5}я снова вижу его.{/sc}"
+                    "Нельзя отвлекаться."
+                "Стопка бумаги" (icon=GLOW_ICON_INSPECT, bg="light", pos=(212, 153), size=(220, 150)) if not note_eye_stack:
+                    $ note_eye_stack = True
+                    "В этот раз точно получится."
+                    "Должно получиться."
+                    "В любом случае, на другую попытку я уже не найду сил."
+                "Ладони" (icon=GLOW_ICON_INSPECT, pos=(575, 771), size=(220, 150)) if not note_eye_palms:
+                    $ note_eye_palms = True
+                    "Сейчас мои руки послушны."
+                    "Перестали дрожать."
+                    "Это добрый знак."
+                with Dissolve(0.2)
+
+    window auto hide
+
+    pause 0.4
+
+    "Обо всём случившемся невыносимо думать."
+    "Но я должна излить наружу то, что пожирает меня изнутри."
+
+    pause 0.4
 
     ## Координаты — карандаш в кадре без зума; follow_camera переносит их за камерой.
     if not renpy.is_skipping():

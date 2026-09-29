@@ -1,0 +1,64 @@
+2026-09-29 17:33:36 UTC
+Windows-11-10.0.26200-SP0
+Ren'Py 8.5.3.26051504
+
+Early init took 28 ms
+Loading error handling took 19 ms
+Loading script took 107 ms
+Loading save slot metadata took 16 ms
+Loading persistent took 0 ms
+Failed to initialize steam: Exception('steamapi.InitFlat returned 1 (No appID found.  Either launch the game from Steam, or put the file steam_appid.txt containing the correct appID in your game folder.)')
+Running init code took 193 ms
+Loading analysis data took 6 ms
+Analyze and compile ATL took 5 ms
+Reloading save slot metadata took 1 ms
+Dump and make backups took 1 ms
+Cleaning cache took 0 ms
+Making clean stores took 0 ms
+Initial gc took 27 ms
+DPI scale factor: 1.000000
+nvdrs: Loaded, about to disable thread optimizations.
+nvdrs: Disabled thread optimizations.
+Creating interface object took 123 ms
+Init translation took 0 ms
+Cleaning stores took 0 ms
+Load screen analysis took 16 ms
+Analyze screens took 1 ms
+Save screen analysis took 0 ms
+Save pyanalysis took 0 ms
+Save bytecode took 0 ms
+[rpytest] [log] Running 1 test(s) marked with 'only' flag.
+[rpytest] [log] - global::c1s1_piano_screen_keys_and_skip
+
+[rpytest] Starting test run
+[rpytest] Platform:      Windows-11-10.0.26200-SP0
+[rpytest] Python:        3.12.7
+[rpytest] Ren'Py:        Ren'Py 8.5.3.26051504
+[rpytest] Game Version:  0.1.1-demo
+
+[rpytest] [exc] + global
+Running _start took 3 ms
+Interface start took 173 ms
+
+Initializing gl2 renderer:
+primary display bounds: (0, 0, 1920, 1200)
+swap interval: 1 frames
+Fullscreen mode.
+Vendor: 'NVIDIA Corporation'
+Renderer: 'NVIDIA GeForce RTX 5060 Laptop GPU/PCIe/SSE2'
+Version: '4.6.0 NVIDIA 610.88'
+Display Info: <Info({'bitsize': 32, 'bytesize': 4, 'masks': (16711680, 65280, 255, 0), 'shifts': (16, 8, 0, 0), 'losses': (0, 0, 0, 8), 'current_w': 1920, 'current_h': 1200, 'refresh_rate': 165, 'hw': False, 'wm': True, 'video_mem': 268435456, 'blit_hw': False, 'blit_hw_CC': False, 'blit_hw_A': False, 'blit_sw': False, 'blit_sw_CC': False, 'blit_sw_A': False})>
+Screen sizes: virtual=(1920, 1080) physical=(1920, 1200) drawable=(1920, 1200)
+Maximum texture size: 4096x4096
+[rpytest] [exc]   - c1s1_piano_screen_keys_and_skip
+[rpytest] [exc]   - c1s1_piano_screen_keys_and_skip (0.434 s)
+
+[rpytest] Test outcomes (Summary)
+[rpytest] Test suites:     3 |     1 passed |     0 xfailed |     0 failed |     0 xpassed |     2 skipped |     0 not run
+[rpytest] Test cases :   118 |     1 passed |     0 xfailed |     0 failed |     0 xpassed |   117 skipped |     0 not run
+[rpytest] Test hooks :     3 |     3 passed |     0 xfailed |     0 failed |     0 xpassed |     0 skipped |     0 not run
+[rpytest] Assertions :    11 |    11 passed |     0 xfailed |     0 failed |     0 xpassed | 
+
+[rpytest] Time: 1.177 s
+[rpytest] Status: PASSED 
+

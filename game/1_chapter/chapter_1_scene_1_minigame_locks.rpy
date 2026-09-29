@@ -71,10 +71,10 @@ define C1S1_LOCKS_BTN_SIZE = (430, 190)
 define C1S1_LOCKS_BTN_RATTLE = (18, 8)
 define C1S1_LOCKS_BTN_TILT = 2.0
 
-## Стук меняется медленной волной; пары значений — (тишина, пик).
-define C1S1_MG_KNOCK_GAP = (1.35, 0.40)     # сек
-define C1S1_MG_KNOCK_FLASH = (0.13, 0.42)   # доля белого
-define C1S1_MG_KNOCK_FALL = (0.30, 0.14)    # сек
+## Стук — серии из файла (C1S1_MG_KNOCKS), между сериями тишина; сила меняется медленной
+## волной, пары значений — (тишина, пик). Толчки кадра — по ударам внутри файла.
+define C1S1_MG_KNOCK_FIRST_T = 1.0          # сек до первой серии
+define C1S1_MG_KNOCK_GAP = (2.4, 0.6)       # сек тишины между сериями
 define C1S1_MG_KNOCK_SHAKE = (7.0, 22.0)    # px
 define C1S1_MG_BAG_TREMBLE = (0.6, 4.4)     # px
 define C1S1_MG_KNOCK_WAVE_T = 17.0          # сек
@@ -165,8 +165,13 @@ define C1S1_MG_HOVER_SOUND = "hover"
 define C1S1_MG_BLOCKED_SOUND = "033_denied_03"
 
 ## Звук мини-игры; файлы в game/audio/sfx/c1s1/.
-define C1S1_MG_KNOCK_SOUNDS = ("c1s1/knock_inside_1", "c1s1/knock_inside_2", "c1s1/knock_inside_3")
-define C1S1_MG_KNOCK_VOL = (0.70, 1.0)   # слабый и сильный удар волны
+## Серия стука: (файл, длительность, ((секунда удара, сила 0..1), ...)) — удары измерены по
+## огибающей файла; серия выбирается случайно.
+define C1S1_MG_KNOCKS = (
+    ("c1s1/knock_door_1", 1.5, ((0.055, 0.8), (0.315, 1.0), (0.595, 0.94), (0.865, 0.89), (1.11, 0.86), (1.365, 0.71))),
+    ("c1s1/knock_door_2", 1.4, ((0.095, 0.6), (0.25, 1.0), (0.455, 0.72), (0.73, 0.77), (0.985, 0.86), (1.235, 0.72))),
+)
+define C1S1_MG_KNOCK_VOL = (0.70, 1.0)   # тихая и громкая серия волны
 define C1S1_LATCH_OPEN_SOUND = "c1s1/latch_open"
 define C1S1_BIG_LOCK_SOUND = "c1s1/lock_bolt"
 define C1S1_HANDLE_SOUND = "c1s1/handle_click"
@@ -178,12 +183,6 @@ define C1S1_MG_BLOCKED_SHAKE_T = 0.3
 
 define C1S1_MG_VITYA_INTERVAL_T = 10.0
 define C1S1_MG_FAST_T = C1S1_MG_VITYA_INTERVAL_T
-define C1S1_MG_VITYA_LINES = (
-    _("Это я, открывай!"),
-    _("Опять заперлась? Я ж на минуту выскочил!"),
-    _("Боже, что ты там возишься?"),
-    _("Марина, ну ёбана! Замок сломался?"),
-)
 
 ## Оверлей на master; модель замка живёт на отдельном lockgame.
 define C1S1_Z_MG_OVERLAY = 50
@@ -282,6 +281,7 @@ init -5 python:
             "handle_grab": 0.0,
             "handle_last_a": 0.0,
             "knock_next": -1.0,
+            "knock_hits": (),
             "done": -1.0,
             "simple_target": -1.0,
         })
@@ -317,11 +317,11 @@ init -5 python:
         if elapsed is None:
             elapsed = c1s1_mg_elapsed()
         i = min(int(elapsed // C1S1_MG_VITYA_INTERVAL_T),
-                len(C1S1_MG_VITYA_LINES) - 1)
-        return C1S1_MG_VITYA_LINES[max(0, i)]
+                len(C1S1_VITYA_LINES) - 1)
+        return C1S1_VITYA_LINES[max(0, i)]
 
     def c1s1_mg_vitya_dd(st, at):
-        return Text(c1s1_mg_vitya_line(), style="c1s1_mg_bark_text"), 0.1
+        return Text(c1s1_mg_vitya_line(), style="c1s1_vitya_bark_text"), 0.1
 
     def c1s1_mg_reanchor_clock():
         """Исключает menu/rollback из времени, не сбрасывая clock при restart."""
@@ -401,12 +401,19 @@ init -5 python:
     ## Драйвер
 
     def c1s1_mg_knock_step():
-        """Косинусная волна с шумом задаёт интервал и силу следующего стука."""
+        """Косинусная волна с шумом задаёт паузу и силу следующей серии; толчки кадра идут
+        по ударам внутри файла (knock_hits — очередь (секунда, сила))."""
         t = _mg_get("elapsed")
-        nxt = _mg_get("knock_next")
+        hits = _mg_get("knock_hits", ())
+        while hits and hits[0][0] <= t:
+            _mg_set("shake_a", hits[0][1])
+            _mg_set("shake_t", 0.0)
+            hits = hits[1:]
+            _mg_set("knock_hits", hits)
 
+        nxt = _mg_get("knock_next")
         if nxt < 0.0:
-            _mg_set("knock_next", t + C1S1_MG_KNOCK_GAP[0])
+            _mg_set("knock_next", t + C1S1_MG_KNOCK_FIRST_T)
             return
         if t < nxt:
             return
@@ -416,16 +423,15 @@ init -5 python:
         wave = max(0.0, min(1.0, wave))
         _mg_set("wave", wave)
 
+        name, length, onsets = renpy.random.choice(C1S1_MG_KNOCKS)
         gap = _mg_lerp(C1S1_MG_KNOCK_GAP[0], C1S1_MG_KNOCK_GAP[1], wave)
         gap *= 1.0 + renpy.random.uniform(-C1S1_MG_KNOCK_GAP_NOISE, C1S1_MG_KNOCK_GAP_NOISE)
-        _mg_set("knock_next", t + max(0.15, gap))
+        _mg_set("knock_next", t + length + max(0.15, gap))
 
-        sm_sfx(C1S1_MG_KNOCK_SOUNDS,
-               volume=_mg_lerp(C1S1_MG_KNOCK_VOL[0], C1S1_MG_KNOCK_VOL[1], wave))
-        flash_fx(high=_mg_lerp(C1S1_MG_KNOCK_FLASH[0], C1S1_MG_KNOCK_FLASH[1], wave),
-                 fall=_mg_lerp(C1S1_MG_KNOCK_FALL[0], C1S1_MG_KNOCK_FALL[1], wave))
-        _mg_set("shake_a", _mg_lerp(C1S1_MG_KNOCK_SHAKE[0], C1S1_MG_KNOCK_SHAKE[1], wave))
-        _mg_set("shake_t", 0.0)
+        sfxplay(name, loop=False, fadein=0, fadeout=0, overlap=True,
+            volume=_mg_lerp(C1S1_MG_KNOCK_VOL[0], C1S1_MG_KNOCK_VOL[1], wave))
+        amp = _mg_lerp(C1S1_MG_KNOCK_SHAKE[0], C1S1_MG_KNOCK_SHAKE[1], wave)
+        _mg_set("knock_hits", tuple((t + at, amp * rel) for at, rel in onsets))
 
     def c1s1_mg_tick():
         """Timer-драйвер модели: сайд-эффекты только в interaction, dt ограничен."""
@@ -1035,7 +1041,14 @@ transform c1s1_mg_bag(pos_xy, anchor_xy):
     anchor anchor_xy
     pos pos_xy
     xoffset 0.0 yoffset 0.0
-    function c1s1_mg_bag_f
+    parallel:
+        function c1s1_mg_bag_f
+    parallel:
+        brightness_to(-0.04, 3.0)
+        block:
+            ease 6.0 u_breath_brightness -0.08
+            ease 6.0 u_breath_brightness -0.04
+            repeat
 
 ## Экраны
 
@@ -1054,10 +1067,9 @@ screen c1s1_locks_open_door():
         id "door_prompt"
         xysize (config.screen_width, config.screen_height)
         use glow_button(
-            _("Открыть дверь"),
+            _("ОТКРЫВАЙ ДВЕРЬ!"),
             Return("done"),
             bg="dark",
-            pulse="alarm",
             pos=(960, 540),
             size=C1S1_LOCKS_BTN_SIZE,
             visual_at=c1s1_mg_button_rattle())
@@ -1072,18 +1084,19 @@ screen c1s1_locks_minigame():
     timer C1S1_MG_TICK_T action Function(c1s1_mg_tick, _update_screens=False) repeat True modal True
     timer C1S1_MG_POLL_T action Function(c1s1_mg_check_done) repeat True modal True
 
-    use c1s1_mg_vitya_bark
+    use c1s1_vitya_bark(DynamicDisplayable(c1s1_mg_vitya_dd))
 
     if c1s1_mg_blocked_visible():
         frame:
             xalign 0.5
             yalign 0.985
-            padding (24, 14)
-            background Solid("#17120ef0")
+            padding (28, 14)
+            at show_hide(0.3)
             text _("Сначала сдвиньте нижнюю щеколду вправо."):
                 id "c1s1_mg_blocked_hint"
                 style "c1s1_mg_step_button_text"
-                color "#f3d9ac"
+                color "#dad4ca"
+                at scratch("show_text", tint=0.0)
 
     if persistent.sm_simplified_locks:
         textbutton c1s1_mg_simplified_label():
@@ -1104,42 +1117,18 @@ screen c1s1_locks_minigame():
     key "mousedown_1" action Function(c1s1_mg_grab, _update_screens=False) capture False
     key "mouseup_1" action Function(c1s1_mg_capture_release, _update_screens=False) capture False
 
-screen c1s1_mg_vitya_bark():
-
-    frame:
-        style "c1s1_mg_bark_frame"
-
-        vbox:
-            spacing 4
-            text _("Витя") style "c1s1_mg_bark_name"
-            add DynamicDisplayable(c1s1_mg_vitya_dd)
-
-style c1s1_mg_bark_frame is frame:
-    xalign 0.5
-    yalign 0.04
-    xsize 1500
-    padding (30, 18)
-    background Solid("#0a0806e6")
-
-style c1s1_mg_bark_name is default:
-    properties gui.text_properties("name")
-    color "#5c7c9e"
-
-style c1s1_mg_bark_text is default:
-    properties gui.text_properties("dialogue")
-    xsize 1440
-
 style c1s1_mg_access_button is button:
-    background Solid("#17120ee6")
-    hover_background Solid("#915454f2")
-    insensitive_background Solid("#17120e99")
+    background "ui_frame_bg"
+    hover_background "ui_frame_bg_solid"
+    insensitive_background "ui_frame_bg"
     padding (22, 12)
 
 style c1s1_mg_access_button_text is button_text:
-    color "#f2ece0"
+    font gui.main_menu_font
+    color "#dad4ca"
     hover_color "#ffffff"
-    insensitive_color "#aaa39a"
-    outlines [(2, "#000000cc", 0, 0)]
+    insensitive_color "#8a8784"
+    outlines [(2, "#1a1712d9", 0, 0)]
     size 25
 
 style c1s1_mg_step_button is c1s1_mg_access_button:

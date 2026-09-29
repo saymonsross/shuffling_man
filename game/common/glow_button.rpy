@@ -66,6 +66,48 @@ transform glow_state(xz, yz, idle_a, hover_a):
     on hover:
         linear GLOW_FADE_T alpha hover_a
 
+define GLOW_ICON_HOVER = 1.0
+define GLOW_ICON_ZOOM = 0.57
+
+## Общий значок осмотра для сценовых глазиков.
+define GLOW_ICON_INSPECT = "gui/eye_inspect_128.png"
+
+## Точка-маркер: в покое видна полупрозрачная точка, при наведении она гаснет
+## и проявляется сам глазик.
+define GLOW_DOT_SIZE = 25
+define GLOW_DOT_ALPHA = 0.7
+define GLOW_DOT_SOFT = 0.45
+
+## Глоу иконочной кнопки: свой размер, круглее и мельче овала текстовых кнопок;
+## кликабельная зона остаётся size пункта.
+define GLOW_ICON_GLOW_SIZE = (124, 114)
+
+## Прибавка яркости глоу у иконочных кнопок относительно текстовых.
+define GLOW_ICON_GLOW_BOOST = 1.05
+
+image glow_icon_dot = Transform(Solid("#ffffff", xysize=(GLOW_DOT_SIZE, GLOW_DOT_SIZE)),
+    mesh=True, shader="sm.oval_glow",
+    u_glow_color=GLOW_ON_DARK_COLOR, u_glow_soft=GLOW_DOT_SOFT, u_glow_core=GLOW_CORE)
+
+transform glow_icon_state:
+    subpixel True
+    align (0.5, 0.5)
+    zoom GLOW_ICON_ZOOM
+    alpha 0.0
+    on idle:
+        linear GLOW_FADE_T alpha 0.0
+    on hover:
+        linear GLOW_FADE_T alpha GLOW_ICON_HOVER
+
+transform glow_icon_dot_state:
+    subpixel True
+    align (0.5, 0.5)
+    alpha GLOW_DOT_ALPHA
+    on idle:
+        linear GLOW_FADE_T alpha GLOW_DOT_ALPHA
+    on hover:
+        linear GLOW_FADE_T alpha 0.0
+
 define GLOW_TEXT_SIZE = 33
 define GLOW_TEXT_COLOR = "#dad4ca"
 define GLOW_TEXT_HOVER_COLOR = "#ffffff"
@@ -84,8 +126,10 @@ transform glow_underline_state:
         linear GLOW_FADE_T alpha 1.0
 
 ## Процарапанный штрих подписи (common/scratch_text.rpy); тюнер — Choice Tuner в Dev Hub.
+## У иконок-глазиков своя группа: сила в покое настраивается отдельно от текста.
 init -10 python:
     scratch_params("scene_choice_text", "Текст кнопок в сценах", 2.0, 0.3, 1.0, 0.55, idle_mix=0.8)
+    scratch_params("scene_choice_icon", "Иконки кнопок в сценах", 2.0, 0.3, 1.0, 0.55, idle_mix=0.8)
 
 style glow_button_text is default:
     font gui.main_menu_font
@@ -96,15 +140,19 @@ style glow_button_text is default:
     textalign 0.5
 
 ## rift — разлом сцены под кнопкой: "follow" — кнопка едет за камерой, "screen" — стоит на экране.
-screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), size=None, text_size=None, hovered=None, unhovered=None, sensitive=True, pulse="breath", visual_at=None, rift=None):
+## icon — картинка вместо подписи; label остаётся ключом рифта, переводов и Choice Placer.
+screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), size=None, text_size=None, hovered=None, unhovered=None, sensitive=True, pulse="breath", visual_at=None, rift=None, icon=None):
 
     $ _g_w, _g_h = size or GLOW_BASE_SIZE
-    $ _g_xz = _g_w / float(GLOW_BASE_SIZE[0])
-    $ _g_yz = _g_h / float(GLOW_BASE_SIZE[1])
+    $ _g_gw, _g_gh = GLOW_ICON_GLOW_SIZE if icon is not None else (_g_w, _g_h)
+    $ _g_xz = _g_gw / float(GLOW_BASE_SIZE[0])
+    $ _g_yz = _g_gh / float(GLOW_BASE_SIZE[1])
     $ _g_on_light = (bg == "light")
     $ _g_img = "glow_oval_on_light" if _g_on_light else "glow_oval_on_dark"
     $ _g_idle = GLOW_ON_LIGHT_IDLE if _g_on_light else GLOW_ON_DARK_IDLE
     $ _g_hover = GLOW_ON_LIGHT_HOVER if _g_on_light else GLOW_ON_DARK_HOVER
+    if icon is not None:
+        $ _g_idle, _g_hover = _g_idle * GLOW_ICON_GLOW_BOOST, _g_hover * GLOW_ICON_GLOW_BOOST
     $ _g_rift = rift is not None and fx_cfg("rift.enabled")
     $ _g_key = "%s@%s" % (label, pos)
     $ _g_glow = fx_cfg("rift.glow") if _g_rift else 1.0
@@ -123,6 +171,7 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
 
         background None
         sensitive sensitive
+        alt label
         action [SPlay("click"), action]
         hovered [SPlay("hover"), (hovered or NullAction()), Function(sm_rift_hover, _g_key, True)]
         unhovered [(unhovered or NullAction()), Function(sm_rift_hover, _g_key, False)]
@@ -142,17 +191,22 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
                     add _g_img at glow_breath(fx_cfg("rift.glow_breath_t"), fx_cfg("rift.glow_grow"), fx_cfg("rift.glow_low")), glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
                 else:
                     add _g_img at glow_breath, glow_state(_g_xz, _g_yz, _g_idle, _g_hover)
-            ## tint 0: обводка и hover-цвет стиля остаются, шейдер только рвёт штрих.
-            ## fit_first: подчёркивание сценовой кнопки — ровно по ширине надписи.
+            ## fit_first: контейнер — по размеру подписи или иконки, подчёркивание — по ширине надписи.
             fixed:
                 fit_first True
                 align (0.5, 0.5)
-                text label:
-                    style "glow_button_text"
-                    size (text_size or GLOW_TEXT_SIZE)
-                    at scratch("scene_choice_text", tint=0.0), hover_shake(0.51)
-                if _g_rift:
-                    add At(Solid(GLOW_UNDERLINE_COLOR, ysize=GLOW_UNDERLINE_SIZE), scratch("scene_choice_text", tint=0.0)):
-                        yalign 1.0
-                        yoffset GLOW_UNDERLINE_GAP
-                        at glow_underline_state
+                if icon is not None:
+                    ## tint 0 — штрих рвёт контур, фактура и цвет иконки свои.
+                    add icon at scratch("scene_choice_icon", tint=0.0), glow_icon_state, hover_shake(0.51)
+                    add "glow_icon_dot" at scratch("scene_choice_icon", tint=0.0), glow_icon_dot_state, hover_shake(0.51)
+                else:
+                    ## tint 0: обводка и hover-цвет стиля остаются, шейдер только рвёт штрих.
+                    text label:
+                        style "glow_button_text"
+                        size (text_size or GLOW_TEXT_SIZE)
+                        at scratch("scene_choice_text", tint=0.0), hover_shake(0.51)
+                    if _g_rift:
+                        add At(Solid(GLOW_UNDERLINE_COLOR, ysize=GLOW_UNDERLINE_SIZE), scratch("scene_choice_text", tint=0.0)):
+                            yalign 1.0
+                            yoffset GLOW_UNDERLINE_GAP
+                            at glow_underline_state

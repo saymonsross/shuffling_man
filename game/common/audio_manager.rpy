@@ -151,6 +151,15 @@ init -200 python:
         _sm_audio_store(serial, slots)
         return True
 
+    def sm_audio_get_pos(handle):
+        """Позиция живого звука, с; None — handle устарел или канал молчит."""
+        serial, slots = _sm_audio_state()
+        slot = next((slot for slot in slots.values()
+            if slot["handle"] == handle and slot["active"]), None)
+        if slot is None or not _sm_audio_busy(slot["channel"]):
+            return None
+        return renpy.music.get_pos(channel=slot["channel"])
+
     def sm_audio_set_filter(handle, audio_filter, duration=0.016):
         duration = _sm_audio_number(duration, "duration")
         serial, slots = _sm_audio_state()
