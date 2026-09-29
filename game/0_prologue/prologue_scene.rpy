@@ -59,7 +59,7 @@ label prologue_titles:
         yoffset -15
         align (0.5, 0.5)
         subpixel True
-    with Dissolve(2.0)
+    with Dissolve(3.5)
 
     pause 3.0
 
@@ -71,7 +71,7 @@ label prologue_titles:
         truecenter
         align (0.5, 0.5)
         subpixel True
-    with Dissolve(2.0)
+    with Dissolve(3.0)
 
     pause 3.0
 
@@ -87,7 +87,7 @@ label prologue_scene:
 
     $ sm_parallax_off = False
 
-    pause 1.0
+    pause 0.3
 
     scene prologue_dark_room with Dissolve(4.0):
         zoom 1.0
@@ -305,7 +305,7 @@ label end_dev_yet:
     $ quick_menu = False
     $ sm_parallax_off = True
 
-    scene black with Dissolve(2.0)
+    scene black with Dissolve(1.0)
 
     show expression prologue_title(_("пока всё"), 50) as prologue_titles_text_2:
         align (0.5, 0.5)

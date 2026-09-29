@@ -36,8 +36,8 @@ label main_menu:
                 linear 90.5 rotate 5.0
             
         show main_menu_logo:
-            align (0.5, 0.2)
-            zoom 0.68
+            align (0.5, 0.15)
+            zoom 0.78
         show screen main_menu
         with Dissolve(0.3)
 

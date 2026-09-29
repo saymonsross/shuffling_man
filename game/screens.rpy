@@ -1251,6 +1251,7 @@ style confirm_frame:
 ## Окна поверх игры — шрифтом кнопок главного меню.
 style confirm_prompt_text:
     font gui.main_menu_font
+    color "#dedbd7"
     textalign 0.5
     layout "subtitle"
 

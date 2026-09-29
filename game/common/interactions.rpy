@@ -48,3 +48,15 @@ init python:
         store._dismiss_pause = not store.click_skip_block
 
     config.interact_callbacks.append(_sm_click_skip_block_sync)
+
+    ## auto_hide() из 7dots прячет окно на "call", а вход в меню Ren'Py сам делает
+    ## call _enter_game_menu: первое открытие меню растворяло окно диалога отдельно.
+    ## Служебные операторы Ren'Py окно не трогают.
+    def _sm_window_auto_callback(statement):
+        if renpy.get_filename_line()[0].replace("\\", "/").startswith("renpy/common/"):
+            return
+        _window_auto_callback(statement)
+
+    config.statement_callbacks = [
+        _sm_window_auto_callback if cb is _window_auto_callback else cb
+        for cb in config.statement_callbacks]
