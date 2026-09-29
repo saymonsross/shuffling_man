@@ -8,6 +8,7 @@ image chapter_1 scene_2_sandwiches_3 = At("images/1_chapter/owner_review/chapter
 
 label chapter_1_scene_2:
 
+    $ quick_menu = True
     camera
     scene chapter_1 scene_2_parents_room_door
 

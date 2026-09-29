@@ -129,6 +129,7 @@ style c1s1_cleanup_text is gui_text:
 label chapter_1_scene_1_minigame_cleanup hide:
     $ c1s1_cleanup_reset()
     $ dismiss_off()
+    $ quick_menu = False
     window hide
     camera
     scene chapter_1_cleanup_room
@@ -157,4 +158,5 @@ label chapter_1_scene_1_minigame_cleanup hide:
 
     hide screen c1s1_cleanup_minigame
     $ dismiss_on()
+    $ quick_menu = True
     return

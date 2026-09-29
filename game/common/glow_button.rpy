@@ -162,7 +162,7 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
         $ _g_xz, _g_yz = _g_xz * fx_cfg("rift.glow_size"), _g_yz * fx_cfg("rift.glow_size")
 
     button:
-        at show_hide(.3)
+        at show_hide(0.5)
         xysize (_g_w, _g_h)
         xpos pos[0]
         ypos pos[1]

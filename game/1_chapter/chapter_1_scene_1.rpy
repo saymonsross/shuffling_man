@@ -344,6 +344,9 @@ init python:
 
 label chapter_1_scene_1:
 
+    ## От лампы до замков — кино без реплик: быстрое меню возвращается в .after_locks.
+    $ quick_menu = False
+
     ## Лампа.
     $ fx_vignette = True
     $ mstop(fadeout=14.0)
@@ -708,9 +711,7 @@ label .piano:
     $ sfxplay("c1s1/knock_door_1", loop=False, fadein=0, fadeout=0, overlap=True)
     pause 3.495
 
-    $ quick_menu = True
-
-    "end"
+    # "end"
 
     ## ══════════ ЗАМКИ ══════════
     ## Саспенс замков наплывает на предыдущий: старый гаснет 18 с, новый входит 10 с.
@@ -723,6 +724,7 @@ label .after_locks:
     $ sfxstop(handle=c1s1_metronome_audio, fadeout=1.2)
     $ c1s1_metronome_audio = None
     camera
+    $ quick_menu = True
 
     if c1s1_locks_outcome == "timeout":
         $ c1s1_locks_outcome = "normal"

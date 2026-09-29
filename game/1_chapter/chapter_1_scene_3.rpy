@@ -32,6 +32,7 @@ default c1s3_neighbor_choice = None
 
 label chapter_1_scene_3:
 
+    $ quick_menu = True
     camera at zoom(1.10), align(0.5, 0.5)
     scene chapter_1 scene_3_children_room_floor
 
