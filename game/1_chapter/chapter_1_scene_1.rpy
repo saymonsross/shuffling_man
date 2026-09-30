@@ -51,15 +51,6 @@ define C1S1_Z_DOOR_BAG = 5
 
 define C1S1_LOCKS_FOCUS = (0.50, 0.32)
 
-## Витя за дверью. Первая реплика всплывает на стуке Б; в замках реплики сменяются
-## по очереди каждые C1S1_MG_VITYA_INTERVAL_T секунд, последняя держится.
-define C1S1_VITYA_LINES = (
-    _("Это я, открывай!"),
-    _("Опять заперлась? Я ж на минуту выскочил!"),
-    _("Боже, что ты там возишься?"),
-    _("Марина, ну ёбана! Замок сломался?"),
-)
-
 define c1s1_locks_knock_punch = Move((0, 16), (0, -16), 0.08, bounce=True, repeat=True, delay=0.26)
 define c1s1_locks_knock_punch_hard = Move((0, 22), (0, -22), 0.08, bounce=True, repeat=True, delay=0.24)
 
@@ -86,50 +77,109 @@ image c1s1_gg_frame_2 = Fixed("chapter_1_piano", "chapter_1_piano_gg 2", xysize=
 ## группы show_text. line — строка или displayable (в замках — меняющийся текст).
 ## side "top" — бабл сверху по центру, хвостик вниз к двери; "left" — бабл у левого края,
 ## хвостик влево, за кадр. pos — свой якорь вместо стандартного.
-screen c1s1_vitya_bark(line, side="top", pos=None):
+## line — строка или кортеж строк: показывается строка с номером index() (в замках — номер
+## текущего замка), последняя держится. pos: side "left" — левый край и центр по вертикали;
+## "top"/"up" — центр по горизонтали и верх. При включённом Choice Placer (F7) бабл
+## перетаскивается, pos пишется в вызов.
+screen c1s1_vitya_bark(line, side="top", pos=None, index=None):
     zorder 60
-    if side == "left":
+    $ _b_key = line if isinstance(line, str) else line[0]
+    $ _b_pos = _cp_bark_moved.get((side, _b_key)) or pos or ((48, 300) if side == "left" else (960, 44))
+    $ _b_anchor = (0.0, 0.5) if side == "left" else (0.5, 0.0)
+    if config.developer and renpy.get_screen("dev_choice_placer") is not None:
+        drag:
+            draggable True
+            droppable False
+            drag_raise True
+            pos _b_pos
+            anchor _b_anchor
+            dragged renpy.partial(dev_cp_bark_dragged, side, _b_key, _b_anchor)
+            use c1s1_vitya_bark_body(line, side, index)
+    else:
+        fixed:
+            fit_first True
+            pos _b_pos
+            anchor _b_anchor
+            at (c1s1_bark_in_left if side == "left" else c1s1_bark_in)
+            ## Дрожь — на вложенном контейнере: выезд пишет те же offset снаружи.
+            fixed:
+                fit_first True
+                at shake(1.0)
+                use c1s1_vitya_bark_body(line, side, index)
+
+## Перетащенные Choice Placer позиции баблов этой сессии: (side, текст) → pos. В релизе пуст.
+init python:
+    _cp_bark_moved = {}
+
+init python:
+    def c1s1_vitya_indexed_line(lines, i):
+        """Строка с номером i, последняя держится."""
+        return lines[max(0, min(int(i), len(lines) - 1))]
+
+    def c1s1_vitya_indexed_dd(st, at, lines, index):
+        return Text(c1s1_vitya_indexed_line(lines, index()), style="c1s1_vitya_bark_text"), 0.1
+
+screen c1s1_vitya_bark_body(line, side, index=None):
+    if side == "up":
+        vbox:
+            spacing 0
+            add "c1s1_bark_tail_up" xalign 0.5 yoffset 4
+            use c1s1_vitya_bark_frame(line, index)
+    elif side == "left":
         hbox:
-            at c1s1_bark_in_left
-            yanchor 0.5
-            pos (pos or (48, 300))
             ## Хвостик перекрывает контур рамки: тёмный треугольник продолжает заливку.
-            spacing -3
+            spacing -4
             add "c1s1_bark_tail_left" yalign 0.5
-            use c1s1_vitya_bark_frame(line)
+            use c1s1_vitya_bark_frame(line, index)
     else:
         vbox:
-            at c1s1_bark_in
-            xanchor 0.5
-            pos (pos or (960, 44))
             spacing 0
-            use c1s1_vitya_bark_frame(line)
-            add "c1s1_bark_tail" xalign 0.5 yoffset -3
+            use c1s1_vitya_bark_frame(line, index)
+            add "c1s1_bark_tail" xalign 0.5 yoffset -4
 
-screen c1s1_vitya_bark_frame(line):
+screen c1s1_vitya_bark_frame(line, index=None):
     frame:
+        background "c1s1_bark_bg"
         xmaximum 1500
-        padding (34, 14, 34, 18)
+        padding (40, 18, 40, 22)
         vbox:
-            spacing 0
-            text _("ВИТЯ") style "c1s1_vitya_bark_name" at scratch("show_text", tint=0.0)
+            spacing 2
+            text _("ВИТЯ") style "c1s1_vitya_bark_name" at scratch("show_text", tint=0.0, mix=0.5)
             if isinstance(line, str):
-                text line style "c1s1_vitya_bark_text" at scratch("show_text", tint=0.0)
+                text line style "c1s1_vitya_bark_text" at scratch("show_text", tint=0.0, mix=0.5)
             else:
-                add line at scratch("show_text", tint=0.0)
+                add DynamicDisplayable(c1s1_vitya_indexed_dd, line, index) at scratch("show_text", tint=0.0, mix=0.5)
+
+## Рамка бабла: заливка окон проекта, контур толще (C1S1_BARK_LINE px) — только линии по
+## краям, середина остаётся прозрачной.
+define C1S1_BARK_LINE = 3
+image c1s1_bark_border = At(Frame(Fixed(
+        Solid(gui.frame_line_color, xsize=40, ysize=C1S1_BARK_LINE),
+        Solid(gui.frame_line_color, ypos=40 - C1S1_BARK_LINE, xsize=40, ysize=C1S1_BARK_LINE),
+        Solid(gui.frame_line_color, xsize=C1S1_BARK_LINE, ysize=40),
+        Solid(gui.frame_line_color, xpos=40 - C1S1_BARK_LINE, xsize=C1S1_BARK_LINE, ysize=40),
+        xysize=(40, 40)), 6, 6, 6, 6),
+    scratch("ui_frame", tint=0.0))
+image c1s1_bark_bg = Fixed(Solid("#000000c7"), "c1s1_bark_border")
 
 ## Половины ромба: треугольник с контуром по скошенным сторонам. tail — нижняя половина,
-## остриё вниз; tail_left — левая половина, остриё влево.
+## остриё вниз; tail_up — верхняя, остриё вверх (мини-игры); tail_left — левая, остриё влево.
 image c1s1_bark_tail = At(Transform(Fixed(
-        Transform(Solid(gui.frame_line_color, xysize=(26, 26)), rotate=45, align=(0.5, 0.5)),
-        Transform(Solid("#000000c7", xysize=(20, 20)), rotate=45, align=(0.5, 0.5)),
-        xysize=(38, 38)), crop=(0, 19, 38, 19)),
+        Transform(Solid(gui.frame_line_color, xysize=(32, 32)), rotate=45, align=(0.5, 0.5)),
+        Transform(Solid("#000000c7", xysize=(24, 24)), rotate=45, align=(0.5, 0.5)),
+        xysize=(46, 46)), crop=(0, 23, 46, 23)),
+    scratch("ui_frame", tint=0.0))
+
+image c1s1_bark_tail_up = At(Transform(Fixed(
+        Transform(Solid(gui.frame_line_color, xysize=(32, 32)), rotate=45, align=(0.5, 0.5)),
+        Transform(Solid("#000000c7", xysize=(24, 24)), rotate=45, align=(0.5, 0.5)),
+        xysize=(46, 46)), crop=(0, 0, 46, 23)),
     scratch("ui_frame", tint=0.0))
 
 image c1s1_bark_tail_left = At(Transform(Fixed(
-        Transform(Solid(gui.frame_line_color, xysize=(26, 26)), rotate=45, align=(0.5, 0.5)),
-        Transform(Solid("#000000c7", xysize=(20, 20)), rotate=45, align=(0.5, 0.5)),
-        xysize=(38, 38)), crop=(0, 0, 19, 38)),
+        Transform(Solid(gui.frame_line_color, xysize=(32, 32)), rotate=45, align=(0.5, 0.5)),
+        Transform(Solid("#000000c7", xysize=(24, 24)), rotate=45, align=(0.5, 0.5)),
+        xysize=(46, 46)), crop=(0, 0, 23, 46)),
     scratch("ui_frame", tint=0.0))
 
 transform c1s1_bark_in():
@@ -145,19 +195,18 @@ transform c1s1_bark_in_left():
         parallel:
             linear 0.06 alpha 1.0
         parallel:
-            easeout 1.0 xoffset 0
+            easeout 0.5 xoffset 0
     on hide:
         easein 0.3 alpha 0.0 xoffset -10
 
 style c1s1_vitya_bark_name is default:
-    font gui.main_menu_font
-    size 24
-    color "#7d9bbd"
-    kerning 2
+    font gui.dialogue_text_font
+    size 28
+    color gui.accent_color
 
 style c1s1_vitya_bark_text is default:
     properties gui.text_properties("dialogue")
-    size 34
+    size 40
     color "#dad4ca"
     xmaximum 1420
 
@@ -266,15 +315,17 @@ transform c1s1_door_fist():
     c1s1_fist(0.1, 0.105)
     c1s1_fist(0.12, 0.155)
 
-## Вещь холла дышит вместе с фоном; через 2.2 с (растворение + пауза сцены) подпрыгивает
-## от ударов knock_door_1, amp 0 — стоит.
+## Вещь холла дышит вместе с фоном; через 1.0 с (растворение сцены) подпрыгивает от ударов
+## knock_door_1, amp 0 — стоит.
 transform c1s1_hall_item(xy, amp=0.0):
     placed(xy)
     subpixel True
     parallel:
-        breath_brightness(-0.04, -0.09, 6.0)
+        linear 10 zoom 1.05
     parallel:
-        pause 2.2
+        fade_brightness(-0.04, -0.09, 3.0)
+    parallel:
+        pause 1.0
         c1s1_knocks_1(amp)
 
 ## Дверь изнутри темнеет к ложной тишине и проседает на возвращении стука (3.505 с).
@@ -287,11 +338,12 @@ transform c1s1_inside_dark():
         ease 6.0 u_breath_brightness -0.08
         repeat
 
-## Дверь изнутри: хвост knock_door_2 (удары 4–6), ложная тишина, усиленный knock_door_1.
+## Дверь изнутри: хвост knock_door_2 (удары 4–6), ложная тишина 2.0 с, усиленный knock_door_1
+## (стартует на 2.505 с после склейки — pause сцены перед стуком А).
 transform c1s1_inside_knocks(amp):
     c1s1_hit(amp * 0.77, 0.255)
     c1s1_hit(amp * 0.86, 0.25)
-    c1s1_hit(amp * 0.72, 3.0)
+    c1s1_hit(amp * 0.72, 2.0)
     c1s1_knocks_1(amp * 1.4)
 
 init python:
@@ -349,22 +401,23 @@ label chapter_1_scene_1:
 
     ## Лампа.
     $ fx_vignette = True
-    $ mstop(fadeout=14.0)
+
     camera at camera_push(C1S1_LAMP_FOCUS, 1.04, 1.14, 25.0)
     scene chapter_1 lamp_dark:
         breath_brightness(-0.05, -0.08, 6.0)
     show chapter_1_lampshade dark zorder 10:
         placed((183, 0))
         breath_brightness(-0.05, -0.08, 6.0)
-    with Dissolve(6.0)
+    with Dissolve(4.0)
 
-    pause 1.0
+    # pause 1.0
 
     ## Интерактивы не создают развилок и пропускаются вместе со сценой.
     if not renpy.is_skipping():
         menu(screen="scene_choice", follow=follow_camera(), skippable=True):
             "ВКЛЮЧИТЬ" (pos=(475, 530), size=(330, 165)):
                 pass
+            with Dissolve(0.5)
 
     show chapter_1_lamp_hand dark_reach zorder 5:
         subpixel True
@@ -428,6 +481,7 @@ label chapter_1_scene_1:
         menu(screen="scene_choice", follow=follow_camera(), skippable=True):
             "ЗАПУСТИТЬ" (pos=(1017, 547), size=(430, 190)):
                 pass
+            with Dissolve(0.5)
 
     ## Та же рука из качания дотягивается кончиками пальцев до палки маятника.
     show chapter_1_lamp_hand metronome_wide:
@@ -469,22 +523,35 @@ label chapter_1_scene_1:
 
     # pause 4.0
 
+    # "sol"
+
     ## Камера рук подхватывает отъезд до его завершения: скорости зума
     ## согласованы, ≈0.038/с у ГГ и ≈0.037/с у рук.
     camera at camera_settle((0.51, 0.61), 1.03, 1.0, 13.4)
-    scene chapter_1 piano_hands:
+    scene black
+    show chapter_1 piano_hands:
         truecenter
+        alpha 1.0
         subpixel True
-        breath_brightness(-0.03, -0.08, 6.0)
+        parallel:
+            breath_brightness(-0.03, -0.08, 6.0)
+        parallel:
+            linear 10 alpha 0.0
     ## Руки — ближний план: parallax_near отделяет их от фона. Дыхание — ypos в absolute:
     ## float без обёртки Ren'Py трактует как долю экрана.
     ## Рука: место на клавишах, откуда выезжает (px снизу), за сколько секунд, размах дыхания
     ## в px, время вверх и вниз.
-    show chapter_1_piano_hand_left at c1s1_hand((330, 264), rise=40, rise_t=3.0, breath=2, up_t=2.9, down_t=3.6)
-    show chapter_1_piano_hand_right at c1s1_hand((1113, 266), rise=40, rise_t=3.0, breath=2, up_t=3.3, down_t=2.7)
-    with Dissolve(1.2)
+    show chapter_1_piano_hand_left:
+        alpha 1.0
+        parallel:
+            c1s1_hand((330, 364), rise=40, rise_t=3.0, breath=2, up_t=2.9, down_t=3.6)
+    show chapter_1_piano_hand_right:
+        alpha 1.0
+        parallel:
+            c1s1_hand((1113, 366), rise=40, rise_t=3.0, breath=2, up_t=3.3, down_t=2.7)
+    with Dissolve(2.0)
 
-    pause 3
+    pause 2.0
 
 ## Пианино под метроном; отдельный вход каталога сцен.
 
@@ -514,9 +581,12 @@ label .piano:
         anchor (0.5, 1.0)
         pos (825, 392)
         function renpy.curry(c1s1_pendulum_f)(14.0)
-    with Dissolve(1.2)
+    with Dissolve(3.2)
 
     call chapter_1_scene_1_minigame_piano from _call_c1s1_minigame_piano_scene
+
+    ## Стук — постановка целиком: клик её не проматывает до самых замков; Ctrl/«Пропуск» работают.
+    $ click_skip_block = True
 
     ## ▶ СТУК А — мини-игра вернулась в момент обрушения нот (игрок собрал предпоследний
     ## шаг). Вместо нот — фальшь, муж долбит в дверь, камера вздрагивает по ударам.
@@ -539,6 +609,8 @@ label .piano:
     ## Время обрушения — сумма pause до hide screen.
     show screen minigame_piano_screen
 
+    $ fnplay("audio/chapter_1/chapter_1_suspense_before_locker_game.ogg", fadein=1.0)
+
     ## ══════════ КАДР 1 · РУКИ ══════════
     ## Сразу на руки над клавишами: вздрагивают от стука А (c1s1_hit), мелко дрожат и за 2.4 с
     ## сползают с клавиш (ypos); осколки нот падают поверх. Растворение 0.5 + пауза 1.3 = 1.8 с
@@ -546,19 +618,16 @@ label .piano:
     scene chapter_1 piano_hands:
         truecenter
         subpixel True
-        parallel:
-            breath_brightness(-0.03, -0.07, 6.0)
-        parallel:
-            linear 3.0 blur 2.0
+        breath_brightness(-0.04, -0.11, 3.0)
     show chapter_1_piano_hand_left:
         subpixel True
         anchor (0, 0)
         pos (330, 284)
         xoffset 0.0 yoffset 0.0
         parallel:
-            breath_brightness(-0.03, -0.07, 6.0)
+            breath_brightness(-0.02, -0.05, 6.0)
         parallel:
-            c1s1_hit(5.0, 0.4)
+            c1s1_hit(8.0, 2.4)
             pause 0.6
             easein 2.4 ypos 318
         parallel:
@@ -572,9 +641,9 @@ label .piano:
         pos (1113, 276)
         xoffset 0.0 yoffset 0.0
         parallel:
-            breath_brightness(-0.03, -0.07, 6.0)
+            breath_brightness(-0.02, -0.05, 6.0)
         parallel:
-            c1s1_hit(5.0, 0.4)
+            c1s1_hit(8.0, 2.4)
             pause 0.8
             easein 2.4 ypos 306
         parallel:
@@ -584,7 +653,7 @@ label .piano:
                 linear 0.05 xoffset (1.0 * sm_motion_scale())
                 repeat
     ## ▶ ВИТЯ: «Это я, открывай!» — плашка висит до холла (hide screen перед КАДРОМ 3).
-    show screen c1s1_vitya_bark(_("Это я, открывай!"), side="left")
+    show screen c1s1_vitya_bark(_("Это я, открывай!"), side="left", pos=(32, 162))
     with Dissolve(0.5)
 
     # >>>>>>>>>>>> КАДР СЦЕНЫ ВО ВРЕМЯ ОБРУШЕНИЯ — сюда
@@ -596,8 +665,6 @@ label .piano:
 
 
     # >>>>>>>>>>>> ВОТ ТУТ
-
-    $ fnplay("audio/chapter_1/chapter_1_suspense_before_locker_game.ogg", fadein=4.0)
 
     pause 2.0
 
@@ -621,17 +688,17 @@ label .piano:
         breath_brightness(-0.04, -0.09, 6.0)
     show chapter_1_door_hand hit at c1s1_door_fist_b, breath_brightness(-0.04, -0.09, 6.0)
     ## Длина кадра двери.
-    pause 3.0
+    pause 1.0
     hide screen c1s1_vitya_bark
 
     ## ══════════ КАДР 3 · ХОЛЛ ══════════
     ## Холл: взгляд тянется к двери, стук слышен отсюда.
-    camera at camera_push((0.41, 0.44), 1.02, 1.08, 6.0)
+    camera at camera_push((0.41, 0.44), 1.02, 1.08, 16.0)
     scene chapter_1 hall:
         breath_brightness(-0.04, -0.09, 6.0)
     ## Внутри групп zorder растёт по порядку предметов; швабра поверх всех.
     ## Второе число — сила подскока от стука.
-    show chapter_1_hall_door zorder 3 at c1s1_hall_item((634, 128), 3.0)
+    show chapter_1_hall_door zorder 3 at c1s1_hall_item((634, 128), 1.0)
     show chapter_1_hall_boots zorder 10 at c1s1_hall_item((1077, 564))
     show chapter_1_hall_packet zorder 10 + 1 at c1s1_hall_item((1075, 594))
     show chapter_1_hall_toy zorder 10 + 2 at c1s1_hall_item((1102, 618))
@@ -644,11 +711,9 @@ label .piano:
     show chapter_1_hall_mop zorder 40 at c1s1_hall_item((924, 302), 4.0)
     with Dissolve(1.0)
 
-    ## Растворение 1.0 + 1.2 = 2.2 с — задержка стука в c1s1_hall_item.
-    pause 1.2
-
-    ## ▶ СТУК А (тише, 0.75). Вещи подпрыгивают сами через 2.2 с после появления кадра —
-    ## это pause 2.2 в c1s1_hall_item. Меняешь паузу выше — поменяй и там.
+    ## ▶ СТУК А (тише, 0.75) — сразу после растворения (1.0 с). Вещи подпрыгивают сами через
+    ## 1.0 с после появления кадра — это pause 1.0 в c1s1_hall_item. Ставишь паузу перед
+    ## стуком — прибавь её и там.
     ## Удары отдаются в дверь и вещи у стен.
     $ sfxplay("c1s1/knock_door_1", loop=False, fadein=0, fadeout=0, overlap=True, volume=0.75)
     ## 0.865 с — до 4-го удара стука А: на нём склейка на дверь снаружи.
@@ -684,40 +749,45 @@ label .piano:
     ## 0.73 с — до 4-го удара стука Б: на нём склейка на дверь изнутри.
 
     ## ══════════ КАДР 5 · ДВЕРЬ ИЗНУТРИ ══════════
-    ## Стена и сумка: c1s1_inside_knocks — удары 5, 6 стука Б, 3 с тишины, потом стук А
-    ## (громкий); c1s1_inside_dark — затемнение по тем же секундам. Наезд на замки — 7 с.
+    ## Стена и сумка: c1s1_inside_knocks — удары 5, 6 стука Б, 2 с тишины, потом стук А
+    ## (громкий). Наезд на замки — 17 с; мини-игра стартует на 4-й секунде и доводит его сама
+    ## (C1S1_MG_ZOOM / C1S1_MG_CAMERA_T в замках) — менять вместе.
     ## Четвёртый удар склеен с дверью изнутри: наезд на замки, сумка вздрагивает.
-    camera at camera_push(C1S1_LOCKS_FOCUS, 1.02, 1.16, 7.0)
+    camera at camera_push(C1S1_LOCKS_FOCUS, 1.02, 1.09, 9.0)
     scene chapter_1 hall_door:
         subpixel True
         parallel:
-            c1s1_inside_dark()
+            breath_brightness(-0.05, -0.09, 4.0)
         parallel:
             c1s1_inside_knocks(6.0)
     show chapter_1_hall_door_bag zorder C1S1_Z_DOOR_BAG:
         placed(C1S1_DOOR_BAG_POS, C1S1_DOOR_BAG_ANCHOR)
         subpixel True
         parallel:
-            c1s1_inside_dark()
+            breath_brightness(-0.05, -0.09, 4.0)
         parallel:
             c1s1_inside_knocks(9.0)
 
     ## Ложная тишина.
-    pause 3.505
+    pause 2.505
 
-    ## ▶ СТУК А (громкий) — через 3.505 с после склейки: c1s1_inside_knocks ждёт его
-    ## в эту секунду. Двигаешь паузу — двигай и 3.0 в c1s1_inside_knocks.
+    ## ▶ СТУК А (громкий) — через 2.505 с после склейки: c1s1_inside_knocks ждёт его
+    ## в эту секунду. Двигаешь паузу — двигай и 2.0 в c1s1_inside_knocks.
     ## Стук возвращается сильнее.
     $ sfxplay("c1s1/knock_door_1", loop=False, fadein=0, fadeout=0, overlap=True)
-    pause 3.495
+    pause 1.495
 
     # "end"
 
     ## ══════════ ЗАМКИ ══════════
     ## Саспенс замков наплывает на предыдущий: старый гаснет 18 с, новый входит 10 с.
     $ fnplay("audio/chapter_1/chapter_1_suspense_locker_game.ogg", fadein=10.0, fadeout=18.0)
+    ## Блокировщик выше кнопок мини-игры и съел бы клик по «Открывай дверь».
+    $ click_skip_block = False
     ## Переход к мини-игре с замками.
     call chapter_1_scene_1_minigame_locks from _call_c1s1_minigame_locks
+
+    jump end_dev_yet
 
 label .after_locks:
 

@@ -326,9 +326,17 @@ label .letter:
     "Это будет моя последняя попытка. Так сказать, спринтерский забег."
     "Я расскажу всё на одном дыхании. Здесь и сейчас."
 
+    $ quick_menu = False
+
+    $ mstop(fadeout=14.0)
+
+    camera:
+        zoom 1.0
+        truecenter
+        subpixel True
+
     ## Граница между прологом и первой главой.
     scene black with Dissolve(2.0)
-    camera
     $ fx_vignette = False
     $ pause(1.2)
 

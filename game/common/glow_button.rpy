@@ -161,8 +161,9 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
         $ _g_img = sm_rift_glow()
         $ _g_xz, _g_yz = _g_xz * fx_cfg("rift.glow_size"), _g_yz * fx_cfg("rift.glow_size")
 
+    ## Появление и уход — на корне экрана-владельца (scene_choice, c1s1_locks_open_door):
+    ## анимацию ухода движок продолжает только у верхних трансформов экрана.
     button:
-        at show_hide(0.5)
         xysize (_g_w, _g_h)
         xpos pos[0]
         ypos pos[1]

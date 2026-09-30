@@ -195,5 +195,10 @@ init -10 python:
         return True
 
 ## rect — (x, y, w, h) кнопки в координатах её контейнера; follow — контейнер едет за камерой.
+## on hide: маяк замолкает вместе с уходом экрана, разлом гаснет за rift.fade, не дожидаясь
+## конца анимации кнопки.
 transform rift_beacon(key, rect, follow):
-    function renpy.curry(sm_rift_beacon_f)(key, rect, follow)
+    on show, replace:
+        function renpy.curry(sm_rift_beacon_f)(key, rect, follow)
+    on hide:
+        pass

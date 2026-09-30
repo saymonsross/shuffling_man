@@ -834,7 +834,8 @@ screen minigame_piano_screen(skippable=True):
                 xysize (kw, kh)
                 background piano_key_face(base, kw, kh)
                 hover_background piano_key_face(base + "_hover", kw, kh)
-                alt (_("[label] — нажать") if (name, up) in pending else label)
+                ## alt читается озвучкой вне экрана: подстановка сразу, без [label].
+                alt (renpy.substitute(_("[label] — нажать"), {"label": label.upper()}) if (name, up) in pending else label.upper())
                 sensitive (piano_state.get("phase") == "play")
                 action Return(("latch", (name, up)))
                 if (name, up) in active:

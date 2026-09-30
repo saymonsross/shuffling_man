@@ -57,6 +57,10 @@ define config.window = "auto"
 define config.window_show_transition = Dissolve(0.3)
 define config.window_hide_transition = Dissolve(0.3)
 
+## Ren'Py по умолчанию не передаёт show/hide внутрь fixed/vbox: трансформы с on show /
+## on hide (show_hide) у кнопок и рамок внутри контейнеров экранов иначе не играют.
+define config.containers_pass_transform_events = {"hover", "idle", "insensitive", "selected_hover", "selected_idle", "show", "hide"}
+
 
 ## Стандартные настройки
 

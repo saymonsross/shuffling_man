@@ -79,7 +79,7 @@ testsuite sm_metronome_regression:
         assert eval (c1s1_metronome_audio == sm_test_audio_old and sm_test_metronome_playing(sm_test_audio_old))
         assert eval (isinstance(sm_test_metronome_filter(sm_test_audio_old), renpy.audio.filter.Sequence))
         assert eval (len(tuple(row for row in sm_audio_snapshot("sfx") if row["active"] and row["tag"] == "c1s1_metronome")) == 1)
-        click "Открыть дверь"
+        click "ОТКРЫВАЙ ДВЕРЬ!"
         assert screen "c1s1_locks_minigame" timeout 10.0
         assert eval (sm_test_metronome_playing(sm_test_audio_old))
         $ c1s1_mg_open_all()

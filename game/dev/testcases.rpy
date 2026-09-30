@@ -120,12 +120,13 @@ testcase c1s1_minigame_timed_outcomes:
     assert eval (c1s1_mg_outcome_for_time(39.99) == 'normal')
     assert eval (c1s1_mg_outcome_for_time(40.0) == 'normal')
     assert eval (c1s1_mg_outcome_for_time(3600.0) == 'normal')
-    assert eval (c1s1_mg_vitya_line(0.0) == 'Это я, открывай!')
-    assert eval (c1s1_mg_vitya_line(C1S1_MG_VITYA_INTERVAL_T) == 'Опять заперлась? Я ж на минуту выскочил!')
-    assert eval (c1s1_mg_vitya_line(C1S1_MG_VITYA_INTERVAL_T * 2.0) == 'Боже, что ты там возишься?')
-    assert eval (c1s1_mg_vitya_line(C1S1_MG_VITYA_INTERVAL_T * 3.0) == 'Марина, ну ёбана! Замок сломался?')
-    assert eval (c1s1_mg_vitya_line(40.0) == 'Марина, ну ёбана! Замок сломался?')
-    assert eval (c1s1_mg_vitya_line(3600.0) == 'Марина, ну ёбана! Замок сломался?')
+    $ sm_test_lines = ("a", "b", "c", "d")
+    assert eval (c1s1_vitya_indexed_line(sm_test_lines, 0) == "a")
+    assert eval (c1s1_vitya_indexed_line(sm_test_lines, 1) == "b")
+    assert eval (c1s1_vitya_indexed_line(sm_test_lines, 2) == "c")
+    assert eval (c1s1_vitya_indexed_line(sm_test_lines, 3) == "d")
+    assert eval (c1s1_vitya_indexed_line(sm_test_lines, 9) == "d")
+    assert eval (c1s1_vitya_indexed_line(sm_test_lines, -1) == "a")
 
     ## Время выбора не включает короткую выдержку уже открытого замка.
     $ c1s1_mg_reset()
@@ -341,10 +342,10 @@ testcase story_full_route:
     click "Завести метроном"
     skip fast
     assert screen "c1s1_locks_open_door" timeout 15.0
-    click "Открыть дверь"
+    click "ОТКРЫВАЙ ДВЕРЬ!"
     assert screen "c1s1_locks_minigame" timeout 10.0
     assert eval (c1s1_mg_active and c1s1_mg_knocking)
-    assert eval (c1s1_mg_vitya_line() == 'Это я, открывай!')
+    assert eval (c1s1_vitya_indexed_line(("a", "b"), c1s1_mg_lock_i) == "a")
 
     ## Механику замков проверяют отдельные тесты; здесь важен возврат из мини-игры в сцену.
     $ c1s1_mg_open_all()

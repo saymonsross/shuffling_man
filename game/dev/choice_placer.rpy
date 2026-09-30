@@ -2,6 +2,7 @@
 ## F7 — вкл/выкл (F5 занят сохранением FX Tuner). Пока включён, кнопки menu(screen="scene_choice") показаны рамками;
 ## отпустил рамку — pos=(x, y) пункта меню переписывается в .rpy, кнопка остаётся на новом
 ## месте до перезагрузки. Координаты — в кадре сцены: кнопка едет за камерой, как и раньше.
+## Баблы c1s1_vitya_bark тоже тащатся: pos пишется в их вызов (show screen / use).
 ## Строки намеренно не локализуются.
 
 define -30 CP_HOTKEY = "K_F7"
@@ -46,6 +47,54 @@ init python:
             return None
         return None
 
+    _CP_BARK_DIRS = ("0_prologue", "1_chapter", "2_chapter", "3_chapter", "4_endings", "common")
+
+    def dev_cp_bark_write(side, key, pos):
+        """Переписывает pos=(x, y) в вызове c1s1_vitya_bark с текстом key (у кортежа реплик —
+        первая) и стороной side. Возвращает «файл:строка» или None."""
+        needle = '"%s"' % key
+        side_needle = 'side="%s"' % side
+        for d in _CP_BARK_DIRS:
+            folder = _cp_os.path.join(config.gamedir, d)
+            if not _cp_os.path.isdir(folder):
+                continue
+            for name in sorted(_cp_os.listdir(folder)):
+                if not name.endswith(".rpy"):
+                    continue
+                path = _cp_os.path.join(folder, name)
+                with _cp_io.open(path, encoding="utf-8", newline="") as f:
+                    lines = f.read().splitlines(True)
+                for j, text in enumerate(lines):
+                    if "c1s1_vitya_bark(" not in text or needle not in text or text.lstrip().startswith("screen "):
+                        continue
+                    if (side_needle in text) != (side != "top") and side != "top":
+                        continue
+                    if side == "top" and "side=" in text and side_needle not in text:
+                        continue
+                    if _CP_POS_RE.search(text):
+                        lines[j] = _CP_POS_RE.sub("pos=(%d, %d)" % pos, text, count=1)
+                    else:
+                        head, sep, tail = text.rstrip("\r\n").rpartition(")")
+                        if not sep:
+                            continue
+                        lines[j] = "%s, pos=(%d, %d))%s%s" % (head, pos[0], pos[1], tail, text[len(text.rstrip("\r\n")):])
+                    with _cp_io.open(path, "w", encoding="utf-8", newline="") as f:
+                        f.write("".join(lines))
+                    return "%s/%s:%d" % (d, name, j + 1)
+        return None
+
+    def dev_cp_bark_dragged(side, key, anchor, drags, drop):
+        d = drags[0]
+        pos = (int(round(d.x + anchor[0] * d.w)), int(round(d.y + anchor[1] * d.h)))
+        _cp_bark_moved[(side, key)] = pos
+        written = dev_cp_bark_write(side, key, pos)
+        if written:
+            _cp_state["msg"] = "бабл %s  pos=(%d, %d)  →  %s" % (side, pos[0], pos[1], written)
+        else:
+            _cp_state["msg"] = "бабл %s  pos=(%d, %d)  →  вызов c1s1_vitya_bark не найден, впиши руками" % (side, pos[0], pos[1])
+        renpy.restart_interaction()
+        return None
+
     def dev_cp_dragged(where, caption, anchor, size, drags, drop):
         d = drags[0]
         pos = (int(round(d.x + anchor[0] * size[0])), int(round(d.y + anchor[1] * size[1])))
@@ -75,8 +124,8 @@ screen dev_choice_placer():
         yoffset 8
         vbox:
             spacing 4
-            text "CHOICE PLACER · тащи сценовые кнопки мышью · отпустил — pos пишется в .rpy · F7 — выкл" style "dev_cp_text"
-            if not renpy.get_screen("scene_choice"):
+            text "CHOICE PLACER · тащи сценовые кнопки и баблы мышью · отпустил — pos пишется в .rpy · F7 — выкл" style "dev_cp_text"
+            if not renpy.get_screen("scene_choice") and not renpy.get_screen("c1s1_vitya_bark") and not renpy.get_screen("c1s1_locks_minigame"):
                 text "на экране нет сценовых кнопок — дойди до menu(screen=\"scene_choice\")" style "dev_cp_text" color "#ffcc44"
             if _cp_state["msg"]:
                 text _cp_state["msg"] style "dev_cp_text" color "#ff8080" substitute False

@@ -26,9 +26,11 @@ screen scene_choice(items, follow=None, skippable=False):
     if skippable and renpy.is_skipping():
         timer 0.01 action items[0].action modal True
 
+    ## Плавное появление и уход всего экрана — внешним трансформом корня; follow остаётся
+    ## ближайшим к контейнеру, как ждёт камера.
     fixed:
         id "world"
-        at (follow if follow is not None else [])
+        at (([follow] if follow is not None else []) + [show_hide(0.5)])
         xysize (config.screen_width, config.screen_height)
         for i in items:
             if _sc_placing:

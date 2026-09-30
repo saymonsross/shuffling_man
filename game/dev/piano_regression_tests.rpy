@@ -67,6 +67,16 @@ label sm_test_piano hide:
     call screen sm_test_piano_finished
     return
 
+## Пропуск включён до вызова: мини-игра возвращает "skipped", не показывая экран.
+label sm_test_piano_early hide:
+    $ piano_metro.t0 = None
+    $ piano_metro.handle = None
+    $ config.skipping = "fast"
+    call chapter_1_scene_1_minigame_piano from _call_sm_test_piano_early
+    $ skip_stop()
+    call screen sm_test_piano_finished
+    return
+
 screen sm_test_piano_finished():
     modal True
     null
@@ -353,15 +363,10 @@ testcase c1s1_piano_screen_keys_and_skip:
 
 testcase c1s1_piano_early_skip:
     $ persistent.sm_simplified_locks = False
-    run Function(dev_scene_nav_start, "chapter_1_scene_1.piano")
-    assert "start" timeout 15.0
-    ## Непрочитанная реплика останавливает пропуск: в тестовом savedir всё непрочитано.
-    $ _preferences.skip_unseen = True
-    skip fast
-    assert eval (c1s1_piano_outcome == "skipped") timeout 15.0
+    run Start("sm_test_piano_early")
+    assert screen "sm_test_piano_finished" timeout 5.0
+    assert eval (c1s1_piano_outcome == "skipped" and piano_state == {})
     $ skip_stop()
-    $ _preferences.skip_unseen = False
-    run MainMenu(confirm=False)
 
 testcase c1s1_piano_load_rebinds_metronome:
     ## Загрузка возвращает к последнему нажатию; такт (NoRollback) связывается заново из состояния.
@@ -370,6 +375,10 @@ testcase c1s1_piano_load_rebinds_metronome:
     advance until screen "minigame_piano_screen" timeout 15.0
     assert eval (piano_state["metronome"] is not None and piano_state["metronome"] == c1s1_metronome_audio)
     assert eval (piano_metro.handle == c1s1_metronome_audio)
+    ## Контрольная точка появляется после первого нажатия: до него сохранение вернуло бы
+    ## к предыдущему checkpoint сцены.
+    click pos sm_test_piano_wrong_xy()
+    assert eval (piano_state["stumbles"] == 1 and piano_state["pos"] == 0) timeout 2.0
     run Function(sm_test_cleanup_memory_save)
     $ piano_metro.handle = None
     $ piano_metro.t0 = None

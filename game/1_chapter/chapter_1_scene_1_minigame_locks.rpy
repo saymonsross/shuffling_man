@@ -19,20 +19,28 @@ image chapter_1_latch_body = "images/1_chapter/lock_mini_game/latch/latch_body.p
 image chapter_1_latch_stroke = "images/1_chapter/lock_mini_game/latch/latch_stroke.png"
 image chapter_1_latch_overlay_body = "images/1_chapter/lock_mini_game/latch/latch_body_owerlay_1.png"
 image chapter_1_latch_overlay_keeper = "images/1_chapter/lock_mini_game/latch/latch_body_owerlay_2.png"
-image chapter_1_latch_knob = hover_lit("images/1_chapter/lock_mini_game/latch/latch_knob.png", "c1s1_mg_part_lit('latch')", 0.24)
+image chapter_1_latch_knob = hover_lit("images/1_chapter/lock_mini_game/latch/latch_knob.png", "c1s1_mg_part_lit('latch')", -0.08)
 
 ## У деталей большого замка разные холсты; расхождения заданы в C1S1_BIG_*_OFF.
 image chapter_1_big_lock_body = "images/1_chapter/lock_mini_game/big_lock/big_lock_body.png"
 image chapter_1_big_lock_stroke = "images/1_chapter/lock_mini_game/big_lock/big_lock_stroke.png"
 image chapter_1_big_lock_latch_shadow = "images/1_chapter/lock_mini_game/big_lock/big_lock_latch_shadow.png"
-image chapter_1_big_lock_latch = hover_lit("images/1_chapter/lock_mini_game/big_lock/big_lock_latch.png", "c1s1_mg_part_lit('big_latch')", 0.24)
+image chapter_1_big_lock_latch = hover_lit("images/1_chapter/lock_mini_game/big_lock/big_lock_latch.png", "c1s1_mg_part_lit('big_latch')", -0.08)
 image chapter_1_big_lock_spin_shadow = "images/1_chapter/lock_mini_game/big_lock/big_lock_knob_spinner_shadow.png"
 ## Центр обрезанной вертушки совпадает с осью вращения.
-image chapter_1_big_lock_spin = hover_lit("images/1_chapter/lock_mini_game/big_lock/big_lock_knob_spinner_crop.png", "c1s1_mg_part_lit('big_spin')", 0.24)
+image chapter_1_big_lock_spin = hover_lit("images/1_chapter/lock_mini_game/big_lock/big_lock_knob_spinner_crop.png", "c1s1_mg_part_lit('big_spin')", -0.08)
 
 ## Рычаг ручки вращается вокруг C1S1_HANDLE_PIVOT, не центра холста.
 image chapter_1_handle_body = "images/1_chapter/lock_mini_game/door_handle/door_handle_body.png"
-image chapter_1_handle_lever = hover_lit("images/1_chapter/lock_mini_game/door_handle/door_handle.png", "c1s1_mg_part_lit('handle')", 0.24)
+image chapter_1_handle_lever = hover_lit("images/1_chapter/lock_mini_game/door_handle/door_handle.png", "c1s1_mg_part_lit('handle')", -0.08)
+
+image c1s1_big_latch_arrow_img = "gui/arrow_right_128.png"
+
+## Белые силуэты подвижных деталей под ними: рваный штрих выходит за край — обводка зацепа.
+image chapter_1_latch_knob_outline = "images/1_chapter/lock_mini_game/latch/latch_knob.png"
+image chapter_1_big_lock_latch_outline = "images/1_chapter/lock_mini_game/big_lock/big_lock_latch.png"
+image chapter_1_big_lock_spin_outline = "images/1_chapter/lock_mini_game/big_lock/big_lock_knob_spinner_crop.png"
+image chapter_1_handle_lever_outline = "images/1_chapter/lock_mini_game/door_handle/door_handle.png"
 
 image chapter_1_mg_overlay = Solid("#0a0806")
 
@@ -60,8 +68,10 @@ define C1S1_MG_LOCK_FLAGS = {
 
 ## Константы
 
-## Кадр мини-игры и неподвижный фокус камеры.
-define C1S1_MG_ZOOM = 1.16
+## Кадр мини-игры и неподвижный фокус камеры. Камера продолжает наезд сцены (1.02 → 1.06 за
+## 17 с, вход на 4-й секунде): доводит до C1S1_MG_ZOOM за оставшиеся C1S1_MG_CAMERA_T.
+define C1S1_MG_ZOOM = 1.06
+define C1S1_MG_CAMERA_T = 13.0
 define C1S1_MG_SETTLE_T = 0.35
 
 define C1S1_MG_OVERLAY_ALPHA = 0.72
@@ -130,6 +140,12 @@ define C1S1_BIG_SPIN_OFF = (206, -15)
 ## Ход и зона хвата щеколды, px ассета.
 define C1S1_BIG_LATCH_TRAVEL = 70
 define C1S1_BIG_LATCH_GRAB_BOX = (261, 205, 300, 150)
+## Стрелка-подсказка под нижней щеколдой, пока её держат: мигает, едет вместе с щеколдой.
+## Смещение — px ассета от центра замка (как GRAB_BOX), zoom — доля от 128 px.
+define C1S1_BIG_LATCH_ARROW_OFF = (261, 262)
+define C1S1_BIG_LATCH_ARROW_ZOOM = 0.6
+define C1S1_BIG_LATCH_ARROW_ALPHA = (0.25, 0.65)
+define C1S1_BIG_LATCH_ARROW_BLINK_T = 0.8
 
 define C1S1_BIG_SPIN_RADIUS = 135
 define C1S1_BIG_SPIN_TURN = 360.0   # градусы
@@ -162,7 +178,15 @@ define C1S1_MG_TICK_T = 1.0 / 30.0  # 30 обновлений/с
 define C1S1_MG_POINTER_LOST_T = 0.25  # release вне окна: защита от вечного drag
 
 define C1S1_MG_HOVER_SOUND = "hover"
-define C1S1_MG_BLOCKED_SOUND = "033_denied_03"
+## Белая рваная обводка подвижной детали (белый силуэт под деталью со штрихом группы
+## lock_parts, Locks Tuner): слабая C1S1_MG_IDLE_OUTLINE_ALPHA, пока замок ждёт — деталь
+## читается как интерактивная; полная C1S1_MG_GRAB_OUTLINE_ALPHA, пока держишь. Зацеп — щелчок.
+define C1S1_MG_GRAB_SOUND = "click"
+define C1S1_MG_GRAB_VOL = 0.5
+define C1S1_MG_IDLE_OUTLINE_ALPHA = 0.3
+define C1S1_MG_GRAB_OUTLINE_ALPHA = 1.0
+define C1S1_MG_GRAB_OUTLINE_RELAX = 0.3
+define C1S1_MG_BLOCKED_SOUND = "c1s1/2_lock_declaine"
 
 ## Звук мини-игры; файлы в game/audio/sfx/c1s1/.
 ## Серия стука: (файл, длительность, ((секунда удара, сила 0..1), ...)) — удары измерены по
@@ -172,20 +196,42 @@ define C1S1_MG_KNOCKS = (
     ("c1s1/knock_door_2", 1.4, ((0.095, 0.6), (0.25, 1.0), (0.455, 0.72), (0.73, 0.77), (0.985, 0.86), (1.235, 0.72))),
 )
 define C1S1_MG_KNOCK_VOL = (0.70, 1.0)   # тихая и громкая серия волны
-define C1S1_LATCH_OPEN_SOUND = "c1s1/latch_open"
-define C1S1_BIG_LOCK_SOUND = "c1s1/lock_bolt"
-define C1S1_HANDLE_SOUND = "c1s1/handle_click"
+define C1S1_LATCH_OPEN_SOUND = "c1s1/shekolda_open"
+## Звук хода, пока деталь тащат: петля, громкость по скорости (доли пути детали в секунду до
+## полной), гаснет через C1S1_SLIDE_HOLD_T без движения или при отпускании. Один звук на
+## каждую подвижную деталь; нет файла — деталь ходит молча.
+define C1S1_LATCH_SLIDE_SOUND = "c1s1/shekolda_slide"
+define C1S1_LATCH_SLIDE_FULL_SPEED = 2.0
+define C1S1_BIG_LATCH_SLIDE_SOUND = "c1s1/shekolda_slide"
+define C1S1_BIG_LATCH_SLIDE_FULL_SPEED = 1.5
+define C1S1_BIG_SPIN_SLIDE_SOUND = "c1s1/shekolda_slide"
+define C1S1_BIG_SPIN_SLIDE_FULL_SPEED = 1.0
+define C1S1_SLIDE_VOL = (0.25, 1.0)
+define C1S1_SLIDE_HOLD_T = 0.12
+define C1S1_SLIDE_FADE_T = 0.15
+define C1S1_BIG_LOCK_SOUND = "c1s1/2_lock_step_1_open"
+## Нижняя щеколда большого замка дошла до упора: вертушка свободна.
+define C1S1_BIG_LATCH_OPEN_SOUND = "c1s1/2_lock_step_1_open"
+define C1S1_HANDLE_SOUND = "c1s1/handle_open"
 define C1S1_MG_LOCK_VOL = 1.0
 define C1S1_MG_HOVER_GAP_T = 0.15
 define C1S1_MG_BLOCKED_GAP_T = 0.35
 define C1S1_MG_BLOCKED_T = 1.25
 define C1S1_MG_BLOCKED_SHAKE_T = 0.3
+## Отказ вертушки: обводка нижней щеколды один раз вспыхивает тёмно-красным и гаснет за
+## C1S1_MG_BLOCKED_BLINK_T.
+define C1S1_MG_BLOCKED_BLINK_T = 0.5
+define C1S1_MG_BLOCKED_BLINK_COLOR = "#8a1414"
+## Щеколда при отказе еле заметно дёргается на месте: механизм упирается.
+define C1S1_MG_BLOCKED_JOLT = 2.0
 
-define C1S1_MG_VITYA_INTERVAL_T = 10.0
-define C1S1_MG_FAST_T = C1S1_MG_VITYA_INTERVAL_T
+define C1S1_MG_FAST_T = 10.0
 
 ## Оверлей на master; модель замка живёт на отдельном lockgame.
 define C1S1_Z_MG_OVERLAY = 50
+
+init -10 python:
+    scratch_params("lock_parts", "Обводка зацепленной детали замков", 3.0, 0.3, 3.0, 0.9)
 
 ## Логика
 
@@ -202,8 +248,42 @@ init -5 python:
             self.tick_clock = None
             self.pointer_down = False
             self.pointer_up_since = None
+            self.slide_handle = None
+            self.slide_sound = None
+            self.slide_idle_t = 0.0
 
     _c1s1_clock_state = _C1S1ClockState()
+
+    ## Звук хода живёт вне rollback: откат и выход просто глушат его.
+    def c1s1_slide(sound, full_speed, moved_p, dt):
+        state = _c1s1_clock_state
+        if dt <= 0.0:
+            return
+        if state.slide_sound != sound:
+            c1s1_slide_stop()
+            state.slide_sound = sound
+        speed = abs(moved_p) / dt
+        if speed > 0.02:
+            state.slide_idle_t = 0.0
+            vol = _mg_lerp(C1S1_SLIDE_VOL[0], C1S1_SLIDE_VOL[1], speed / max(0.01, full_speed))
+            if state.slide_handle is None:
+                if renpy.loadable("audio/sfx/" + sound + ".ogg"):
+                    state.slide_handle = sfxplay(sound, loop=True, fadein=C1S1_SLIDE_FADE_T,
+                        fadeout=0, tag="c1s1_slide", overlap=True, volume=vol)
+            else:
+                sm_audio_set_volume(state.slide_handle, vol, delay=0.05)
+            return
+        state.slide_idle_t += dt
+        if state.slide_idle_t >= C1S1_SLIDE_HOLD_T:
+            c1s1_slide_stop()
+
+    def c1s1_slide_stop():
+        state = _c1s1_clock_state
+        if state.slide_handle is not None:
+            sm_audio_stop(handle=state.slide_handle, fadeout=C1S1_SLIDE_FADE_T)
+            state.slide_handle = None
+        state.slide_sound = None
+        state.slide_idle_t = 0.0
 
     ## В отличие от _fx_state, эта модель участвует в rollback.
     def _mg_get(name, default=0.0):
@@ -225,6 +305,7 @@ init -5 python:
         return c1s1_mg_pointer_down() or c1s1_mg_physical_primary_down()
 
     def c1s1_mg_cancel_pointer():
+        c1s1_slide_stop()
         _c1s1_clock_state.pointer_down = False
         _c1s1_clock_state.pointer_up_since = None
         _mg_set("latch_grab", 0.0)
@@ -300,6 +381,7 @@ init -5 python:
 
     def c1s1_mg_stop():
         """Обнуляет shake до остановки драйвера, чтобы кадр не застыл смещённым."""
+        c1s1_slide_stop()
         _mg_set("shake_a", 0.0)
         _mg_set("shake_t", 0.0)
         c1s1_mg_clear_feedback()
@@ -312,16 +394,6 @@ init -5 python:
         if elapsed < C1S1_MG_FAST_T:
             return "fast"
         return "normal"
-
-    def c1s1_mg_vitya_line(elapsed=None):
-        if elapsed is None:
-            elapsed = c1s1_mg_elapsed()
-        i = min(int(elapsed // C1S1_MG_VITYA_INTERVAL_T),
-                len(C1S1_VITYA_LINES) - 1)
-        return C1S1_VITYA_LINES[max(0, i)]
-
-    def c1s1_mg_vitya_dd(st, at):
-        return Text(c1s1_mg_vitya_line(), style="c1s1_vitya_bark_text"), 0.1
 
     def c1s1_mg_reanchor_clock():
         """Исключает menu/rollback из времени, не сбрасывая clock при restart."""
@@ -580,9 +652,11 @@ init -5 python:
                 p += (dx * vx + dy * vy) * C1S1_LATCH_ZOOM / span2
             ## Избыток одного движения не переносится через поворот траектории.
             p = max(float(seg), min(float(seg + 1), p))
+            c1s1_slide(C1S1_LATCH_SLIDE_SOUND, C1S1_LATCH_SLIDE_FULL_SPEED, p - _mg_get("latch_p"), dt)
             _mg_set("latch_p", p)
 
             if p >= max_p:
+                c1s1_slide_stop()
                 sm_sfx(C1S1_LATCH_OPEN_SOUND, volume=C1S1_MG_LOCK_VOL)
                 _mg_set("latch_grab", 0.0)
                 store.c1s1_latch_open = True
@@ -663,6 +737,9 @@ init -5 python:
             _mg_set("big_last_mx", mx)
             p += dx / max(1.0, C1S1_BIG_LATCH_TRAVEL * C1S1_BIG_LOCK_ZOOM)
             p = max(0.0, min(1.0, p))
+            if p >= 1.0 and _mg_get("big_p") < 1.0:
+                c1s1_slide_stop()
+                sm_sfx(C1S1_BIG_LATCH_OPEN_SOUND, volume=C1S1_MG_LOCK_VOL)
         else:
             ## При экранной оси y вниз против часовой соответствует убыванию atan2.
             a = c1s1_big_spin_angle(mx, my)
@@ -675,8 +752,13 @@ init -5 python:
             p += -da / max(1.0, C1S1_BIG_SPIN_TURN)
             p = max(1.0, min(2.0, p))
 
+        if _mg_get("big_grab") < 1.5:
+            c1s1_slide(C1S1_BIG_LATCH_SLIDE_SOUND, C1S1_BIG_LATCH_SLIDE_FULL_SPEED, p - _mg_get("big_p"), dt)
+        else:
+            c1s1_slide(C1S1_BIG_SPIN_SLIDE_SOUND, C1S1_BIG_SPIN_SLIDE_FULL_SPEED, p - _mg_get("big_p"), dt)
         _mg_set("big_p", p)
         if p >= 2.0:
+            c1s1_slide_stop()
             sm_sfx(C1S1_BIG_LOCK_SOUND, volume=C1S1_MG_LOCK_VOL)
             _mg_set("big_grab", 0.0)
             store.c1s1_big_lock_open = True
@@ -684,8 +766,31 @@ init -5 python:
     def c1s1_big_turn():
         return max(0.0, min(1.0, _mg_get("big_p") - 1.0))
 
+    def c1s1_big_latch_x():
+        """Сдвиг нижней щеколды по ходу плюс дрожь отказа."""
+        x = C1S1_BIG_LATCH_TRAVEL * C1S1_BIG_LOCK_ZOOM * min(1.0, _mg_get("big_p"))
+        if not sm_reduced_motion():
+            age = _mg_get("play_t") - _mg_get("blocked_at", -10.0)
+            if _mg_get("big_p") < 1.0 and 0.0 <= age < C1S1_MG_BLOCKED_BLINK_T:
+                fade = 1.0 - age / C1S1_MG_BLOCKED_BLINK_T
+                x += C1S1_MG_BLOCKED_JOLT * fade * math.sin(age * math.pi * 24.0)
+        return x
+
     def c1s1_big_latch_f(trans, st, at):
-        trans.xoffset = C1S1_BIG_LATCH_TRAVEL * C1S1_BIG_LOCK_ZOOM * min(1.0, _mg_get("big_p"))
+        trans.xoffset = c1s1_big_latch_x()
+        return 1.0 / 60.0
+
+    def c1s1_big_latch_arrow_f(trans, st, at):
+        trans.xoffset = c1s1_big_latch_x()
+        lo, hi = C1S1_BIG_LATCH_ARROW_ALPHA
+        if not c1s1_mg_part_grabbed("big_latch") or _mg_get("big_p") >= 1.0:
+            level = 0.0
+        elif sm_reduced_motion():
+            level = (lo + hi) / 2.0
+        else:
+            phase = _fx_frame_time() / max(0.05, C1S1_BIG_LATCH_ARROW_BLINK_T)
+            level = lo + (hi - lo) * (0.5 + 0.5 * math.sin(2.0 * math.pi * phase))
+        trans.alpha = _fx_step("c1s1_big_latch_arrow", level, 0.35, 0.0)
         return 1.0 / 60.0
 
     def c1s1_big_stroke_f(trans, st, at):
@@ -842,8 +947,51 @@ init -5 python:
             _mg_get("latch_grab") > 0.5
             or _mg_get("big_grab") > 0.5
             or _mg_get("handle_grab") > 0.5)
+        if _c1s1_clock_state.pointer_down:
+            sm_sfx(C1S1_MG_GRAB_SOUND, volume=C1S1_MG_GRAB_VOL)
+
+    def c1s1_mg_part_grabbed(part):
+        if part == "latch":
+            return _mg_get("latch_grab") > 0.5
+        if part == "big_latch":
+            return abs(_mg_get("big_grab") - 1.0) < 0.01
+        if part == "big_spin":
+            return abs(_mg_get("big_grab") - 2.0) < 0.01
+        return _mg_get("handle_grab") > 0.5
+
+    def c1s1_mg_part_actionable(part):
+        """Деталь, которую сейчас можно двигать: у большого замка сначала щеколда, потом вертушка."""
+        if part == "big_latch":
+            return _mg_get("big_p") < 1.0
+        if part == "big_spin":
+            return _mg_get("big_p") >= 1.0
+        return True
+
+    def c1s1_mg_blocked_blink():
+        """Доля красного в обводке нижней щеколды после отказа вертушки: мигает и гаснет."""
+        age = _mg_get("play_t") - _mg_get("blocked_at", -10.0)
+        if not (c1s1_mg_lock() == "big_lock" and _mg_get("big_p") < 1.0 and 0.0 <= age < C1S1_MG_BLOCKED_BLINK_T):
+            return 0.0
+        return 1.0 - age / C1S1_MG_BLOCKED_BLINK_T
+
+    def c1s1_mg_grab_outline_f(part, trans, st, at):
+        blink = c1s1_mg_blocked_blink() if part == "big_latch" else 0.0
+        if c1s1_mg_part_grabbed(part):
+            target = C1S1_MG_GRAB_OUTLINE_ALPHA
+        elif store.c1s1_mg_active and not c1s1_mg_lock_open() and c1s1_mg_part_actionable(part):
+            target = C1S1_MG_IDLE_OUTLINE_ALPHA
+        else:
+            target = 0.0
+        alpha = _fx_step("c1s1_mg_outline_" + part, target, C1S1_MG_GRAB_OUTLINE_RELAX, 0.0)
+        trans.alpha = max(alpha, blink)
+        trans.u_scratch_hover = blink
+        return 1.0 / 60.0
 
     def c1s1_mg_release():
+        ## Щелчок только когда деталь действительно отпускают, не на клик по пустому месту;
+        ## если этим движением замок открылся, звучит только его звук открытия.
+        if c1s1_mg_pointer_down() and not c1s1_mg_lock_open():
+            sm_sfx(C1S1_MG_GRAB_SOUND, volume=C1S1_MG_GRAB_VOL)
         c1s1_mg_cancel_pointer()
 
     def c1s1_mg_capture_release():
@@ -903,11 +1051,11 @@ init -5 python:
 
         lock = c1s1_mg_lock()
         if lock == "latch":
-            key, limit, speed = "latch_p", c1s1_latch_max_p(), 3.5
+            key, limit, speed, sound = "latch_p", c1s1_latch_max_p(), 3.5, C1S1_LATCH_OPEN_SOUND
         elif lock == "big_lock":
-            key, limit, speed = "big_p", 2.0, 2.5
+            key, limit, speed, sound = "big_p", 2.0, 2.5, C1S1_BIG_LOCK_SOUND
         elif lock == "door_handle":
-            key, limit, speed = "handle_p", 1.0, 2.5
+            key, limit, speed, sound = "handle_p", 1.0, 2.5, C1S1_HANDLE_SOUND
         else:
             _mg_set("simple_target", -1.0)
             return False
@@ -918,8 +1066,12 @@ init -5 python:
             return True
 
         _mg_set("simple_target", -1.0)
+        ## Упрощённый режим открывает замок тем же звуком, что и drag.
         if p + 0.0001 >= limit:
+            sm_sfx(sound, volume=C1S1_MG_LOCK_VOL)
             setattr(store, C1S1_MG_LOCK_FLAGS[lock], True)
+        elif lock == "big_lock" and p + 0.0001 >= 1.0:
+            sm_sfx(C1S1_BIG_LATCH_OPEN_SOUND, volume=C1S1_MG_LOCK_VOL)
         return True
 
     def c1s1_mg_open_all():
@@ -952,6 +1104,15 @@ init -5 python:
 
 ## Трансформы
 
+## Белый силуэт под деталью: штрих (tint 1 — белый) рвёт край наружу, alpha растёт, пока держат.
+## hover-цвет штриха занят под мигание отказа: u_scratch_hover ведёт c1s1_mg_grab_outline_f.
+transform c1s1_mg_grab_outline(part):
+    alpha 0.0
+    parallel:
+        scratch("lock_parts", tint=1.0, idle_color="#ffffff", hover_color=C1S1_MG_BLOCKED_BLINK_COLOR, pad=24)
+    parallel:
+        function renpy.curry(c1s1_mg_grab_outline_f)(part)
+
 transform c1s1_mg_button_rattle():
     subpixel True
     transform_anchor True
@@ -959,7 +1120,7 @@ transform c1s1_mg_button_rattle():
     function c1s1_mg_button_rattle_f
 
 ## Начальный zoom наследуется для плавной склейки; rotate сбрасывается явно.
-transform c1s1_mg_camera(z1=C1S1_MG_ZOOM, t=C1S1_MG_SETTLE_T, key="cam"):
+transform c1s1_mg_camera(z1=C1S1_MG_ZOOM, t=C1S1_MG_CAMERA_T, key="cam"):
     subpixel True
     align (0.5, 0.5)
     rotate 0.0
@@ -999,6 +1160,15 @@ transform c1s1_latch_knob(off_xy, center_xy, z):
     pos c1s1_lock_pos(center_xy, off_xy, z)
     xoffset 0.0 yoffset 0.0
     function c1s1_latch_knob_f
+
+transform c1s1_big_latch_arrow(off_xy, center_xy, z):
+    subpixel True
+    anchor (0.5, 0.0)
+    zoom C1S1_BIG_LATCH_ARROW_ZOOM
+    pos c1s1_lock_pos(center_xy, off_xy, z)
+    xoffset 0.0
+    alpha 0.0
+    function c1s1_big_latch_arrow_f
 
 transform c1s1_big_latch_slide(off_xy, center_xy, z):
     subpixel True
@@ -1057,7 +1227,8 @@ screen c1s1_mg_runtime():
     ## Под modal-меню таймер останавливается.
     timer C1S1_MG_TICK_T action Function(c1s1_mg_tick, _update_screens=False) repeat True modal True
 
-## Центр и хит-зона неподвижны; от стука дребезжит только текст со свечением.
+## Кнопка в стиле сценовых (glow_button с разломом); центр и хит-зона неподвижны, от стука
+## дребезжит только текст со свечением.
 screen c1s1_locks_open_door():
     ## Выше quick_menu: интерактив остаётся modal.
     zorder 110
@@ -1065,14 +1236,16 @@ screen c1s1_locks_open_door():
     timer C1S1_MG_TICK_T action Function(c1s1_mg_tick, _update_screens=False) repeat True modal True
     fixed:
         id "door_prompt"
+        at show_hide(0.5)
         xysize (config.screen_width, config.screen_height)
         use glow_button(
-            _("ОТКРЫВАЙ ДВЕРЬ!"),
+            _("МАРИНА, ОТКРЫВАЙ ДВЕРЬ!"),
             Return("done"),
             bg="dark",
             pos=(960, 540),
             size=C1S1_LOCKS_BTN_SIZE,
-            visual_at=c1s1_mg_button_rattle())
+            visual_at=c1s1_mg_button_rattle(),
+            rift="screen")
 
 ## Drag для мыши и focusable-альтернатива для клавиатуры, touch и self-voicing.
 screen c1s1_locks_minigame():
@@ -1084,7 +1257,8 @@ screen c1s1_locks_minigame():
     timer C1S1_MG_TICK_T action Function(c1s1_mg_tick, _update_screens=False) repeat True modal True
     timer C1S1_MG_POLL_T action Function(c1s1_mg_check_done) repeat True modal True
 
-    use c1s1_vitya_bark(DynamicDisplayable(c1s1_mg_vitya_dd))
+    ## Реплики Вити за дверью: по одной на замок, в порядке C1S1_MG_LOCK_ORDER.
+    use c1s1_vitya_bark((_("Марина, открывай!"), _("Опять заперлась? Я ж на минуту выскочил!"), _("Боже, что ты там возишься?"), _("Марина, ну давай быстрее! Замок сломался?")), side="up", pos=(1444, 13), index=(lambda: c1s1_mg_lock_i))
 
     if c1s1_mg_blocked_visible():
         frame:
@@ -1096,7 +1270,7 @@ screen c1s1_locks_minigame():
                 id "c1s1_mg_blocked_hint"
                 style "c1s1_mg_step_button_text"
                 color "#dad4ca"
-                at scratch("show_text", tint=0.0)
+                at scratch("show_text", tint=0.0, mix=0.09)
 
     if persistent.sm_simplified_locks:
         textbutton c1s1_mg_simplified_label():
@@ -1213,6 +1387,7 @@ label .show_latch:
     show chapter_1_latch_stroke onlayer lockgame at c1s1_latch_rod(C1S1_LATCH_STROKE_OFF, C1S1_MG_LOCK_CENTER, C1S1_LATCH_ZOOM)
     show chapter_1_latch_overlay_body onlayer lockgame at c1s1_lock_part(C1S1_LATCH_OVERLAY_BODY_OFF, C1S1_MG_LOCK_CENTER, C1S1_LATCH_ZOOM)
     show chapter_1_latch_overlay_keeper onlayer lockgame at c1s1_lock_part(C1S1_LATCH_OVERLAY_KEEPER_OFF, C1S1_MG_LOCK_CENTER, C1S1_LATCH_ZOOM)
+    show chapter_1_latch_knob_outline onlayer lockgame at c1s1_latch_knob(C1S1_LATCH_KNOB_OFF, C1S1_MG_LOCK_CENTER, C1S1_LATCH_ZOOM), c1s1_mg_grab_outline("latch")
     show chapter_1_latch_knob onlayer lockgame at c1s1_latch_knob(C1S1_LATCH_KNOB_OFF, C1S1_MG_LOCK_CENTER, C1S1_LATCH_ZOOM)
 
     return
@@ -1225,8 +1400,11 @@ label .show_big_lock:
     show chapter_1_big_lock_stroke onlayer lockgame at c1s1_big_stroke_slide(C1S1_BIG_STROKE_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)
     show chapter_1_big_lock_body onlayer lockgame at c1s1_lock_part(C1S1_BIG_BODY_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)
     show chapter_1_big_lock_latch_shadow onlayer lockgame at c1s1_big_latch_slide(C1S1_BIG_LATCH_SHADOW_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)
+    show chapter_1_big_lock_latch_outline onlayer lockgame at c1s1_big_latch_slide(C1S1_BIG_LATCH_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM), c1s1_mg_grab_outline("big_latch")
     show chapter_1_big_lock_latch onlayer lockgame at c1s1_big_latch_slide(C1S1_BIG_LATCH_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)
     show chapter_1_big_lock_spin_shadow onlayer lockgame at c1s1_lock_part(C1S1_BIG_SPIN_SHADOW_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)
+    show c1s1_big_latch_arrow_img onlayer lockgame at c1s1_big_latch_arrow(C1S1_BIG_LATCH_ARROW_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)
+    show chapter_1_big_lock_spin_outline onlayer lockgame at c1s1_big_spinner(C1S1_BIG_SPIN_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM), c1s1_mg_grab_outline("big_spin")
     show chapter_1_big_lock_spin onlayer lockgame at c1s1_big_spinner(C1S1_BIG_SPIN_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)
 
     return
@@ -1235,6 +1413,7 @@ label .show_big_lock:
 label .show_door_handle:
 
     show chapter_1_handle_body onlayer lockgame at c1s1_lock_part(C1S1_HANDLE_BODY_OFF, C1S1_MG_LOCK_CENTER, C1S1_HANDLE_ZOOM)
+    show chapter_1_handle_lever_outline onlayer lockgame at c1s1_handle_lever(C1S1_HANDLE_OFF, C1S1_MG_LOCK_CENTER, C1S1_HANDLE_ZOOM), c1s1_mg_grab_outline("handle")
     show chapter_1_handle_lever onlayer lockgame at c1s1_handle_lever(C1S1_HANDLE_OFF, C1S1_MG_LOCK_CENTER, C1S1_HANDLE_ZOOM)
 
     return
