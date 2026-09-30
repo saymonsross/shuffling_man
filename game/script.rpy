@@ -1,6 +1,28 @@
 # Точка входа. Сценарий глав лежит в папках 0_prologue ... 4_endings;
 # сцены связаны цепочкой jump, последняя сцена делает return в главное меню.
 
+default persistent.sm_language_chosen = False
+
+## Первый запуск: выбор языка до главного меню; под test экран не показываем.
+label splashscreen:
+    ## Язык в persistent обязан быть кодом или None: иначе загрузчик tl-путей падает.
+    if _preferences.language is not None and not isinstance(_preferences.language, str):
+        $ renpy.change_language(None)
+
+    if persistent.sm_language_chosen or renpy.game.args.command == "test":
+        return
+
+    $ sm_parallax_off = True
+    scene black
+
+    call screen language_choice_on_start
+
+    ## Return(None) отдаёт True, а не None: русский приходит как True.
+    $ renpy.change_language(_return if isinstance(_return, str) else None)
+    $ persistent.sm_language_chosen = True
+
+    return
+
 label start:
 
     ## Трек главного меню идёт на штатном канале music вне пула 7dots — обёртки его не видят.

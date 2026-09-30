@@ -392,7 +392,7 @@ screen quick_menu_button(label, action, alternate=None):
         fixed:
             xfit True
             yfit True
-            at hover_shake(0.77)
+            at hover_shake(0.77), quick_insensitive_dim
             text label:
                 style "quick_button_text"
                 pos (0, 0) anchor (0, 0)
@@ -403,6 +403,14 @@ screen quick_menu_button(label, action, alternate=None):
                 style "quick_button_text"
                 pos (1, 1) anchor (0, 0)
                 at scratch("quick_menu_text", selected_lit=True)
+
+## Недоступная кнопка (ПРОПУСК на непрочитанном тексте) — полупрозрачная.
+transform quick_insensitive_dim:
+    alpha 1.0
+    on insensitive:
+        linear 0.12 alpha 0.35
+    on idle, hover, selected_idle, selected_hover:
+        linear 0.12 alpha 1.0
 
 transform quick_selected_outline:
     alpha 0.0
@@ -443,7 +451,7 @@ screen main_menu():
 
     ## Отрицательный spacing: зазор даёт поле кнопки, промежуток между ними — сверх него.
     vbox:
-        align (0.5, 0.85)
+        align (0.5, 0.87)
         spacing -4
 
         use main_menu_button(_("НОВАЯ ИГРА"), Start())
@@ -452,10 +460,119 @@ screen main_menu():
 
         use main_menu_button(_("НАСТРОЙКИ"), ShowMenu("preferences"))
 
-        use main_menu_button(_("ОБ ИГРЕ"), ShowMenu("about"))
+        use main_menu_button(_("СОЗДАТЕЛИ"), ShowMenu("about"))
 
         if renpy.variant("pc"):
             use main_menu_button(_("ВЫХОД"), Quit(confirm=True))
+
+    ## Версия из options.rpy без суффикса «-demo»: слово DEMO стоит перед номером.
+    $ main_menu_version = config.version.replace("-demo", "")
+    text _("DEMO [main_menu_version]"):
+        style "main_menu_version"
+        at scratch("main_menu_text", tint=0.0, mix=0.6), alpha(0.81)
+
+    use lang_dropdown
+
+
+## Список языков для выпадашки главного меню и настроек: (код, самоназвание с ISO-кодом).
+## Самоназвания и коды языков не переводятся — вне _().
+define lang_dropdown_items = [
+    (None, "Русский [[RU]"),
+    ("english", "English [[EN]"),
+]
+
+transform lang_dd_unfold():
+    on show:
+        alpha 0.0 yoffset 20
+        easeout 0.15 alpha 1.0 yoffset 0
+    on hide:
+        easein 0.15 alpha 0.0 yoffset 20
+
+screen lang_dropdown():
+
+    default lang_dd_open = False
+    $ lang_dd_current = next((item for item in lang_dropdown_items if item[0] == _preferences.language), lang_dropdown_items[0])
+
+    ## Клик мимо списка закрывает его.
+    if lang_dd_open:
+        button:
+            background None
+            xfill True
+            yfill True
+            action SetLocalVariable("lang_dd_open", False)
+
+    frame:
+        style "lang_dd_frame"
+        background ("ui_frame_bg" if lang_dd_open else None)
+        align (1.0, 1.0)
+        offset (-6, -6)
+
+        vbox:
+            spacing 6
+
+            showif lang_dd_open:
+                vbox:
+                    spacing 2
+                    xalign 1.0
+                    at lang_dd_unfold
+                    for lang_dd_code, lang_dd_name in lang_dropdown_items:
+                        button:
+                            style "lang_dd_item"
+                            action Language(lang_dd_code), SetLocalVariable("lang_dd_open", False)
+                            ## tint 0: шейдер не перекрашивает текст, аутлайн выбранного языка остаётся.
+                            text lang_dd_name:
+                                style "lang_dd_item_text"
+                                at scratch("main_menu_text", tint=0.0), hover_shake(0.77)
+
+            button:
+                style "lang_dd_header"
+                action ToggleLocalVariable("lang_dd_open")
+                hbox:
+                    spacing 12
+                    xalign 1.0
+                    text ("▼" if lang_dd_open else "▲") style "lang_dd_arrow"
+                    text lang_dd_current[1]:
+                        style "lang_dd_header_text"
+                        at scratch("main_menu_text", tint=0.0), hover_shake(0.77)
+
+style lang_dd_frame is frame:
+    padding (24, 14, 24, 14)
+
+
+## Выбор языка при первом запуске (label splashscreen, script.rpy), как в TVARUK_HD.
+screen language_choice_on_start():
+
+    vbox:
+        align (0.5, 0.5)
+        spacing 8
+
+        for lang_code, lang_name in lang_dropdown_items:
+            use main_menu_button(lang_name, Return(lang_code))
+
+style lang_dd_item is main_menu_button:
+    xalign 1.0
+
+style lang_dd_header is main_menu_button:
+    xalign 1.0
+
+style lang_dd_item_text is main_menu_button_text:
+    size (gui.button_text_size - 6)
+    xalign 1.0
+    color "#8A8784"
+    hover_color "#F2EFE9"
+    selected_idle_color "#8A8784"
+    selected_hover_color "#F2EFE9"
+    selected_outlines [(2, "#5c0a0a", 0, 0)]
+
+## Открытый список держит кнопку-заголовок в selected: вид не меняется.
+style lang_dd_header_text is lang_dd_item_text:
+    selected_outlines []
+
+## Oswald без fallback: стрелку рисует интерфейсный шрифт.
+style lang_dd_arrow is lang_dd_header_text:
+    font gui.interface_text_font
+    size 16
+    yalign 0.5
 
 
 ## label приходит уже помеченным _(): Text переводит его при показе.
@@ -482,10 +599,18 @@ style main_menu_button_underlined is main_menu_button:
 
 style main_menu_button_text is gui_button_text:
     font gui.main_menu_font
-    size (gui.button_text_size + 3)
+    size (gui.button_text_size + 7)
     ## Шейдер заливает текст одним цветом: обводка слилась бы с буквами.
     outlines []
     xalign 0.5
+
+## Версия в левом нижнем углу, мелко и приглушённо; отступ как у выпадашки языков справа.
+style main_menu_version is default:
+    font gui.main_menu_font
+    size 16
+    color gui.idle_small_color
+    align (0.0, 1.0)
+    offset (12, -8)
 
 
 ## Меню паузы (Esc в игре), как в TVARUK_HD: затемнение и столбик кнопок в стиле
@@ -656,31 +781,50 @@ style game_menu_label_text:
 
 ## Об игре
 
+## Титры: (роль, имена). Имена в _(): для другого языка транслитерируются.
+define about_credits = [
+    (_("Разработчик"), [_("Hinterland Mood")]),
+    (_("Автор рассказа"), [_("Роман «Chainsaw» Черный")]),
+    (_("Художник"), [_("Надежда Певунова")]),
+    (_("Сценарий"), [_("Данила Ромах")]),
+    (_("Музыка и звук"), [_("REDCHINAWAVE")]),
+    (_("Особая благодарность"), [_("Сергей Паршин")]),
+]
+
 screen about():
 
     tag menu
 
-    use game_menu(_("ОБ ИГРЕ"), scroll="viewport"):
+    use game_menu(_("СОЗДАТЕЛИ")):
 
         style_prefix "about"
 
         vbox:
+            xfill True
+            spacing 36
 
-            label "[config.name!t]"
-            text _("Версия [config.version!t]\n")
+            for about_role, about_names in about_credits:
+                vbox:
+                    xfill True
+                    spacing 6
+                    text about_role style "about_role"
+                    for about_name in about_names:
+                        text about_name
 
-            if gui.about:
-                text "[gui.about!t]\n"
 
-            text _("Сделано с помощью {a=https://www.renpy.org/}Ren'Py{/a} [renpy.version_only].\n\n[renpy.license!t]")
-
-
-style about_label is gui_label
-style about_label_text is gui_label_text
 style about_text is gui_text
 
-style about_label_text:
-    size gui.label_text_size
+## Как реплики в истории: шрифт и цвет окна диалога.
+style about_text:
+    font gui.dialogue_text_font
+    size gui.dialogue_text_size
+    color gui.dialogue_text_color
+    xalign 0.5
+    textalign 0.5
+
+style about_role is about_text:
+    size 26
+    color gui.header_color
 
 
 ## Сохранение и загрузка
@@ -837,6 +981,13 @@ screen preferences():
                             textbutton _("ПОЛНЫЙ") action Preference("display", "fullscreen")
 
             use pref_section(_("ИГРА")):
+                use pref_row(_("ЯЗЫК")):
+                    hbox:
+                        style_prefix "radio"
+                        spacing 40
+                        yalign 0.5
+                        for lang_code, lang_name in lang_dropdown_items:
+                            textbutton lang_name.upper() action Language(lang_code)
                 use pref_row(_("ПРОПУСК")):
                     hbox:
                         style_prefix "radio"
@@ -1127,24 +1278,12 @@ screen keyboard_help():
         text _("Включает режим пропуска.")
 
     hbox:
-        label _("Page Up")
-        text _("Откат назад по сюжету игры.")
-
-    hbox:
-        label _("Page Down")
-        text _("Откатывает предыдущее действие вперёд.")
-
-    hbox:
         label "H"
         text _("Скрывает интерфейс пользователя.")
 
     hbox:
         label "S"
         text _("Делает снимок экрана.")
-
-    hbox:
-        label "V"
-        text _("Включает поддерживаемый {a=https://www.renpy.org/l/voicing}синтезатор речи{/a}.")
 
     hbox:
         label "Shift+A"
@@ -1165,28 +1304,12 @@ screen mouse_help():
         label _("Правый клик")
         text _("Вход в игровое меню.")
 
-    hbox:
-        label _("Колёсико вверх")
-        text _("Откат назад по сюжету игры.")
-
-    hbox:
-        label _("Колёсико вниз")
-        text _("Откатывает предыдущее действие вперёд.")
-
 
 screen gamepad_help():
 
     hbox:
         label _("Правый триггер\nA/Нижняя кнопка")
         text _("Прохождение диалогов, активация интерфейса.")
-
-    hbox:
-        label _("Левый Триггер\nЛевый Бампер")
-        text _("Откат назад по сюжету игры.")
-
-    hbox:
-        label _("Правый бампер")
-        text _("Откатывает предыдущее действие вперёд.")
 
     hbox:
         label _("Крестовина, Стики")

@@ -11,7 +11,7 @@ define config.name = _("Шаркающий человек")
 define gui.show_name = True
 
 
-define config.version = "0.1.3-demo"
+define config.version = "0.1.4-demo"
 
 
 define gui.about = _p("""
@@ -20,6 +20,8 @@ define gui.about = _p("""
 
 define build.name = "shuffling_man"
 
+define config.default_fullscreen = True
+
 
 ## Звуки и музыка
 
@@ -27,6 +29,10 @@ define build.name = "shuffling_man"
 define config.has_sound = True
 define config.has_music = True
 define config.has_voice = True
+
+define config.default_music_volume = 0.85
+define config.default_sfx_volume = 0.85
+define config.default_voice_volume = 0.85
 
 ## Трек главного меню запускает label main_menu (main_menu.rpy), а не config.main_menu_music:
 ## тот заново включается при каждом full_restart, в том числе при входе в сцену из навигатора.
@@ -61,6 +67,15 @@ define config.window_hide_transition = Dissolve(0.3)
 ## on hide (show_hide) у кнопок и рамок внутри контейнеров экранов иначе не играют.
 define config.containers_pass_transform_events = {"hover", "idle", "insensitive", "selected_hover", "selected_idle", "show", "hide"}
 
+## Клавиша F не переключает полноэкранный режим: остаются Alt+Enter и F11.
+## Озвучка интерфейса (self voicing) снята с клавиш (V и её варианты): включить её можно
+## только осознанно, через меню специальных возможностей Shift+A.
+init python:
+    config.keymap["toggle_fullscreen"].remove("noshift_K_f")
+    config.keymap["self_voicing"] = []
+    config.keymap["clipboard_voicing"] = []
+    config.keymap["debug_voicing"] = []
+
 
 ## Стандартные настройки
 
@@ -69,6 +84,12 @@ default preferences.text_cps = 45
 
 
 default preferences.afm_time = 15
+
+
+## Откат — только в разработке (тесты, dev-инструменты); в дистрибутиве config.developer
+## выключен, и колесо/«Назад» не возвращают игрока по сцене.
+init 999 python:
+    config.rollback_enabled = bool(config.developer)
 
 
 ## Директория сохранений

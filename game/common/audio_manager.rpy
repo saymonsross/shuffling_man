@@ -11,6 +11,7 @@ init -200 python:
         "music": "music", "voice": "voice", "sfx": "sfx",
         "audio": "sfx", "sound": "sfx", "effect": "sfx",
     }
+    SM_AUDIO_MAX_VOLUME = 10.0
 
     for _sm_line, _sm_channels in SM_AUDIO_CHANNELS.items():
         for _sm_channel in _sm_channels:
@@ -34,6 +35,26 @@ init -200 python:
             raise ValueError("{} must be finite and in range".format(name))
         return value
 
+    def _sm_audio_apply_volume(channel, volume, delay=0):
+        # Secondary volume clamps at 1.0 in the mixer; the excess is linear channel gain.
+        renpy.music.set_volume(min(volume, 1.0), delay=delay, channel=channel)
+        renpy.audio.audio.get_channel(channel).set_volume(max(volume, 1.0))
+
+    def _sm_audio_sync_gain():
+        # Channel gain lives outside the context: load, rollback and menu contexts restore it from slots every tick.
+        serial, slots = _sm_audio_state()
+        for channels in SM_AUDIO_CHANNELS.values():
+            for channel in channels:
+                slot = slots.get(channel)
+                gain = 1.0
+                if slot is not None and _sm_audio_busy(channel):
+                    gain = max(slot["volume"], 1.0)
+                chan = renpy.audio.audio.get_channel(channel)
+                if chan.chan_volume != gain:
+                    chan.set_volume(gain)
+
+    config.periodic_callbacks.append(_sm_audio_sync_gain)
+
     def _sm_audio_busy(channel):
         # get_playing includes pending queues; get_loop also covers restoration before playback.
         return bool(renpy.music.get_playing(channel=channel) or renpy.music.get_loop(channel=channel))
@@ -56,7 +77,7 @@ init -200 python:
             raise ValueError("Audio tag must be a string or None")
         fadein = _sm_audio_number(fadein, "fadein")
         fadeout = _sm_audio_number(config.fadeout_audio if fadeout is None else fadeout, "fadeout")
-        volume = _sm_audio_number(volume, "volume", 1.0)
+        volume = _sm_audio_number(volume, "volume", SM_AUDIO_MAX_VOLUME)
         if config.skipping and config.skip_sounds and not loop:
             return None
 
@@ -105,7 +126,7 @@ init -200 python:
             renpy.music.set_audio_filter(target, None, replace=True, duration=0)
             serial += 1
             handle = (target, serial)
-        renpy.music.set_volume(volume, channel=target)
+        _sm_audio_apply_volume(target, volume)
         renpy.music.play(list(filenames), channel=target, loop=loop,
             fadein=fadein, fadeout=0, synchro_start=False,
             if_changed=continuing, relative_volume=1.0)
@@ -139,13 +160,13 @@ init -200 python:
         _sm_audio_stop(line=line, tag=tag, handle=handle, fadeout=fadeout)
 
     def sm_audio_set_volume(handle, volume, delay=0):
-        volume = _sm_audio_number(volume, "volume", 1.0)
+        volume = _sm_audio_number(volume, "volume", SM_AUDIO_MAX_VOLUME)
         delay = _sm_audio_number(delay, "delay")
         serial, saved_slots = _sm_audio_state()
         slot = next((slot for slot in saved_slots.values() if slot["handle"] == handle), None)
         if slot is None or not _sm_audio_busy(slot["channel"]):
             return False
-        renpy.music.set_volume(volume, delay=delay, channel=slot["channel"])
+        _sm_audio_apply_volume(slot["channel"], volume, delay)
         slots = dict(saved_slots)
         slots[slot["channel"]] = dict(slot, volume=volume)
         _sm_audio_store(serial, slots)

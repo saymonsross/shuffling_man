@@ -44,7 +44,7 @@ define C1S1_Z_DOOR_BAG = 5
 define C1S1_LOCKS_FOCUS = (0.50, 0.32)
 
 ## Звук сцены. Файлы лежат в game/audio/sfx/c1s1/, кортеж = варианты удара.
-define C1S1_METRONOME_TICK_VOL = 0.55
+define C1S1_METRONOME_TICK_VOL = 0.52
 ## WAV содержит полпериода тишины перед щелчком; длительность равна C1S1_ARROW_HALF_T.
 define C1S1_METRONOME_LOOP_SOUND = "c1s1/metronome_loop"
 ## Щелчок — на середине loop.
@@ -799,6 +799,8 @@ label .piano:
     $ click_skip_block = False
     ## Переход к мини-игре с замками.
     call chapter_1_scene_1_minigame_locks from _call_c1s1_minigame_locks
+
+    # scene black with Dissolve(2.0)
 
     jump end_dev_yet
 

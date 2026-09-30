@@ -311,8 +311,8 @@ label end_dev_yet:
 
     scene black with Dissolve(1.0)
 
-    show expression prologue_title(_("пока всё"), 50) as prologue_titles_text_2:
-        align (0.5, 0.5)
+    show expression prologue_title(_("СПАСИБО, ЧТО ПРОШЛИ ДЕМОВЕРСИЮ ИГРЫ!"), 55) as prologue_titles_text_2:
+        align (0.5, 0.45)
         subpixel True
     with Dissolve(2.0)
 

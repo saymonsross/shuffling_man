@@ -209,7 +209,7 @@ game/
 - Шрифты: не хардкодить в экранах, использовать `gui.text_font` / стили — тогда для языка достаточно задать в `translate <язык> python` все три переменные `gui.text_font`, `gui.name_text_font`, `gui.interface_text_font` (`define gui.*` выполняются раньше `translate python`, поэтому ссылка `gui.name_text_font = gui.text_font` новое значение не подхватит) и `translate <язык> style`-блоки. Выбирать шрифты с покрытием кириллицы и латиницы.
 - Python внутри `translate`-блоков — без побочных эффектов: при смене языка блок исполняется заново.
 - Русские UI-строки поверх встроенных английских строк движка — через `translate None strings:` (файл `game/tl/None/common.rpym` уже отвечает за системные строки).
-- Генерация переводов из CLI: `renpy-8.5.3-sdk\renpy.exe shuffling_man translate english`, выгрузка для переводчиков: `... dialogue english --strings`. Переключение языка в игре — action `Language("english")` / `Language(None)` на экране настроек. Проверка — Shift+D → «Show Translation Info».
+- Генерация переводов из CLI: `renpy-8.5.3-sdk\renpy.exe shuffling_man translate english`, выгрузка для переводчиков: `... dialogue english --strings`. Переключение языка в игре — action `Language("english")` / `Language(None)`: выпадающий список в правом нижнем углу главного меню и секция «Язык» в настройках; оба читают `lang_dropdown_items` в `screens.rpy`. Проверка — Shift+D → «Show Translation Info».
 
 #### Проверка и запуск
 

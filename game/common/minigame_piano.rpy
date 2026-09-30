@@ -742,7 +742,7 @@ init python:
             self.columns = piano_columns()
             ## На бруске — буква клавиши, не нота: игроку важно, что нажать.
             self.labels = {(name, up): Text(label.upper(), size=PIANO_BAR_LABEL_SIZE,
-                    color=PIANO_COLORS["bar_label_black" if black else "bar_label_white"], font=gui.main_menu_font)
+                    color=PIANO_COLORS["bar_label_black" if black else "bar_label_white"], font="fonts/oswald_regular.ttf")
                 for name, up, label, kx, ky, kw, kh, black in piano_key_geometry()}
 
         def render(self, width, height, st, at):
@@ -813,7 +813,8 @@ init python:
                 rv.blit(r, (int(x + w / 2.0 - rw / 2.0), int(y + h / 2.0 - rh / 2.0)))
 
         def _draw_step(self, rv, part, notes, bottom, active, st, at, width, height, fade):
-            for key, h in piano_step_bars(part, notes):
+            ## Бруски чёрных клавиш — поверх белых, как сами клавиши.
+            for key, h in sorted(piano_step_bars(part, notes), key=lambda kb: self.columns[kb[0]][2]):
                 kx, kw, black = self.columns[key]
                 top = max(PIANO_FALL_TOP, int(bottom) - h)
                 if top >= int(bottom):
@@ -908,7 +909,7 @@ screen minigame_piano_screen(skippable=True):
                 text label.upper() style "piano_key_label" color PIANO_COLORS[base + "_label"] align (0.5, 0.9)
 
         if playing and piano_state.get("part") == 0 and piano_state.get("pos", 0) <= PIANO_HINT_STEPS:
-            text _("НАЖИМАЙ ПОДСВЕЧЕННЫЕ КЛАВИШИ: Z X C V B N M И S D G H J") style "piano_hint" ypos ((PIANO_KB_Y + PIANO_WHITE_H + config.screen_height) // 2) yanchor 0.5 at piano_hint_fade
+            text _("НАЖИМАЙ ПОДСВЕЧЕННЫЕ КЛАВИШИ") style "piano_hint" ypos ((PIANO_KB_Y + PIANO_WHITE_H + config.screen_height) // 2) yanchor 0.5 at piano_hint_fade
 
 ## Вызов: call minigame_piano(партии, metronome=handle loop-канала, beat=, phase=, on_step=имя
 ## функции store(part, pos) на собранный шаг, break_before_end=сколько последних шагов ломается)

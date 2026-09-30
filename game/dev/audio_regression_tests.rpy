@@ -51,7 +51,7 @@ label sm_test_audio_restore hide:
     $ sm_audio_stop()
     call screen sm_test_audio_checkpoint("ready")
     $ sm_test_audio_handles = (
-        sm_audio_play("<silence 30.0>", line="music", tag="score", loop=True, volume=0.35),
+        sm_audio_play("<silence 30.0>", line="music", tag="score", loop=True, volume=1.35),
         sm_audio_play("<silence 31.0>", tag="ambience", loop=True, volume=0.45),
         sm_audio_play("<silence 0.2>", line="voice", tag="line"))
     call screen sm_test_audio_checkpoint("first")
@@ -148,6 +148,38 @@ testsuite sm_audio_regression:
         $ sm_test_audio_new = sm_audio_play("<silence 25.0>", tag="tail_replacement")
         assert eval (sm_test_audio_new[0] == sm_test_audio_old[0] and sm_test_audio_new != sm_test_audio_old)
         assert eval (sm_test_audio_backend_ready(5, "sfx")) timeout 2.0
+
+    testcase volume_gain:
+        python hide:
+            boosted = sm_audio_play("<silence 20.0>", line="music", tag="score", loop=True, volume=1.4)
+            plain = sm_audio_play("<silence 21.0>", tag="ambience", loop=True, volume=0.5)
+            chan = renpy.audio.audio.get_channel(boosted[0])
+            assert chan.chan_volume == 1.4 and chan.context.secondary_volume == 1.0
+            chan = renpy.audio.audio.get_channel(plain[0])
+            assert chan.chan_volume == 1.0 and chan.context.secondary_volume == 0.5
+            assert sm_audio_set_volume(boosted, 0.5)
+            assert sm_audio_set_volume(plain, 2.0)
+            chan = renpy.audio.audio.get_channel(boosted[0])
+            assert chan.chan_volume == 1.0 and chan.context.secondary_volume == 0.5
+            chan = renpy.audio.audio.get_channel(plain[0])
+            assert chan.chan_volume == 2.0 and chan.context.secondary_volume == 1.0
+            try:
+                sm_audio_play("<silence 22.0>", tag="loud", volume=SM_AUDIO_MAX_VOLUME + 1.0)
+            except ValueError:
+                pass
+            else:
+                assert False
+            rows = {row["tag"]: row for row in sm_audio_snapshot() if row["active"]}
+            assert rows["score"]["volume"] == 0.5 and rows["ambience"]["volume"] == 2.0
+            chan.set_volume(1.0)
+            _sm_audio_sync_gain()
+            assert chan.chan_volume == 2.0
+            store.sm_test_audio_old = plain
+        assert eval (sm_test_audio_backend_ready(1, "music") and sm_test_audio_backend_ready(1, "sfx")) timeout 2.0
+        $ sm_audio_stop()
+        assert eval (renpy.music.get_playing(channel=sm_test_audio_old[0]) is None) timeout 2.0
+        $ _sm_audio_sync_gain()
+        assert eval (renpy.audio.audio.get_channel(sm_test_audio_old[0]).chan_volume == 1.0)
 
     testcase wrappers_and_group_stops:
         python hide:
@@ -257,7 +289,9 @@ testsuite sm_audio_regression:
         assert eval (all(renpy.music.get_playing(channel="sm_voice_" + str(index)) is None for index in range(5))) timeout 2.0
         python hide:
             rows = {row["tag"]: row for row in sm_audio_snapshot() if row["active"]}
-            assert rows["score"]["volume"] == 0.35
+            assert rows["score"]["volume"] == 1.35
+            assert renpy.audio.audio.get_channel(rows["score"]["channel"]).chan_volume == 1.35
+            assert renpy.audio.audio.get_channel(rows["ambience"]["channel"]).chan_volume == 1.0
             assert rows["ambience"]["volume"] == 0.45
             assert renpy.music.get_loop(channel=rows["score"]["channel"]) == ["<silence 30.0>"]
             assert renpy.music.get_loop(channel=rows["ambience"]["channel"]) == ["<silence 31.0>"]

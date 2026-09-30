@@ -101,7 +101,7 @@ label prologue_scene:
         parallel:
             breath_brightness(-0.01, -0.04, 6.0)
 
-    $ mplay("opening/prologue_1", fadein=10.0, fadeout=18.0)
+    $ mplay("opening/prologue_1", fadein=10.0, fadeout=18.0, volume=1.3)
 
     $ click_skip_block = False
     $ quick_menu = True
