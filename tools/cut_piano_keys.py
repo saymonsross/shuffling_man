@@ -69,3 +69,13 @@ for lab, src, semis in (("g#3", "g3", 1), ("a#3", "a3", 1), ("e4", "f4", -1)):
         "rubberband=pitch=%.6f:pitchq=quality" % (2 ** (semis / 12.0)))
     print("%-4s <- %s %+d gain %+.1f dB" % (lab, src, semis, g))
 print("done", len(plan) + 3)
+
+## Призвук промашки: одна октава игровой клавиатуры (ноты четвёртой октавы), 0.45 с с
+## затуханием, на 14 dB тише клавиш — звучит под холостым щелчком key_dead.
+SOFT = OUT + "/soft"
+os.makedirs(SOFT, exist_ok=True)
+for n in names:
+    subprocess.check_call([FF, "-v", "error", "-y", "-i", "%s/%s4.ogg" % (OUT, n), "-t", "0.45",
+        "-af", "volume=-14dB,afade=t=out:st=0.08:d=0.37",
+        "-ar", "48000", "-c:a", "libvorbis", "-q:a", "5", "-fs", "500000", "%s/%s.ogg" % (SOFT, n)])
+print("soft", len(names))

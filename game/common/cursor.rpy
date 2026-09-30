@@ -14,7 +14,7 @@ init -10 python:
         return isinstance(f, (renpy.display.behavior.Button, renpy.display.behavior.Bar))
 
     def _cursor_blocked():
-        if main_menu or renpy.context()._menu:
+        if main_menu or renpy.context()._menu or renpy.get_screen("confirm"):
             return False
         ## Над кнопкой (быстрое меню и т. п.) клик работает — курсор обычный.
         if _cursor_over_focus():

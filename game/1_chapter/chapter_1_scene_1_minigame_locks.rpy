@@ -148,7 +148,7 @@ define C1S1_BIG_LATCH_ARROW_ALPHA = (0.25, 0.65)
 define C1S1_BIG_LATCH_ARROW_BLINK_T = 0.8
 
 define C1S1_BIG_SPIN_RADIUS = 135
-define C1S1_BIG_SPIN_TURN = 360.0   # градусы
+define C1S1_BIG_SPIN_TURN = 540.0   # градусы: полтора оборота
 
 ## Ход язычка в корпус за полный оборот, px ассета.
 define C1S1_BIG_STROKE_TRAVEL = 120
@@ -196,7 +196,7 @@ define C1S1_MG_KNOCKS = (
     ("c1s1/knock_door_2", 1.4, ((0.095, 0.6), (0.25, 1.0), (0.455, 0.72), (0.73, 0.77), (0.985, 0.86), (1.235, 0.72))),
 )
 define C1S1_MG_KNOCK_VOL = (0.70, 1.0)   # тихая и громкая серия волны
-define C1S1_LATCH_OPEN_SOUND = "c1s1/shekolda_open"
+define C1S1_LATCH_OPEN_SOUND = "c1s1/latch_open"
 ## Звук хода, пока деталь тащат: петля, громкость по скорости (доли пути детали в секунду до
 ## полной), гаснет через C1S1_SLIDE_HOLD_T без движения или при отпускании. Один звук на
 ## каждую подвижную деталь; нет файла — деталь ходит молча.
@@ -206,12 +206,15 @@ define C1S1_BIG_LATCH_SLIDE_SOUND = "c1s1/shekolda_slide"
 define C1S1_BIG_LATCH_SLIDE_FULL_SPEED = 1.5
 define C1S1_BIG_SPIN_SLIDE_SOUND = "c1s1/shekolda_slide"
 define C1S1_BIG_SPIN_SLIDE_FULL_SPEED = 1.0
+## Ручка скрипит, только пока её тянут вниз; обратный ход молчит.
+define C1S1_HANDLE_SLIDE_SOUND = "c1s1/handle_squeak"
+define C1S1_HANDLE_SLIDE_FULL_SPEED = 1.5
 define C1S1_SLIDE_VOL = (0.25, 1.0)
 define C1S1_SLIDE_HOLD_T = 0.12
 define C1S1_SLIDE_FADE_T = 0.15
-define C1S1_BIG_LOCK_SOUND = "c1s1/2_lock_step_1_open"
+define C1S1_BIG_LOCK_SOUND = "c1s1/big_lock_open"
 ## Нижняя щеколда большого замка дошла до упора: вертушка свободна.
-define C1S1_BIG_LATCH_OPEN_SOUND = "c1s1/2_lock_step_1_open"
+define C1S1_BIG_LATCH_OPEN_SOUND = "c1s1/big_lock_latch_open"
 define C1S1_HANDLE_SOUND = "c1s1/handle_open"
 define C1S1_MG_LOCK_VOL = 1.0
 define C1S1_MG_HOVER_GAP_T = 0.15
@@ -500,8 +503,7 @@ init -5 python:
         gap *= 1.0 + renpy.random.uniform(-C1S1_MG_KNOCK_GAP_NOISE, C1S1_MG_KNOCK_GAP_NOISE)
         _mg_set("knock_next", t + length + max(0.15, gap))
 
-        sfxplay(name, loop=False, fadein=0, fadeout=0, overlap=True,
-            volume=_mg_lerp(C1S1_MG_KNOCK_VOL[0], C1S1_MG_KNOCK_VOL[1], wave))
+        c1s1_knock(name, "door", _mg_lerp(C1S1_MG_KNOCK_VOL[0], C1S1_MG_KNOCK_VOL[1], wave))
         amp = _mg_lerp(C1S1_MG_KNOCK_SHAKE[0], C1S1_MG_KNOCK_SHAKE[1], wave)
         _mg_set("knock_hits", tuple((t + at, amp * rel) for at, rel in onsets))
 
@@ -858,8 +860,10 @@ init -5 python:
                 da += 360.0
             _mg_set("handle_last_a", a)
             p = max(0.0, min(1.0, p + da / max(1.0, C1S1_HANDLE_TURN)))
+            c1s1_slide(C1S1_HANDLE_SLIDE_SOUND, C1S1_HANDLE_SLIDE_FULL_SPEED, max(0.0, p - _mg_get("handle_p")), dt)
             _mg_set("handle_p", p)
             if p >= 1.0:
+                c1s1_slide_stop()
                 sm_sfx(C1S1_HANDLE_SOUND, volume=C1S1_MG_LOCK_VOL)
                 _mg_set("handle_grab", 0.0)
                 store.c1s1_door_handle_open = True

@@ -31,11 +31,13 @@ screen hover_click(items):
 ## Блокировщик клика: $ click_skip_block = True — клик, Enter и пробел не проматывают
 ## pause, with и реплики; промотка (Ctrl, «ПРОПУСК») работает. Игровые меню не блокируются:
 ## у них свой контекст. Сценовые кнопки тоже: блокировщик выше их и съел бы клик.
+## Окно подтверждения (выход по Alt+F4 и т. п.) открывается в контексте игры — его кнопки
+## тоже не блокируются.
 default click_skip_block = False
 
 screen sm_click_skip_block():
     zorder 1000
-    if click_skip_block and not main_menu and not renpy.context()._menu and not renpy.get_screen("scene_choice"):
+    if click_skip_block and not main_menu and not renpy.context()._menu and not renpy.get_screen("scene_choice") and not renpy.get_screen("confirm"):
         ## Вспышку отказа курсора даёт нажатие кнопки мыши (cursor.rpy), а не этот ключ:
         ## dismiss срабатывает на отпускании.
         key "dismiss" action NullAction()

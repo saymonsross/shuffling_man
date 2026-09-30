@@ -63,6 +63,13 @@ define C1S1_METRONOME_PHASE = 0.5
 
 default c1s1_metronome_audio = None
 
+## Стук слышен с разных мест. "outside" — со стороны Вити, чистый; с нашей стороны он глуше:
+## "door" — у двери, "hall" — из холла, "room" — из комнаты. Число — доля звука, которую
+## заменяет low-pass (0 — чистый, больше — глуше).
+define C1S1_KNOCK_MUFFLE = {"outside": 0.0, "door": 0.1, "hall": 0.22, "room": 0.35}
+define C1S1_KNOCK_LOWPASS_HZ = 700.0
+default c1s1_knock_audio = None
+
 default c1s1_gg_pose = 1
 ## Доля пути за кадр 60 Гц: ≈0.2 с на смену позы.
 define C1S1_GG_POSE_RELAX = 0.25
@@ -384,6 +391,22 @@ init python:
         trans.rotate = amp * sm_motion_scale() * math.sin(math.pi * t / m.beat)
         return 0
 
+    def c1s1_knock_filter(place):
+        k = C1S1_KNOCK_MUFFLE.get(place, 0.0)
+        if k <= 0.0:
+            return None
+        return renpy.audio.filter.WetDry(renpy.audio.filter.Lowpass(C1S1_KNOCK_LOWPASS_HZ), wet=k, dry=1.0 - k)
+
+    def c1s1_knock(name, place, volume=1.0):
+        """Серия стука, слышная из place."""
+        store.c1s1_knock_audio = sfxplay(name, loop=False, fadein=0, fadeout=0, overlap=True, volume=volume)
+        sm_audio_set_filter(store.c1s1_knock_audio, c1s1_knock_filter(place), duration=0)
+        return store.c1s1_knock_audio
+
+    def c1s1_knock_place(place, t=0.05):
+        """Склейка посреди серии: тот же стук слышен уже из другого места."""
+        sm_audio_set_filter(store.c1s1_knock_audio, c1s1_knock_filter(place), duration=t)
+
     def c1s1_metronome_tension():
         return sm_audio_set_filter(c1s1_metronome_audio, [
             renpy.audio.filter.Lowpass(2200.0),
@@ -592,7 +615,7 @@ label .piano:
     ## шаг). Вместо нот — фальшь, муж долбит в дверь, камера вздрагивает по ударам.
     ## Строки до show screen идут в один кадр с обрушением: паузы сюда не ставить.
     $ sfxplay("wrong/1", audio_dir="audio/chapter_1_piano_minigame", loop=False, fadein=0, fadeout=0, overlap=True, volume=1.0)
-    $ sfxplay("c1s1/knock_door_1", loop=False, fadein=0, fadeout=0, overlap=True)
+    $ c1s1_knock("c1s1/knock_door_1", "room")
     camera:
         subpixel True
         align (0.5, 0.5)
@@ -671,7 +694,7 @@ label .piano:
     ## ▶ СТУК Б — звук стартует на строке sfxplay ниже, кадр склеен с ним.
     ## Второй заход ближе и злее; метроном глохнет.
     $ c1s1_metronome_tension()
-    $ sfxplay("c1s1/knock_door_2", loop=False, fadein=0, fadeout=0, overlap=True)
+    $ c1s1_knock("c1s1/knock_door_2", "outside")
 
     ## ══════════ КАДР 2 · ДВЕРЬ СНАРУЖИ ══════════
     ## Кулак (c1s1_door_fist_b) и толчки камеры (c1s1_knocks_2) — по ударам стука Б.
@@ -715,9 +738,10 @@ label .piano:
     ## 1.0 с после появления кадра — это pause 1.0 в c1s1_hall_item. Ставишь паузу перед
     ## стуком — прибавь её и там.
     ## Удары отдаются в дверь и вещи у стен.
-    $ sfxplay("c1s1/knock_door_1", loop=False, fadein=0, fadeout=0, overlap=True, volume=0.75)
+    $ c1s1_knock("c1s1/knock_door_1", "hall", 0.75)
     ## 0.865 с — до 4-го удара стука А: на нём склейка на дверь снаружи.
     pause 0.865
+    $ c1s1_knock_place("outside")
 
     ## ══════════ КАДР 4 · ДВЕРЬ СНАРУЖИ ══════════
     ## Толчки камеры: три c1s1_hit — удары 4, 5, 6 стука А (он ещё звучит), потом
@@ -743,8 +767,9 @@ label .piano:
     pause 1.1
 
     ## ▶ СТУК Б — ровно через 1.1 с после склейки: камера и кулак ждут его в эту секунду.
-    $ sfxplay("c1s1/knock_door_2", loop=False, fadein=0, fadeout=0, overlap=True)
+    $ c1s1_knock("c1s1/knock_door_2", "outside")
     pause 0.73
+    $ c1s1_knock_place("door")
 
     ## 0.73 с — до 4-го удара стука Б: на нём склейка на дверь изнутри.
 
@@ -774,7 +799,7 @@ label .piano:
     ## ▶ СТУК А (громкий) — через 2.505 с после склейки: c1s1_inside_knocks ждёт его
     ## в эту секунду. Двигаешь паузу — двигай и 2.0 в c1s1_inside_knocks.
     ## Стук возвращается сильнее.
-    $ sfxplay("c1s1/knock_door_1", loop=False, fadein=0, fadeout=0, overlap=True)
+    $ c1s1_knock("c1s1/knock_door_1", "door")
     pause 1.495
 
     # "end"

@@ -19,6 +19,9 @@ define PIANO_SUBDIV = 4
 define PIANO_KEYS_DIR = "audio/keys/"
 define PIANO_KEYS_EXT = ".ogg"
 define PIANO_DEAD_SOUND = "audio/keys/key_dead.ogg"
+## Под холостым щелчком — тихий короткий призвук нажатой клавиши: PIANO_SOFT_DIR/<нота>.ogg
+## (громкость и затухание запечены в файл, tools/cut_piano_keys.py).
+define PIANO_SOFT_DIR = "audio/keys/soft/"
 ## Первый шаг партии ждёт у клавиш сразу; после нажатия следующий подступает по сетке от доли
 ## нажатия, не раньше чем через PIANO_WINDOW.
 define PIANO_WINDOW = 0.18
@@ -57,6 +60,8 @@ define PIANO_PX_PER_BEAT = 90
 define PIANO_BAR_INSET = 8
 define PIANO_BAR_MIN_H = 18
 define PIANO_BAR_BORDER = 3
+## Чёрный контур вокруг бруска ноты белой клавиши, px: светлая штриховка не теряется на светлом.
+define PIANO_BAR_OUTLINE = 3
 define PIANO_BAR_PAD = 12
 define PIANO_KEY_PAD = 6
 define PIANO_HATCH_PERIOD = 11.0
@@ -74,22 +79,22 @@ define PIANO_FADE_IN_T = 0.8
 define PIANO_COLLAPSE_T = 1.8
 define PIANO_COLLAPSE_FADE_T = 0.4
 define PIANO_SHARDS = 3
-define PIANO_GRAVITY = 1900.0
-define PIANO_SHARD_VX = (60.0, 220.0)
-define PIANO_SHARD_VY = (-320.0, -80.0)
-define PIANO_SHARD_SPIN = (90.0, 300.0)
+define PIANO_GRAVITY = 2400.0
+define PIANO_SHARD_VX = (40.0, 160.0)
+define PIANO_SHARD_VY = (-220.0, -40.0)
+define PIANO_SHARD_SPIN = (60.0, 200.0)
 ## Клавиши ломаются пополам и тяжелее нот: срываются с задержкой, летят ниже и медленнее.
 define PIANO_KEY_SHARDS = 2
-define PIANO_KEY_SHARD_DELAY = (0.1, 0.45)
-define PIANO_KEY_SHARD_VX = (20.0, 120.0)
-define PIANO_KEY_SHARD_VY = (-380.0, -160.0)
-define PIANO_KEY_SHARD_SPIN = (40.0, 180.0)
+define PIANO_KEY_SHARD_DELAY = (0.05, 0.35)
+define PIANO_KEY_SHARD_VX = (15.0, 80.0)
+define PIANO_KEY_SHARD_VY = (-170.0, -40.0)
+define PIANO_KEY_SHARD_SPIN = (25.0, 110.0)
 define PIANO_KEY_LABEL_SIZE = 32
 define PIANO_COLORS = {
     "white": "#e9e2d6", "white_hover": "#f6f1e8", "white_down": "#b9b0a1", "white_label": "#141210",
     "black": "#241f1c", "black_hover": "#3a332e", "black_down": "#0f0d0b", "black_label": "#efe9df",
     "white_next": "#9c1f1f", "black_next": "#6e1010",
-    "bar_edge": "#f2ece0", "bar_hatch": "#f2ece0c0", "bar_dark": "#050403f2", "bar_done": "#7e8f6a80",
+    "bar_outline": "#050403", "bar_edge": "#f2ece0", "bar_hatch": "#f2ece0c0", "bar_dark": "#050403f2", "bar_done": "#7e8f6a80",
     "bar_label_white": "#141210", "bar_label_black": "#efe9df",
     "line": "#f2ece080",
 }
@@ -392,6 +397,27 @@ init python:
         else:
             piano_log_missing(filename)
 
+    ## Промашки звучат на своих каналах вне пула эффектов: в пуле пять каналов, длинные ноты
+    ## занимают их все, и щелчок отбирал бы канал у звучащей ноты.
+    PIANO_MISS_CHANNELS = ("sm_piano_wood", "sm_piano_soft")
+    for _piano_channel in PIANO_MISS_CHANNELS:
+        renpy.music.register_channel(_piano_channel, mixer="sfx", loop=False, tight=True,
+            synchro_start=False, stop_on_mute=False)
+        config.main_menu_stop_channels.append(_piano_channel)
+
+    def piano_play_miss(filename, channel):
+        if renpy.loadable(filename):
+            fnplay(filename, channel=channel, loop=False, fadein=0, fadeout=0)
+        else:
+            piano_log_missing(filename)
+
+    def piano_miss_sound(key):
+        """Промашка: деревянный щелчок и под ним призвук самой клавиши."""
+        piano_play_miss(PIANO_DEAD_SOUND, PIANO_MISS_CHANNELS[0])
+        soft = PIANO_SOFT_DIR + key[0].replace("s", "#") + PIANO_KEYS_EXT
+        if renpy.loadable(soft):
+            piano_play_miss(soft, PIANO_MISS_CHANNELS[1])
+
     def piano_key_down(key, now=None):
         """Клавиша зажата: "miss" — не из шага (холостой щелчок), "step" — шаг собран, None — ждём остальные."""
         s = store.piano_state
@@ -401,7 +427,7 @@ init python:
         piano_clock.flash, piano_clock.flash_t = key, now
         if key not in piano_step_keys():
             s["stumbles"] += 1
-            piano_play_file(PIANO_DEAD_SOUND)
+            piano_miss_sound(key)
             return "miss"
         piano_clock.held.add(key)
         return "step" if not piano_pending() else None
@@ -418,7 +444,7 @@ init python:
         piano_clock.flash, piano_clock.flash_t = key, now
         if key not in piano_step_keys():
             s["stumbles"] += 1
-            piano_play_file(PIANO_DEAD_SOUND)
+            piano_miss_sound(key)
             return "miss"
         if key not in s["pressed"]:
             s["pressed"] += (key,)
@@ -660,6 +686,17 @@ init python:
                 Transform(Solid("#00000000", xysize=inner), xpos=b, ypos=b),
                 Transform(fill, xpos=b, ypos=b),
                 xysize=(w, h))
+            ## Контур — четыре полосы: сплошная подложка закрасила бы просвет штриховки.
+            if not black and not done:
+                o = PIANO_BAR_OUTLINE
+                c = PIANO_COLORS["bar_outline"]
+                frame = Fixed(
+                    Solid(c, xysize=(w + 2 * o, o)),
+                    Solid(c, ypos=h + o, xysize=(w + 2 * o, o)),
+                    Solid(c, ypos=o, xysize=(o, h)),
+                    Solid(c, xpos=w + o, ypos=o, xysize=(o, h)),
+                    Transform(frame, pos=(o, o)),
+                    xysize=(w + 2 * o, h + 2 * o))
             piano_bar_cache[key] = At(frame, scratch("piano_notes", tint=0.0, pad=PIANO_BAR_PAD))
         return piano_bar_cache[key]
 
