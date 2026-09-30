@@ -26,6 +26,7 @@ game/
 │   ├── fx_tuner/         — FX Tuner (F10): эффекты вживую → fx_config.yaml
 │   ├── path_tuner/       — Path Tuner (F6): spline-траектории мышью → ATL с knot, README.ru.md / README.en.md
 │   ├── position_tuner/  — Position Tuner (F9), README.ru.md / README.en.md
+│   ├── rmb_editor/       — RMB Editor (Shift+ПКМ): клик в игре → промпт Claude во вкладке VS Code, README.ru.md / README.en.md
 │   ├── scene_navigation/ — dev-навигация по сценам и превью
 │   ├── testcases.rpy     — тестовые сценарии Ren'Py, testsuite global и его хуки
 │   └── *_regression_tests.rpy — регрессионные тесты подсистем

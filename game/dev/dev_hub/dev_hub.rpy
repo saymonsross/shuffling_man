@@ -5,7 +5,8 @@
 define -30 DEV_HUB_HOTKEY = "K_F12"
 
 ## screen — показать поверх игры, menu — открыть как игровое меню,
-## label — прыгнуть (только внутри игры, не из меню); hotkey — имя константы с keysym;
+## label — прыгнуть (только внутри игры, не из меню); func — вызвать функцию по имени;
+## hotkey — имя константы с keysym; keys — готовая подпись жеста, если это не клавиша;
 ## args — аргументы экрана screen; group "scratch" — тюнеры процарапанного штриха, сеткой.
 define -30 DEV_HUB_TOOLS = (
     {"title": "Position Tuner", "hotkey": "PT_HOTKEY", "screen": "position_tuner",
@@ -16,6 +17,8 @@ define -30 DEV_HUB_TOOLS = (
         "about": "spline-траектория мышью → ATL с knot в буфер"},
     {"title": "Choice Placer", "hotkey": "CP_HOTKEY", "screen": "dev_choice_placer",
         "about": "сценовые кнопки выбора мышью → pos=(x, y) в .rpy"},
+    {"title": "RMB Editor", "keys": "Shift+ПКМ", "func": "rmb_open_from_hub",
+        "about": "клик по объекту или бросок файла → промпт Claude во вкладке VS Code"},
     {"title": "Font Tuner", "group": "scratch", "screen": "fx_tuner",
         "args": {"groups": ("main_menu_text",), "title": "FONT TUNER"},
         "about": "штрих текста кнопок главного меню → game/fx_config.yaml"},
@@ -115,6 +118,8 @@ init -5 python:
         return " / ".join(labels[:2]) or "—"
 
     def dev_hub_tool_keys(entry):
+        if "keys" in entry:
+            return entry["keys"]
         keysym = getattr(store, entry.get("hotkey", ""), None)
         return (dev_hub_key_label(keysym) or "") if keysym else ""
 
@@ -126,6 +131,8 @@ init -5 python:
             return renpy.has_screen(entry["screen"])
         if "menu" in entry:
             return renpy.has_screen(entry["menu"])
+        if "func" in entry:
+            return callable(getattr(store, entry["func"], None))
         return renpy.has_label(entry["label"]) and dev_hub_in_game()
 
     def dev_hub_tool_action(entry):
@@ -133,6 +140,8 @@ init -5 python:
             return [Hide("dev_hub"), Show(entry["screen"], **entry.get("args", {}))]
         if "menu" in entry:
             return [Hide("dev_hub"), ShowMenu(entry["menu"])]
+        if "func" in entry:
+            return [Hide("dev_hub"), Function(getattr(store, entry["func"]))]
         return [Hide("dev_hub"), Jump(entry["label"])]
 
     def dev_hub_builtin_action(name):

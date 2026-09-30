@@ -268,7 +268,7 @@ label .letter:
             "ВЗЯТЬ" (bg="light", pos=(1264, 431), size=(260, 140),
                     hovered=SetVariable("note_hover_pencil", True),
                     unhovered=SetVariable("note_hover_pencil", False)):
-                pass
+                $ sm_sfx("prologue/pencil_take", volume=0.8)
             with Dissolve(0.2)
 
     ## После закрытия экрана unhovered не вызывается.

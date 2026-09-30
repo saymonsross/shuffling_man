@@ -253,6 +253,12 @@ default fx_pixelate_strength = FX_PIXELATE_DEFAULT
 define FX_CHROMA_DEFAULT = 1.0
 default fx_chroma_strength = FX_CHROMA_DEFAULT
 
+## Bloom — так же: сила по сюжету fx_bloom_strength (0..FX_BLOOM_MAX, множитель к
+## bloom.intensity). Выше текущей сила встаёт сразу, плавно идёт только спад.
+define FX_BLOOM_DEFAULT = 1.0
+define FX_BLOOM_MAX = 3.0
+default fx_bloom_strength = FX_BLOOM_DEFAULT
+
 ## Охват scene — все слои config.layers, кроме UI: новый слой мира (как lockgame
 ## у мини-игры замков) получает эффекты сам, если добавлен в init.
 ## forever — экраны 7dots show_forever, которые не прячутся по H.
@@ -300,17 +306,22 @@ init -10 python:
     fx_param("bloom.knee", 0.5, 0.0, 1.0, step=0.01, doc="мягкость порога: 0 — резкая граница")
     fx_param("bloom.intensity", 0.6, 0.0, 3.0, step=0.05, doc="сила свечения")
     fx_param("bloom.radius", 24, 4, 128, doc="радиус свечения в точках экрана 1920×1080")
+    fx_param("bloom.relax", 0.03, 0.005, 1.0, step=0.005,
+        doc="плавность спада fx_bloom_strength")
 
     def _fx_grade_identity():
         return (fx_cfg("grade.brightness") == 0.0 and fx_cfg("grade.contrast") == 1.0
             and fx_cfg("grade.saturation") == 1.0)
 
-    def _fx_story_level(key, var, default, relax):
+    def _fx_story_level(key, var, default, relax, hi=1.0, snap_up=False):
         """(сглаженная сила от сцены, цель); превью тюнера подменяет цель полной."""
         if fx_cfg_runtime["preview"]:
             target = 1.0
         else:
-            target = _fx_num(getattr(store, var, default), default, 0.0, 1.0)
+            target = _fx_num(getattr(store, var, default), default, 0.0, hi)
+        ## _fx_step после подстановки всё равно нужен: он ведёт часы накопителя.
+        if snap_up and target > _fx_state.get(key, target):
+            _fx_state[key] = target
         ## Один накопитель эффекта на все слои намеренно: цель у них общая, а _fx_step
         ## делает не больше одного шага за кадр, поэтому слои не тянут его друг у друга.
         return _fx_step(key, target, relax, start=target), target
@@ -327,6 +338,10 @@ init -10 python:
         return _fx_story_level("chroma_level", "fx_chroma_strength",
             FX_CHROMA_DEFAULT, fx_cfg("chroma.relax"))
 
+    def _fx_bloom_level():
+        return _fx_story_level("bloom_level", "fx_bloom_strength",
+            FX_BLOOM_DEFAULT, fx_cfg("bloom.relax"), hi=FX_BLOOM_MAX, snap_up=True)
+
     ## Трансформ слоя попадает в сейвы вместе со SceneLists: после релиза не
     ## переименовывать fx_layer и fx_layer_f.
     def fx_layer_f(scope, trans, st, at):
@@ -336,6 +351,7 @@ init -10 python:
         p_level, p_target = _fx_posterize_level()
         x_level, x_target = _fx_pixelate_level()
         c_level, c_target = _fx_chroma_level()
+        b_level, b_target = _fx_bloom_level()
         shaders = python_list()
         bloom = False
         if not fx_cfg_bypassed():
@@ -355,13 +371,14 @@ init -10 python:
                 trans.u_pixelate_size = float(size)
             if scope == "scene" and sm_rift_layer(trans):
                 shaders.append("sm.rift")
+            intensity = fx_cfg("bloom.intensity") * b_level
             bloom = (fx_cfg("bloom.enabled") and fx_cfg("bloom.scope") == scope
-                and fx_cfg("bloom.intensity") > 0.001)
+                and intensity > 0.001)
             if bloom:
                 shaders.append("sm.bloom")
                 trans.u_bloom_threshold = fx_cfg("bloom.threshold")
                 trans.u_bloom_knee = fx_cfg("bloom.knee")
-                trans.u_bloom_intensity = fx_cfg("bloom.intensity")
+                trans.u_bloom_intensity = intensity
                 trans.u_bloom_radius = float(fx_cfg("bloom.radius"))
             if fx_cfg("grade.enabled") and fx_cfg("grade.scope") == scope and not _fx_grade_identity():
                 shaders.append("sm.grade")
@@ -385,7 +402,7 @@ init -10 python:
         trans.shader = None
         ## Правки тюнера и сцены перезапускают интеракцию сами; кадры нужны только затуханию.
         settling = any(abs(l - t) > 0.001 for l, t in
-            ((p_level, p_target), (x_level, x_target), (c_level, c_target)))
+            ((p_level, p_target), (x_level, x_target), (c_level, c_target), (b_level, b_target)))
         return 1.0 / 60.0 if settling else 0.1
 
     def _fx_story_status(var, key, value):
@@ -407,7 +424,12 @@ init -10 python:
     fx_group("posterize", "Постеризация", fx_posterize_status)
     fx_group("pixelate", "Пикселизация", fx_pixelate_status)
     fx_group("grade", "Ретушь")
-    fx_group("bloom", "Bloom")
+
+    def fx_bloom_status():
+        return _fx_story_status("fx_bloom_strength", "bloom_level",
+            lambda level: "%.2f" % (fx_cfg("bloom.intensity") * level))
+
+    fx_group("bloom", "Bloom", fx_bloom_status)
 
     def fx_chroma_status():
         return _fx_story_status("fx_chroma_strength", "chroma_level", lambda level: "%.2f" % level)

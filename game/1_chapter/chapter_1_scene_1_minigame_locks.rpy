@@ -22,6 +22,9 @@ image chapter_1_latch_overlay_keeper = "images/1_chapter/lock_mini_game/latch/la
 image chapter_1_latch_knob = hover_lit("images/1_chapter/lock_mini_game/latch/latch_knob.png", "c1s1_mg_part_lit('latch')", -0.08)
 
 ## У деталей большого замка разные холсты; расхождения заданы в C1S1_BIG_*_OFF.
+## Задняя стенка паза ответной планки: без неё за убранным язычком сквозь паз видна дверь.
+## Размер — px холста корпуса; цвет — боковая грань планки.
+image chapter_1_big_lock_keeper_back = Solid("#1a0d00", xysize=(61, 256))
 image chapter_1_big_lock_body = "images/1_chapter/lock_mini_game/big_lock/big_lock_body.png"
 image chapter_1_big_lock_stroke = "images/1_chapter/lock_mini_game/big_lock/big_lock_stroke.png"
 image chapter_1_big_lock_latch_shadow = "images/1_chapter/lock_mini_game/big_lock/big_lock_latch_shadow.png"
@@ -130,6 +133,8 @@ define C1S1_BIG_LOCK_ZOOM = 1.4
 
 ## Смещения центров относительно корпуса, px ассета.
 define C1S1_BIG_BODY_OFF = (0, 0)
+## Правый край стенки совпадает с гранью планки, остальные уходят под корпус.
+define C1S1_BIG_KEEPER_BACK_OFF = (-222, -14)
 define C1S1_BIG_STROKE_OFF = (159, 125)
 define C1S1_BIG_LATCH_SHADOW_OFF = (0, 0)
 define C1S1_BIG_LATCH_OFF = (0, 0)
@@ -1264,18 +1269,6 @@ screen c1s1_locks_minigame():
     ## Реплики Вити за дверью: по одной на замок, в порядке C1S1_MG_LOCK_ORDER.
     use c1s1_vitya_bark((_("Марина, открывай!"), _("Опять заперлась? Я ж на минуту выскочил!"), _("Боже, что ты там возишься?"), _("Марина, ну давай быстрее! Замок сломался?")), side="up", pos=(1444, 13), index=(lambda: c1s1_mg_lock_i))
 
-    if c1s1_mg_blocked_visible():
-        frame:
-            xalign 0.5
-            yalign 0.985
-            padding (28, 14)
-            at show_hide(0.3)
-            text _("Сначала сдвиньте нижнюю щеколду вправо."):
-                id "c1s1_mg_blocked_hint"
-                style "c1s1_mg_step_button_text"
-                color "#dad4ca"
-                at scratch("show_text", tint=0.0, mix=0.09)
-
     if persistent.sm_simplified_locks:
         textbutton c1s1_mg_simplified_label():
             style "c1s1_mg_step_button"
@@ -1397,10 +1390,11 @@ label .show_latch:
     return
 
 ## Порядок show большого замка:
-##   ЯЗЫЧОК → корпус → тень щеколды → ЩЕКОЛДА → тень вертушки → ВЕРТУШКА
+##   стенка паза → ЯЗЫЧОК → корпус → тень щеколды → ЩЕКОЛДА → тень вертушки → ВЕРТУШКА
 ## Корпус маскирует язычок; тень вертушки остаётся неподвижной.
 label .show_big_lock:
 
+    show chapter_1_big_lock_keeper_back onlayer lockgame at c1s1_lock_part(C1S1_BIG_KEEPER_BACK_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)
     show chapter_1_big_lock_stroke onlayer lockgame at c1s1_big_stroke_slide(C1S1_BIG_STROKE_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)
     show chapter_1_big_lock_body onlayer lockgame at c1s1_lock_part(C1S1_BIG_BODY_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)
     show chapter_1_big_lock_latch_shadow onlayer lockgame at c1s1_big_latch_slide(C1S1_BIG_LATCH_SHADOW_OFF, C1S1_MG_LOCK_CENTER, C1S1_BIG_LOCK_ZOOM)

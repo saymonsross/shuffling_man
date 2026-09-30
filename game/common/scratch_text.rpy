@@ -105,6 +105,9 @@ init -11 python:
         gl_FragColor = mix(src, vec4(col.rgb, 1.0) * col.a * src.a, u_scratch_tint);
         """)
 
+    ## Кадров штриха до повтора: при шаге 0.15 с — около 10 с.
+    SCRATCH_SEED_LOOP = 64
+
     ## mix_f — функция без аргументов, множитель силы штриха в рантайме (например, курсор гасит штрих).
     def scratch_f(group, mix_f, trans, st, at):
         trans.u_scratch_on = 1.0 if fx_cfg(group + ".enabled") and not fx_cfg_bypassed() else 0.0
@@ -118,9 +121,11 @@ init -11 python:
         trans.u_scratch_spread = float(fx_cfg(group + ".spread"))
         trans.u_scratch_copy_alpha = float(fx_cfg(group + ".copy_alpha"))
         ## Seed меняется ступенькой, как в покадровой анимации; без анимации штрих застывает.
+        ## Зациклен: шейдер умножает его на 17 и 29 и отдаёт в sin-хэш. Без цикла за минуты
+        ## координаты шума уходят в десятки тысяч, float теряет дробную часть — штрих грубеет.
         step = fx_cfg(group + ".step")
         if fx_cfg(group + ".animate") and not sm_reduced_motion():
-            trans.u_scratch_seed = float(int(st / step))
+            trans.u_scratch_seed = float(int(st / step) % SCRATCH_SEED_LOOP)
             return step - (st % step)
         trans.u_scratch_seed = 0.0
         ## Редкая перерисовка подхватывает правки тюнера.

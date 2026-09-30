@@ -31,6 +31,11 @@ testsuite global:
         $ persistent.sm_reduce_motion, persistent.sm_simplified_locks, persistent.sm_disable_flashes = renpy.session.pop("_sm_test_preferences")
         $ renpy.get_mouse_pos = renpy.session.pop("_sm_test_get_mouse_pos")
         $ sm_test_fx_restore(renpy.session.pop("_sm_test_fx"))
+        ## Упавший тест не должен оставить открытое поле RMB Editor и подмены открывателя.
+        if eval (_rmb_run["active"]):
+            keysym "K_ESCAPE"
+            assert eval (not _rmb_run["active"]) timeout 2.0
+        $ sm_test_rmb_reset()
 
     teardown:
         exit

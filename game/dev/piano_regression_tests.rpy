@@ -252,6 +252,37 @@ testcase c1s1_piano_screen_collapse:
     assert eval (c1s1_piano_outcome == "clean" and piano_state == {})
     $ skip_stop()
 
+testcase c1s1_piano_early_press_snaps_smoothly:
+    ## Раннее нажатие: брусок был над линией — сразу после сбора он рисуется там же и за
+    ## PIANO_SNAP_T доезжает; нажатие у линии сдвига не даёт.
+    python:
+        original = sm_test_piano_fake_pos({})
+        try:
+            now = sm_test_piano_begin()
+            for key in sorted(piano_pending()):
+                piano_key_down(key, now=now)
+            piano_complete_step(now=now)
+            store.sm_test_piano_wait_snap = piano_clock.snap[1]
+            due = piano_due()
+            early = due - 0.4
+            for key in sorted(piano_pending()):
+                piano_key_down(key, now=early)
+            piano_complete_step(now=early)
+            store.sm_test_piano_early_px = piano_clock.snap[1]
+            store.sm_test_piano_expect_px = 0.4 / piano_metro.beat * PIANO_PX_PER_BEAT
+            store.sm_test_piano_off_start = piano_snap_offsets(early)
+            store.sm_test_piano_off_mid = piano_snap_offsets(early + PIANO_SNAP_T / 2.0)
+            store.sm_test_piano_off_end = piano_snap_offsets(early + PIANO_SNAP_T)
+        finally:
+            store.piano_channel_pos = original
+            piano_clock.held.clear()
+            store.piano_state = {}
+    assert eval (sm_test_piano_wait_snap == 0.0)
+    assert eval (abs(sm_test_piano_early_px - sm_test_piano_expect_px) < 0.01)
+    assert eval (abs(sm_test_piano_off_start[0] - sm_test_piano_expect_px) < 0.01)
+    assert eval (0.0 < sm_test_piano_off_mid[0] < sm_test_piano_off_start[0])
+    assert eval (sm_test_piano_off_end == (0.0, 0.0))
+
 testcase c1s1_piano_clean_when_late:
     ## Опоздание не наказывается: все шаги собраны с большим опозданием — исход чистый.
     python:

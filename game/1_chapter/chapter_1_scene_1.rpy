@@ -461,6 +461,7 @@ label chapter_1_scene_1:
 
     ## Щелчок и мгновенная смена освещения без сброса камеры.
     $ sm_sfx("lamp_on", volume=0.9)
+    $ fx_bloom_strength = 1.4
     ## Нижняя часть корпуса закрывает пивот стрелки, руки остаются перед метрономом.
     scene chapter_1 lamp_light:
         breath_brightness(-0.04, -0.08, 6.0)
@@ -471,6 +472,7 @@ label chapter_1_scene_1:
         anchor (0.5, 1.0)
         pos (1007, 660)
         rotate 0.0
+        brightness(-0.1)
     ## Точный фрагмент светлого фона ниже прорези: (835, 640, 1171, 777).
     show chapter_1_metro_patch zorder 4:
         breath_brightness(-0.04, -0.08, 6.0)
@@ -551,6 +553,7 @@ label chapter_1_scene_1:
     ## Камера рук подхватывает отъезд до его завершения: скорости зума
     ## согласованы, ≈0.038/с у ГГ и ≈0.037/с у рук.
     camera at camera_settle((0.51, 0.61), 1.03, 1.0, 13.4)
+    $ fx_bloom_strength = FX_BLOOM_DEFAULT
     scene black
     show chapter_1 piano_hands:
         truecenter

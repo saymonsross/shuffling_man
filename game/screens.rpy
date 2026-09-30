@@ -327,8 +327,34 @@ screen quick_menu():
 
 init python:
     config.overlay_screens.append("quick_menu")
+    config.overlay_screens.append("quick_menu_stub")
 
 default quick_menu = True
+
+## Быстрое меню спрятано (quick_menu = False или мини-игра): в правом нижнем углу остаётся
+## значок — клик открывает игровое меню, как Esc. zorder выше модальных экранов мини-игр и
+## блокировщика клика (1000): иначе значок был бы виден, но не нажимался.
+screen quick_menu_stub():
+
+    zorder 1001
+
+    showif (not quick_menu or renpy.get_screen("c1s1_mg_runtime")) and not main_menu and not renpy.get_screen("confirm"):
+
+        button:
+            at show_hide(.3)
+            style "quick_stub_button"
+            alt _("Пауза")
+            action ShowMenu()
+            add Transform("gui/menu_128.png", zoom=0.3):
+                at scratch("quick_menu_text"), hover_shake(0.77)
+
+style quick_stub_button is default:
+    xalign 1.0
+    yalign 1.0
+    padding (20, 14)
+    background None
+    hover_sound "audio/sfx/hover.ogg"
+    activate_sound "audio/sfx/click.ogg"
 
 style quick_menu_frame is empty
 style quick_menu is hbox

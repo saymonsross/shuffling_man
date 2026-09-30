@@ -248,15 +248,17 @@ testcase c1s1_big_lock_blocked_feedback:
     $ sm_test_big_lock_blocked_feedback()
 
 testcase c1s1_blocked_hint_screen:
+    ## Отказ вертушки — только звук, вспышка и дрожь щеколды: текстовой подсказки нет.
     $ c1s1_mg_reset()
     $ c1s1_mg_lock_i = 1
     $ c1s1_mg_active = True
     run Show("c1s1_locks_minigame")
-    assert not id "c1s1_mg_blocked_hint"
+    assert eval (not c1s1_mg_blocked_visible())
     run Function(c1s1_mg_blocked_feedback)
-    assert id "c1s1_mg_blocked_hint" timeout 0.5
+    assert eval (c1s1_mg_blocked_visible()) timeout 0.5
+    assert not "щеколду" raw
     pause 1.4
-    assert not id "c1s1_mg_blocked_hint"
+    assert eval (not c1s1_mg_blocked_visible())
     run Hide("c1s1_locks_minigame")
     $ c1s1_mg_reset()
 

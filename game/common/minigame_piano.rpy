@@ -42,7 +42,7 @@ define PIANO_BLACK_SLOTS = (0, 1, 3, 4, 5)
 
 ## Клавиатура на кадре: белые клавиши слева направо, чёрные — над стыками.
 define PIANO_KB_X = 612
-define PIANO_KB_Y = 785
+define PIANO_KB_Y = 812
 define PIANO_WHITE_W = 96
 define PIANO_WHITE_H = 190
 define PIANO_WHITE_GAP = 4
@@ -74,6 +74,9 @@ define PIANO_HINT_STEPS = 4
 define PIANO_HINT_FADE_T = 1.0
 ## Мини-игра проявляется за PIANO_FADE_IN_T от старта (по часам игры: каждое нажатие — новая интеракция).
 define PIANO_FADE_IN_T = 0.8
+## Раннее нажатие подтягивает мелодию к игроку: бруски доезжают до новых мест за PIANO_SNAP_T,
+## а не прыгают.
+define PIANO_SNAP_T = 0.12
 ## Обрушение: осколки бруска (PIANO_SHARDS на ноту) разлетаются и падают с гравитацией,
 ## экран держится PIANO_COLLAPSE_T и последние PIANO_COLLAPSE_FADE_T гаснет целиком.
 define PIANO_COLLAPSE_T = 1.8
@@ -290,6 +293,8 @@ init python:
             self.shards = ()
             self.key_shards = ()
             self.collapse_t = None
+            ## (момент, px до линии у собранного шага, px скачка остальных).
+            self.snap = (-10.0, 0.0, 0.0)
 
     piano_metro = PianoMetronome()
     piano_clock = PianoClock()
@@ -324,6 +329,7 @@ init python:
         piano_clock.shards = ()
         piano_clock.key_shards = ()
         piano_clock.collapse_t = None
+        piano_clock.snap = (-10.0, 0.0, 0.0)
         piano_clock.due = piano_clock.due_for = None
         piano_clock.done = {}
         piano_clock.started = piano_now()
@@ -458,6 +464,9 @@ init python:
         if cur is None:
             return
         piano_metro.sync(now)
+        ## Сколько бруску оставалось до линии: нажали раньше, чем он доехал.
+        due = piano_due()
+        early_px = 0.0 if due is None else max(0.0, due - now) / piano_metro.beat * PIANO_PX_PER_BEAT
         part = s["parts"][s["part"]]
         breaking = piano_breaks_here(s, part, s["pos"] + 1)
         if not breaking:
@@ -474,10 +483,22 @@ init python:
             s["pos"] += 1
             piano_clock.due = piano_grid_after(now - PIANO_WINDOW) + gap * piano_step_t()
             piano_clock.due_for = (s["part"], s["pos"])
+            ## Остальные бруски сдвинулись на разницу старого и нового места следующего шага.
+            new_px = max(0.0, piano_clock.due - now) / piano_metro.beat * PIANO_PX_PER_BEAT
+            piano_clock.snap = (now, early_px, gap * piano_px_step() + early_px - new_px)
             if breaking:
                 piano_collapse(now)
         else:
             piano_advance_part("played")
+
+    def piano_snap_offsets(now):
+        """(px вверх для собранного шага, px вверх для остальных): скачок раннего нажатия тает."""
+        t0, done_px, next_px = piano_clock.snap
+        k = (now - t0) / PIANO_SNAP_T
+        if k < 0.0 or k >= 1.0:
+            return 0.0, 0.0
+        f = (1.0 - k) * (1.0 - k)
+        return done_px * f, next_px * f
 
     def piano_breaks_here(s, part, pos):
         """Последняя партия на шаге pos дошла до шагов, которые не доигрываются."""
@@ -744,9 +765,10 @@ init python:
             line = renpy.render(Solid(PIANO_COLORS["line"], xysize=((PIANO_WHITE_W + PIANO_WHITE_GAP) * 7 - PIANO_WHITE_GAP, 2)), width, height, st, at)
             rv.blit(line, (PIANO_KB_X, PIANO_KB_Y - 1))
             self._draw_done(rv, s, s["pos"] - 1, now, st, at, width, height)
+            snap_next = piano_snap_offsets(now)[1]
             for k in range(s["pos"], len(part)):
                 pos, notes = part[k]
-                bottom = piano_step_bottom(pos, cur[0], lead)
+                bottom = piano_step_bottom(pos, cur[0], lead) - snap_next
                 if bottom < PIANO_FALL_TOP:
                     break
                 self._draw_step(rv, part, notes, bottom, piano_active() if k == s["pos"] else set(), st, at, width, height, 1.0)
@@ -763,6 +785,8 @@ init python:
                 age = now - done_t
                 fade = 1.0 - age / PIANO_BAR_FADE_T
                 bottom = PIANO_KB_Y + age / piano_metro.beat * PIANO_PX_PER_BEAT
+                if k == last:
+                    bottom -= piano_snap_offsets(now)[0]
                 self._draw_step(rv, part, part[k][1], bottom, set(), st, at, width, height, fade)
 
         def _draw_shards(self, rv, now, st, at, width, height):
@@ -884,7 +908,7 @@ screen minigame_piano_screen(skippable=True):
                 text label.upper() style "piano_key_label" color PIANO_COLORS[base + "_label"] align (0.5, 0.9)
 
         if playing and piano_state.get("part") == 0 and piano_state.get("pos", 0) <= PIANO_HINT_STEPS:
-            text _("НАЖИМАЙ ПОДСВЕЧЕННЫЕ КЛАВИШИ: Z X C V B N M И S D G H J") style "piano_hint" ypos ((PIANO_KB_Y + PIANO_WHITE_H + config.screen_height - gui.quick_menu_height) // 2) yanchor 0.5 at piano_hint_fade
+            text _("НАЖИМАЙ ПОДСВЕЧЕННЫЕ КЛАВИШИ: Z X C V B N M И S D G H J") style "piano_hint" ypos ((PIANO_KB_Y + PIANO_WHITE_H + config.screen_height) // 2) yanchor 0.5 at piano_hint_fade
 
 ## Вызов: call minigame_piano(партии, metronome=handle loop-канала, beat=, phase=, on_step=имя
 ## функции store(part, pos) на собранный шаг, break_before_end=сколько последних шагов ломается)

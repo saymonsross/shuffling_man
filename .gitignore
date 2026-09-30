@@ -32,5 +32,8 @@
 # Claude
 /.claude/settings.local.json
 
+# RMB Editor requests
+/.rmb_editor
+
 # VS Code
 /.vscode
