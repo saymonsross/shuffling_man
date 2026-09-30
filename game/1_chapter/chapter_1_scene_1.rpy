@@ -1,4 +1,5 @@
-## Глава 1: лампа → метроном → пианино → стук → холл → дверь → замки.
+## Глава 1, сцена 1: лампа → метроном → пианино → стук → холл → дверь → замки →
+## Витя дома → телевизор → уборка → ссора у телевизора.
 ## Переходы в цепочке стука склеены с ударами.
 
 ## Изображения
@@ -35,24 +36,12 @@ define C1S1_ARROW_HALF_T = 60.0 / 85.0
 
 define C1S1_LAMP_FOCUS = (0.44, 0.44)
 
-## Вторая серия ударов у пианино сильнее первой.
-define c1s1_knock_punch = Move((0, 12), (0, -12), 0.09, bounce=True, repeat=True, delay=0.26)
-define c1s1_knock_punch_hard = Move((0, 20), (0, -20), 0.08, bounce=True, repeat=True, delay=0.24)
-
-## В холле три удара слабее, чем у пианино.
-define c1s1_hall_knock_punch = Move((0, 6), (0, -6), 0.09, bounce=True, repeat=True, delay=0.22)
-
-define c1s1_door_hit_punch = Move((0, 14), (0, -14), 0.08, bounce=True, repeat=True, delay=0.24)
-
 ## Сумка заякорена в нижнем левом углу обрезанного холста.
 define C1S1_DOOR_BAG_POS = (0, 1080)
 define C1S1_DOOR_BAG_ANCHOR = (0.0, 1.0)
 define C1S1_Z_DOOR_BAG = 5
 
 define C1S1_LOCKS_FOCUS = (0.50, 0.32)
-
-define c1s1_locks_knock_punch = Move((0, 16), (0, -16), 0.08, bounce=True, repeat=True, delay=0.26)
-define c1s1_locks_knock_punch_hard = Move((0, 22), (0, -22), 0.08, bounce=True, repeat=True, delay=0.24)
 
 ## Звук сцены. Файлы лежат в game/audio/sfx/c1s1/, кортеж = варианты удара.
 define C1S1_METRONOME_TICK_VOL = 0.55
@@ -62,17 +51,9 @@ define C1S1_METRONOME_LOOP_SOUND = "c1s1/metronome_loop"
 define C1S1_METRONOME_PHASE = 0.5
 
 default c1s1_metronome_audio = None
-
-## Стук слышен с разных мест. "outside" — со стороны Вити, чистый; с нашей стороны он глуше:
-## "door" — у двери, "hall" — из холла, "room" — из комнаты. Число — доля звука, которую
-## заменяет low-pass (0 — чистый, больше — глуше).
-define C1S1_KNOCK_MUFFLE = {"outside": 0.0, "door": 0.1, "hall": 0.22, "room": 0.35}
-define C1S1_KNOCK_LOWPASS_HZ = 700.0
 default c1s1_knock_audio = None
 
 default c1s1_gg_pose = 1
-## Доля пути за кадр 60 Гц: ≈0.2 с на смену позы.
-define C1S1_GG_POSE_RELAX = 0.25
 
 ## Поза — целый кадр (фон пианино + фигура): растворение между кадрами не просвечивает фон
 ## и не показывает две пары рук, как было бы у вырезанных фигур.
@@ -157,14 +138,13 @@ screen c1s1_vitya_bark_frame(line, index=None):
             else:
                 add DynamicDisplayable(c1s1_vitya_indexed_dd, line, index) at scratch("show_text", tint=0.0, mix=0.5)
 
-## Рамка бабла: заливка окон проекта, контур толще (C1S1_BARK_LINE px) — только линии по
-## краям, середина остаётся прозрачной.
-define C1S1_BARK_LINE = 3
+## Рамка бабла: заливка окон проекта, контур толще (3 px) — только линии по краям,
+## середина остаётся прозрачной.
 image c1s1_bark_border = At(Frame(Fixed(
-        Solid(gui.frame_line_color, xsize=40, ysize=C1S1_BARK_LINE),
-        Solid(gui.frame_line_color, ypos=40 - C1S1_BARK_LINE, xsize=40, ysize=C1S1_BARK_LINE),
-        Solid(gui.frame_line_color, xsize=C1S1_BARK_LINE, ysize=40),
-        Solid(gui.frame_line_color, xpos=40 - C1S1_BARK_LINE, xsize=C1S1_BARK_LINE, ysize=40),
+        Solid(gui.frame_line_color, xsize=40, ysize=3),
+        Solid(gui.frame_line_color, ypos=37, xsize=40, ysize=3),
+        Solid(gui.frame_line_color, xsize=3, ysize=40),
+        Solid(gui.frame_line_color, xpos=37, xsize=3, ysize=40),
         xysize=(40, 40)), 6, 6, 6, 6),
     scratch("ui_frame", tint=0.0))
 image c1s1_bark_bg = Fixed(Solid("#000000c7"), "c1s1_bark_border")
@@ -381,7 +361,8 @@ init python:
         if pose == 1:
             trans.alpha = 1.0
             return None
-        trans.alpha = _fx_step("c1s1_gg_pose_2", 1.0 if store.c1s1_gg_pose == 2 else 0.0, C1S1_GG_POSE_RELAX, 0.0)
+        ## 0.25 — доля пути за кадр 60 Гц: ≈0.2 с на смену позы.
+        trans.alpha = _fx_step("c1s1_gg_pose_2", 1.0 if store.c1s1_gg_pose == 2 else 0.0, 0.25, 0.0)
         return 0
 
     def c1s1_pendulum_f(amp, trans, st, at):
@@ -391,11 +372,14 @@ init python:
         trans.rotate = amp * sm_motion_scale() * math.sin(math.pi * t / m.beat)
         return 0
 
+    ## Стук слышен с разных мест. "outside" — со стороны Вити, чистый; с нашей стороны он глуше:
+    ## "door" — у двери, "hall" — из холла, "room" — из комнаты. Число — доля звука, которую
+    ## заменяет low-pass 700 Гц (0 — чистый, больше — глуше).
     def c1s1_knock_filter(place):
-        k = C1S1_KNOCK_MUFFLE.get(place, 0.0)
+        k = {"outside": 0.0, "door": 0.1, "hall": 0.22, "room": 0.35}.get(place, 0.0)
         if k <= 0.0:
             return None
-        return renpy.audio.filter.WetDry(renpy.audio.filter.Lowpass(C1S1_KNOCK_LOWPASS_HZ), wet=k, dry=1.0 - k)
+        return renpy.audio.filter.WetDry(renpy.audio.filter.Lowpass(700.0), wet=k, dry=1.0 - k)
 
     def c1s1_knock(name, place, volume=1.0):
         """Серия стука, слышная из place."""
@@ -419,7 +403,8 @@ init python:
 
 label chapter_1_scene_1:
 
-    ## От лампы до замков — кино без реплик: быстрое меню возвращается в .after_locks.
+    ## От лампы до замков — кино без реплик: быстрое меню возвращается на первой реплике
+    ## после замков.
     $ quick_menu = False
 
     ## Лампа.
@@ -821,78 +806,150 @@ label .after_locks:
 
     $ sfxstop(handle=c1s1_metronome_audio, fadeout=1.2)
     $ c1s1_metronome_audio = None
-    camera
-    $ quick_menu = True
 
     if c1s1_locks_outcome == "timeout":
         $ c1s1_locks_outcome = "normal"
 
+    ## ══════════ КАДР 6 · ВИТЯ В ДВЕРЯХ ══════════
+    ## Открыла быстро — мягкое растворение и медленный наезд на лицо. Возилась — склейка
+    ## почти встык, камера оседает с крупного плана: Витя на взводе.
+    window auto hide
     if c1s1_locks_outcome == "fast":
-        scene chapter_1 scene_1_vitya_outcome_fast
-
-        vit "Привет."
-
-        scene chapter_1 scene_1_hall_vitya
-
-        "Часто Витя бывал просто невыносим."
-
-        scene chapter_1 scene_1_hall_mess
-
-        "Ничего серьёзного: какие-то банальности, быт... И эти его дурацкие, неискоренимые привычки."
-
+        camera at camera_push((0.47, 0.30), 1.03, 1.10, 16.0)
+        scene chapter_1 scene_1_vitya_outcome_fast:
+            breath_brightness(-0.04, -0.09, 6.0)
+        with Dissolve(1.5)
     else:
-        scene chapter_1 scene_1_vitya_outcome_normal
+        camera at camera_settle((0.47, 0.30), 1.14, 1.06, 1.2)
+        scene chapter_1 scene_1_vitya_outcome_normal:
+            breath_brightness(-0.04, -0.09, 6.0)
+        with Dissolve(0.3)
+    $ quick_menu = True
 
+    if c1s1_locks_outcome == "fast":
+        vit "Привет."
+    else:
         vit "Ну наконец-то, бля."
 
-        scene chapter_1 scene_1_hall_vitya
+    ## ══════════ КАДР 7 · ВИТЯ В ХОЛЛЕ ══════════
+    ## Общий план. Долгий наезд на дверь идёт через этот и следующий кадр.
+    window auto hide
+    camera at camera_push((0.39, 0.45), 1.02, 1.12, 40.0)
+    scene chapter_1 scene_1_hall_vitya:
+        breath_brightness(-0.04, -0.09, 6.0)
+    with Dissolve(1.5)
 
-        "Часто Витя бывал просто невыносим."
+    "Часто Витя бывал просто невыносим."
 
-        scene chapter_1 scene_1_hall_mess
+    ## ══════════ КАДР 8 · ХОЛЛ БЕЗ ВИТИ ══════════
+    ## Камера не сбрасывается: Витя растворяется, в холле остаются его вещи.
+    window auto hide
+    scene chapter_1 scene_1_hall_mess:
+        breath_brightness(-0.04, -0.09, 6.0)
+    with Dissolve(2.0)
 
-        "Ничего серьёзного: какие-то банальности, быт... И эти его дурацкие, неискоренимые привычки."
+    "Ничего серьёзного: какие-то банальности, быт... И эти его дурацкие, неискоренимые привычки."
+
+    ## Кадр темнеет до нижней границы и замирает.
+    show chapter_1 scene_1_hall_mess:
+        brightness_to(-0.09, 5.0)
 
     "Раньше мне хватало сил их не замечать. Терпеть."
 
+## Телевизор; отдельный вход каталога сцен.
+
 label .tv:
-    camera
-    scene chapter_1 scene_1_tv_close
+
+    ## ══════════ КАДР 9 · ПУЛЬТ ══════════
+    ## Наезд на экран с помехами.
+    window auto hide
+    camera at camera_push((0.58, 0.30), 1.03, 1.12, 20.0)
+    scene chapter_1 scene_1_tv_close:
+        breath_brightness(-0.03, -0.08, 6.0)
+    with Dissolve(1.5)
 
 label .tv_dialogue:
+
     vit "Наконец-то..."
 
+## Уборка; отдельный вход каталога сцен.
+
 label .cleanup:
-    camera
-    scene chapter_1 scene_1_living_room_mess
+
+    ## ══════════ КАДР 10 · ГОСТИНАЯ ══════════
+    ## Отъезд открывает бардак и оседает на зуме 1.0, дыхание мелкое: уборка стартует
+    ## без камеры и без затемнения, склейка в неё почти незаметна.
+    window auto hide
+    camera at camera_settle((0.5, 0.5), 1.08, 1.0, 2.5)
+    scene chapter_1 scene_1_living_room_mess:
+        breath_brightness(0.0, -0.04, 6.0)
+    with Dissolve(1.5)
 
     "Разбросанные носки, не опускающийся стульчак, как типично!"
 
     call chapter_1_scene_1_minigame_cleanup from _call_c1s1_household_cleanup
 
-    scene chapter_1 scene_1_kitchen_sink
+    ## ══════════ КАДР 11 · РАКОВИНА ══════════
+    ## Наезд на гору посуды.
+    window auto hide
+    camera at camera_push((0.45, 0.62), 1.03, 1.10, 20.0)
+    scene chapter_1 scene_1_kitchen_sink:
+        breath_brightness(-0.04, -0.09, 6.0)
+    with Dissolve(1.5)
 
     mar "Ты в магазин зашёл?"
     "Нарушенные обещания..."
 
-    scene chapter_1 scene_1_sofa_tv_night
+    ## ══════════ КАДР 12 · ВИТЯ У ТЕЛЕВИЗОРА, НОЧЬ ══════════
+    ## День сменился ночью: долгое растворение, один медленный наезд на весь разговор.
+    window auto hide
+    camera at camera_push((0.60, 0.38), 1.02, 1.12, 40.0)
+    scene chapter_1 scene_1_sofa_tv_night:
+        breath_brightness(-0.05, -0.09, 6.0)
+    with Dissolve(2.5)
 
     vit "Не-а."
     "Ну, мелочь. И ещё одна. И ещё одна. День за днём."
     mar "У нас на завтра..."
     "Раз за разом просишь, напоминаешь, умоляешь…"
 
-    scene chapter_1 scene_1_tv_close_night
+    ## ══════════ КАДР 13 · ЭКРАН ══════════
+    ## Наезд на экран: Витя смотрит в него, не на Марину.
+    window auto hide
+    camera at camera_push((0.58, 0.30), 1.04, 1.12, 14.0)
+    scene chapter_1 scene_1_tv_close_night:
+        breath_brightness(-0.05, -0.09, 6.0)
+    with Dissolve(0.8)
 
     vit "Не, завтра не могу никак."
     mar "Но мы договаривались!"
 
-    scene chapter_1 scene_1_vitya_sofa
+    ## ══════════ КАДР 14 · ССОРА ══════════
+    ## Склейка встык на крик, окно диалога остаётся (show, не scene). Камера бьёт в лицо
+    ## и оседает.
+    camera at camera_settle((0.40, 0.38), 1.16, 1.06, 0.5)
+    show chapter_1 scene_1_vitya_sofa:
+        breath_brightness(-0.05, -0.09, 6.0)
 
     vit "Не ори!"
     mar "Сам не ори!"
     "Скандалишь, наконец. Но тебя не слышат. Как это выводило меня из себя."
+
+    ## Второй удар камерой — на новый крик.
+    camera at camera_settle((0.40, 0.38), 1.13, 1.08, 0.4)
+
     vit "Ты опять начинаешь?!"
+
+    ## Круг замыкается: медленный наезд, кадр темнеет до нижней границы.
+    camera at camera_push((0.40, 0.38), 1.08, 1.14, 12.0)
+    show chapter_1 scene_1_vitya_sofa:
+        brightness_to(-0.09, 4.0)
+
     "И так по кругу. Снова и снова."
+
+    window auto hide
+    scene black with Dissolve(2.0)
+
+    pause 0.6
 
     jump chapter_1_scene_2

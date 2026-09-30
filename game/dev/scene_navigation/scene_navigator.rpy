@@ -25,6 +25,12 @@ define DEV_SCENE_NAV_ENTRIES = (
     },
     {
         "section": _("ГЛАВА 1"),
+        "title": _("После замков"),
+        "label": "chapter_1_scene_1.after_locks",
+        "preview": "images/1_chapter/chapter_1 scene_1_vitya_outcome_fast.png",
+    },
+    {
+        "section": _("ГЛАВА 1"),
         "title": _("Телевизор"),
         "label": "chapter_1_scene_1.tv",
         "preview": "images/1_chapter/chapter_1 scene_1_tv_close.png",

@@ -167,14 +167,15 @@ testcase c1s1_minigame_accessibility:
     $ renpy.get_mouse_pos = lambda: renpy.test.testmouse.get_mouse_pos(0, 0)
     $ persistent.sm_simplified_locks = True
     $ persistent.sm_reduce_motion = True
+    $ sm_test_punch = Move((0, 12), (0, -12), 0.09, bounce=True, repeat=True, delay=0.26)
     assert eval (abs(
-        sm_motion_transition(c1s1_knock_punch)(old_widget=Null(), new_widget=Null()).delay
-        - c1s1_knock_punch(old_widget=Null(), new_widget=Null()).delay) < 0.0001)
+        sm_motion_transition(sm_test_punch)(old_widget=Null(), new_widget=Null()).delay
+        - sm_test_punch(old_widget=Null(), new_widget=Null()).delay) < 0.0001)
     assert eval (isinstance(
-        sm_motion_transition(c1s1_knock_punch)(old_widget=Null(), new_widget=Null()),
+        sm_motion_transition(sm_test_punch)(old_widget=Null(), new_widget=Null()),
         renpy.display.transition.NoTransition))
     $ persistent.sm_reduce_motion = False
-    assert eval (sm_motion_transition(c1s1_knock_punch) is c1s1_knock_punch)
+    assert eval (sm_motion_transition(sm_test_punch) is sm_test_punch)
     $ c1s1_mg_reset()
     $ c1s1_mg_active = True
 

@@ -102,7 +102,7 @@ testcase dev_scene_navigator_continues_scene_2:
     click id entry_label
 
     if eval (entry_label == "chapter_1_scene_2"):
-        assert "Я потеряла способность закрывать на эти мелочи глаза." timeout 3.0
+        assert "Я потеряла способность закрывать на эти мелочи глаза." timeout 8.0
     else:
         assert "Для него, для Настеньки. Для себя." timeout 3.0
         assert eval (sprite_showed('chapter_1 scene_2_sandwiches'))

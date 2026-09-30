@@ -1,4 +1,4 @@
-## Глава 1, сцена 3.
+## Глава 1, сцена 3: детская → холодильник → чаепитие → истерика → подъезд → диван, «Шаркающий человек».
 
 ## Изображения
 
@@ -6,6 +6,22 @@ image chapter_1 scene_3_sofa_tv_1 = sm_tv_scene("images/1_chapter/chapter_1 scen
     C1S3_TV_POS, C1S3_TV_SIZE, ((2, 2), (402, 2), (402, 282), (2, 282)))
 define C1S3_TV_POS = (1228, 118)
 define C1S3_TV_SIZE = (404, 284)
+
+## Настя скачет на диване: взлёт → смаз → приземление → смаз. Меняется только фон под
+## одним экраном помех (смена кадра внутри композита сбрасывала бы цикл шума). Камера в
+## сцене вздрагивает на приземлении: паузы здесь и pause камеры менять вместе.
+image c1s3_sofa_jump_bg:
+    "images/1_chapter/chapter_1 scene_3_sofa_tv_1.png"
+    pause 0.34
+    "images/1_chapter/chapter_1 scene_3_sofa_tv.png"
+    pause 0.07
+    "images/1_chapter/chapter_1 scene_3_sofa_tv_2.png"
+    pause 0.2
+    "images/1_chapter/chapter_1 scene_3_sofa_tv.png"
+    pause 0.07
+    repeat
+image chapter_1 scene_3_sofa_jump = sm_tv_scene("c1s3_sofa_jump_bg",
+    C1S3_TV_POS, C1S3_TV_SIZE, ((2, 2), (402, 2), (402, 282), (2, 282)))
 
 ## Правый магнит остаётся над авторским цветовым мазком; сдвигается сам лист.
 image chapter_1 scene_3_fridge_hanging = Composite((1920, 1080),
@@ -29,42 +45,76 @@ image chapter_1_fridge_magnet = "images/1_chapter/owner_review/chapter_1_review_
 default c1s3_teaparty_choice = None
 default c1s3_neighbor_choice = None
 
+## Сцена
 
 label chapter_1_scene_3:
 
     $ quick_menu = True
-    camera at zoom(1.10), align(0.5, 0.5)
-    scene chapter_1 scene_3_children_room_floor
+
+    ## ══════════ КАДР 1 · ДЕТСКАЯ, ПОЛ ══════════
+    ## Из чёрного. Зум 1.10 — запас краёв под поворот взгляда в конце кадра.
+    window auto hide
+    camera:
+        subpixel True
+        align (0.5, 0.5)
+        rotate 0.0
+        xoffset 0.0 yoffset 0.0
+        zoom 1.10
+        linear sm_motion_time(30.0) zoom 1.15
+    scene chapter_1 scene_3_children_room_floor:
+        breath_brightness(-0.03, -0.08, 6.0)
+    with Dissolve(3.0)
 
     "Моя дочь как раз проходила через сложный период взросления и невыносимо трепала наши нервы в процессе."
 
-    window hide
-    ## Сдвиг кадра вправо направляет взгляд налево; зум закрывает края.
-    camera at zoom(1.10), align(0.5, 0.5), offseting(0, 0, int(80 * sm_motion_scale()), 0, sm_motion_time(0.85))
-    $ pause(sm_motion_time(0.85))
-    camera
+    ## Взгляд уходит влево — и в растворение на холодильник.
+    window auto hide
+    camera:
+        subpixel True
+        ease sm_motion_time(0.85) xoffset int(80 * sm_motion_scale())
+    pause sm_motion_time(0.85)
+
+    ## ══════════ КАДР 2 · ХОЛОДИЛЬНИК ══════════
+    ## Наезд на рисунки. Дыхания нет: яркость ровная, пока новый рисунок не повешен.
+    camera at camera_push((0.56, 0.42), 1.02, 1.09, 30.0)
     scene chapter_1 scene_3_fridge
     with Dissolve(0.8)
 
     "То есть вела себя как обычно, но всё же чуть-чуть беспокойней, а это о чём-то да говорит."
 
-    window hide
+    ## Передний магнит снят: новый лист выезжает снизу, магнит проявляется поверх.
+    window auto hide
     scene chapter_1 scene_3_fridge_hanging
     show chapter_1_fridge_drawing zorder 1 at move_between((793, 1080), (793, 217), t=sm_motion_time(0.7))
-    $ pause(sm_motion_time(0.7))
+    pause sm_motion_time(0.7)
     show chapter_1_fridge_magnet zorder 2 at placed((897, 172)), show_hide(0.18)
-    $ pause(0.18)
+    pause 0.18
+
     ## Статическая сборка даёт дальнейшим репликам и сейвам один законченный кадр.
-    scene chapter_1 scene_3_fridge_new_drawing
+    ## На реплике он темнеет до нижней границы: выход из холодильника — через затемнение.
+    scene chapter_1 scene_3_fridge_new_drawing:
+        fade_brightness(0.0, -0.09, 8.0)
 
     "Последней её потрясающей выдумкой был панический страх оставаться дома одной."
 
-    scene chapter_1 scene_3_children_room_girl_neutral
+    ## ══════════ КАДР 3 · НАСТЯ ══════════
+    ## Наезд на лицо.
+    window auto hide
+    camera at camera_push((0.38, 0.27), 1.02, 1.08, 18.0)
+    scene chapter_1 scene_3_children_room_girl_neutral:
+        breath_brightness(-0.03, -0.08, 6.0)
+    with Dissolve(2.0)
 
     nas "Спасибо, что побыла на нашем чаепитии! Полли не пришёл сегодня..."
     nas "Как тебе профессор Косолап?"
 
-    scene chapter_1 scene_3_toys
+    ## ══════════ КАДР 4 · ЧАЕПИТИЕ ══════════
+    ## Наезд на профессора Косолапа.
+    window auto hide
+    camera at camera_push((0.25, 0.32), 1.02, 1.08, 30.0)
+    scene chapter_1 scene_3_toys:
+        breath_brightness(-0.03, -0.08, 6.0)
+    with Dissolve(1.0)
 
     menu(screen="textbox"):
         "\"Очаровашка!\"":
@@ -87,63 +137,148 @@ label chapter_1_scene_3:
             mar "Я стеснялась спросить! А где Полли?"
             nas "Он испугался и сбежал... Трусишка!"
 
-    scene chapter_1 scene_3_children_room_girl_sad
+    ## ══════════ КАДР 5 · НАСТЯ МРАЧНЕЕТ ══════════
+    window auto hide
+    camera at camera_push((0.42, 0.33), 1.03, 1.10, 16.0)
+    scene chapter_1 scene_3_children_room_girl_sad:
+        breath_brightness(-0.04, -0.09, 6.0)
+    with Dissolve(1.0)
 
     mar "Я пойду встречу папу с работы. Посиди, пока..."
 
-    scene chapter_1 scene_3_children_room_girl_crying
+    ## ══════════ КАДР 6 · ИСТЕРИКА ══════════
+    ## Склейка встык на крик, окно диалога остаётся (show, не scene). Камера бьёт в лицо
+    ## и оседает; каждый новый крик — удар ближе.
+    camera at camera_settle((0.42, 0.42), 1.16, 1.05, 0.5)
+    show chapter_1 scene_3_children_room_girl_crying:
+        breath_brightness(-0.04, -0.09, 6.0)
 
     nas "НЕТ!"
+
+    camera at camera_settle((0.42, 0.42), 1.14, 1.08, 0.4)
+
     nas "НЕ УХОДИ!"
     mar "Почему?.."
+
+    camera at camera_settle((0.42, 0.42), 1.18, 1.11, 0.4)
+
     nas "НЕЛЬЗЯ!"
 
-    scene chapter_1 scene_3_sofa_tv_1
+    ## ══════════ КАДР 7 · ПРЫЖКИ НА ДИВАНЕ ══════════
+    ## Вход через чёрный. Кадр прыжков (c1s3_sofa_jump_bg) подставляется в тег первого
+    ## кадра; камера вздрагивает на приземлении — pause до толчка равен взлёту и смазу.
+    ## При «меньше движения» кадр стоит.
+    window auto hide
+    scene black with Dissolve(1.0)
+
+    pause 0.4
+
+    if sm_reduced_motion():
+        camera
+        scene chapter_1 scene_3_sofa_tv_1:
+            breath_brightness(-0.03, -0.08, 6.0)
+    else:
+        camera:
+            subpixel True
+            align (0.5, 0.5)
+            rotate 0.0
+            xoffset 0.0 yoffset 0.0
+            zoom 1.04
+            block:
+                pause 0.41
+                linear 0.04 yoffset 5.0
+                easein 0.23 yoffset 0.0
+                repeat
+        scene chapter_1 scene_3_sofa_tv_1:
+            "chapter_1 scene_3_sofa_jump"
+            breath_brightness(-0.03, -0.08, 6.0)
+    with Dissolve(1.5)
 
     "Стоило нам с Витей обоим ненадолго отлучиться, как наша принцесса начинала вопить, греметь кастрюлями, орать под телевизор."
 
-    scene chapter_1 scene_3_entrance
+    ## ══════════ КАДР 8 · ПОДЪЕЗД ══════════
+    ## Наезд вверх по лестнице, к двери.
+    window auto hide
+    camera at camera_push((0.54, 0.40), 1.02, 1.10, 26.0)
+    scene chapter_1 scene_3_entrance:
+        breath_brightness(-0.04, -0.09, 6.0)
+    with Dissolve(2.0)
 
     "Мы пыталась с ней по-хорошему поговорить, объяснить, что взрослым девочкам так вести себя должно быть стыдно."
     "Потом просто ругалась."
 
-    scene chapter_1 scene_3_daughter_top
+    ## ══════════ КАДР 9 · НАСТЯ СВЕРХУ ══════════
+    ## Один наезд на лицо через два кадра: на втором руки растворяются (show без ATL —
+    ## дыхание и камера не сбрасываются).
+    window auto hide
+    camera at camera_push((0.50, 0.42), 1.03, 1.14, 45.0)
+    scene chapter_1 scene_3_daughter_top:
+        breath_brightness(-0.04, -0.09, 6.0)
+    with Dissolve(1.0)
 
     vit "Это ни в какие рамки. Ну что это за поведение, а?"
 
-    scene chapter_1 scene_3_daughter_top_close
+    show chapter_1 scene_3_daughter_top_close
+    with Dissolve(0.8)
 
     "Вот она: охрипшая от крика, наша маленькая принцесса истерии, с красным заплаканным лицом."
     vit "Мама и так почти целыми днями дома торчит. Тебя нельзя оставить на час?"
     nas "Нельзя..."
     vit "Это несерьёзно... Сходи заткни соседей!"
 
-    scene chapter_1 scene_3_entrance_neighbor
+    ## ══════════ КАДР 10 · СОСЕДКА ══════════
+    ## Наезд на фигуру наверху лестницы.
+    window auto hide
+    camera at camera_push((0.50, 0.35), 1.03, 1.10, 14.0)
+    scene chapter_1 scene_3_entrance_neighbor:
+        breath_brightness(-0.04, -0.09, 6.0)
+    with Dissolve(1.0)
 
     sos "Ну наконец-то явились! И что за дела? Лучше бы вы стены сверлили круглосуточно!"
 
-    scene chapter_1 scene_3_entrance_neighbors
+    ## ══════════ КАДР 11 · ВТОРАЯ СОСЕДКА ══════════
+    ## Склейка встык: лицо вырастает перед камерой, камера отшатывается.
+    camera at camera_settle((0.26, 0.55), 1.12, 1.04, 0.6)
+    show chapter_1 scene_3_entrance_neighbors:
+        breath_brightness(-0.04, -0.09, 6.0)
 
     menu(screen="textbox"):
         "\"Простите...\"":
             $ c1s3_neighbor_choice = "apologize"
+            ## Извинилась: камера медленно уходит мимо соседки к двери наверху.
+            camera at camera_push((0.50, 0.30), 1.04, 1.16, 20.0)
             mar "У неё просто тяжёлый возраст. Извините, пожалуйста."
             sos "Ну Мариш, это несерьёзно. Ребёнка надо воспитывать!"
             "Я знала. Просто не понимала, как. Мы пытались разобраться..."
 
         "\"Заткнитесь!\"":
             $ c1s3_neighbor_choice = "confront"
+            ## Сорвалась: удар камерой в лицо соседке.
+            camera at camera_settle((0.26, 0.55), 1.14, 1.07, 0.4)
             mar "И вы тоже разораться решили?! Закройте рты и валите домой!"
             sos "О, психованная семейка! Ничего-ничего, потом вызовем милицию..."
             "Они не имели права нравоучать нас."
             "Пусть лучше приглядывают за своими детьми, болтающимися без дела по двору, как оборванцы."
 
-    scene chapter_1 scene_3_sofa_marina
+    ## ══════════ КАДР 12 · МАРИНА НА ДИВАНЕ ══════════
+    ## После «Простите» — долгое растворение, после «Заткнитесь» — склейка встык.
+    window auto hide
+    camera at camera_push((0.75, 0.35), 1.02, 1.10, 30.0)
+    scene chapter_1 scene_3_sofa_marina:
+        breath_brightness(-0.04, -0.09, 6.0)
+    if c1s3_neighbor_choice == "apologize":
+        with Dissolve(2.5)
 
     "Конечно, мы ходили с дочкой к психологу."
     "Именно там, далеко не на первом сеансе, Настя шёпотом рассказала, что на самом деле не боится оставаться одна."
 
-    scene chapter_1 scene_3_sofa_daughter
+    ## ══════════ КАДР 13 · НАСТЯ ШЁПОТОМ ══════════
+    ## Очень долгий непрерывный наезд на лицо Насти — на весь разговор.
+    window auto hide
+    camera at camera_push((0.37, 0.42), 1.02, 1.22, 90.0)
+    scene chapter_1 scene_3_sofa_daughter:
+        breath_brightness(-0.04, -0.09, 6.0)
+    with Dissolve(2.0)
 
     nas "Он приходит, когда дома тихо, когда солнышка почти нет..."
     mar "Кто приходит, дорогая?"
@@ -151,7 +286,19 @@ label chapter_1_scene_3:
     nas "Полли сбежал... Он, как я, испугался..."
     vit "Твоего нового воображаемого друга? И как его зовут?"
     nas "Он не друг... И у него нет имени. Просто..."
+
+    ## Кадр темнеет до нижней границы и замирает перед именем.
+    show chapter_1 scene_3_sofa_daughter:
+        brightness_to(-0.09, 4.0)
+
     nas "Шаркающий человек."
+
+    ## Тишина после имени.
+    window auto hide
+
+    pause 2.0
+
+    camera
 
     ## Глава 2 ещё не подключена: вместо jump chapter_2_scene_1 — заглушка.
     jump end_dev_yet

@@ -223,6 +223,7 @@ testcase c1s1_piano_screen_collapse:
     $ persistent.sm_simplified_locks = False
     run Start("sm_test_piano")
     assert screen "minigame_piano_screen" timeout 3.0
+    ## Эталон — 16 шагов; f#4+f#3 — одна клавиша. Ломает сбор 15-го шага.
     click pos sm_test_piano_next_xy()
     assert eval (piano_state["pos"] == 1) timeout 2.0
     click pos sm_test_piano_next_xy()
@@ -242,10 +243,38 @@ testcase c1s1_piano_screen_collapse:
     click pos sm_test_piano_next_xy()
     assert eval (len(piano_state["pressed"]) == 1) timeout 2.0
     click pos sm_test_piano_next_xy()
+    assert eval (piano_state["pos"] == 7) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (piano_state["pos"] == 8) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (len(piano_state["pressed"]) == 1) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (piano_state["pos"] == 9) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (len(piano_state["pressed"]) == 1) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (piano_state["pos"] == 10) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (len(piano_state["pressed"]) == 1) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (piano_state["pos"] == 11) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (piano_state["pos"] == 12) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (len(piano_state["pressed"]) == 1) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (piano_state["pos"] == 13) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (len(piano_state["pressed"]) == 1) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (piano_state["pos"] == 14) timeout 2.0
+    click pos sm_test_piano_next_xy()
+    assert eval (len(piano_state["pressed"]) == 1) timeout 2.0
+    click pos sm_test_piano_next_xy()
     assert eval (piano_state.get("phase") == "collapse" and len(piano_clock.shards) > 0) timeout 2.0
     assert screen "minigame_piano_screen"
     keysym "rollback"
-    assert eval (piano_state.get("phase") == "play" and piano_state["pos"] == 6) timeout 2.0
+    assert eval (piano_state.get("phase") == "play" and piano_state["pos"] == 14) timeout 2.0
     click pos sm_test_piano_next_xy()
     assert eval (piano_state.get("phase") == "collapse") timeout 2.0
     assert screen "sm_test_piano_finished" timeout 5.0

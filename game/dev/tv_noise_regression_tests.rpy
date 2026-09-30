@@ -42,15 +42,15 @@ init python:
         return True
 
     def sm_test_tv_assert_shown(image_name, wide=False):
+        ## Показанный кадр обёрнут в постановочный ATL (дыхание яркости, кадры прыжка):
+        ## пиксели проверяются у образа, показ — по sprite_showed.
         assert sprite_showed(image_name), "Unexpected TV scene"
-        live = next(entry.displayable for entry in renpy.scene_lists().layers["master"]
-            if entry.tag == "chapter_1")
         if image_name == "chapter_1 scene_3_sofa_tv_1":
             pos, size = C1S3_TV_POS, C1S3_TV_SIZE
         else:
             pos = C1S1_TV_WIDE_POS if wide else C1S1_TV_NOISE_POS
             size = C1S1_TV_WIDE_SIZE if wide else C1S1_TV_NOISE_SIZE
-        return sm_test_tv_assert_scene(image_name, pos, size, displayable=live)
+        return sm_test_tv_assert_scene(image_name, pos, size)
 
 testcase dev_tv_crt_geometry:
     run Function(dev_scene_nav_start, "chapter_1_scene_1.tv")
@@ -156,6 +156,10 @@ testcase dev_tv_noise_accessibility:
         sm_test_tv_assert_scene("chapter_1 scene_1_sofa_tv_night", C1S1_TV_WIDE_POS, C1S1_TV_WIDE_SIZE,
             animated=not (sm_reduced_motion() or sm_flashes_disabled()))
         sm_test_tv_assert_scene("chapter_1 scene_3_sofa_tv_1", C1S3_TV_POS, C1S3_TV_SIZE,
+            animated=not (sm_reduced_motion() or sm_flashes_disabled()))
+        ## Кадр прыжков: первый кадр цикла — тот же фон, экран помех общий.
+        sm_test_tv_assert_scene("chapter_1 scene_3_sofa_tv_1", C1S3_TV_POS, C1S3_TV_SIZE,
+            displayable="chapter_1 scene_3_sofa_jump",
             animated=not (sm_reduced_motion() or sm_flashes_disabled()))
 
     run MainMenu(confirm=False)

@@ -246,7 +246,7 @@ label .letter:
                     "В этот раз точно получится."
                     "Должно получиться."
                     "В любом случае, на другую попытку я уже не найду сил."
-                "Ладони" (icon=GLOW_ICON_INSPECT, pos=(575, 771), size=(220, 150)) if not note_eye_palms:
+                "Ладони" (icon=GLOW_ICON_INSPECT, pos=(581, 773), size=(220, 150)) if not note_eye_palms:
                     $ note_eye_palms = True
                     "Сейчас мои руки послушны."
                     "Перестали дрожать."
