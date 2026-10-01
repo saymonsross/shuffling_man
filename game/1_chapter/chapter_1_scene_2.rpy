@@ -13,7 +13,7 @@ image chapter_1 scene_2_sandwiches_3 = At("images/1_chapter/owner_review/chapter
 default c1s2_door_hover = False
 default c1s2_door_open = False
 
-image c1s2_door_bg_lit = At("chapter_1_scene_2_parents_room_door_1_in", brightness(0.08))
+image c1s2_door_bg_lit = At("chapter_1_scene_2_parents_room_door_1_in", brightness(0.03))
 image chapter_1 scene_2_parents_room_door = depth_scene(
     ("chapter_1_scene_2_parents_room_door_1_in",
         At("c1s2_door_bg_lit", flag_fade((0, 0), ("c1s2_door_hover", "c1s2_door_open")))),
@@ -21,6 +21,13 @@ image chapter_1 scene_2_parents_room_door = depth_scene(
         "chapter_1_scene_2_parents_room_door_right_open",
         At("chapter_1_scene_2_parents_room_door_right_close",
             flag_fade((0, 0), ("c1s2_door_hover", "c1s2_door_open"), False))))
+
+## Тот же проём в конце сцены: створка приоткрыта, в комнате Марина на кровати. Задник
+## сдвинут влево, чтобы она стояла в просвете двери.
+image chapter_1 scene_2_parents_room_door_marina = depth_scene(
+    At("chapter_1_scene_2_parents_room_door_2_in", offset(-60, 0)),
+    ("chapter_1_scene_2_parents_room_door_left_wall",
+        "chapter_1_scene_2_parents_room_door_right_open"))
 
 ## Зона проёма между стеной и створкой; едет за камерой, как сценовые кнопки.
 ## Развилки нет: пропуск проходит насквозь.
@@ -44,17 +51,44 @@ screen c1s2_door_hover_zone():
 ## Стартует через 2 с после реплики, перед которой сцена взводит c1s2_tear.
 default c1s2_tear = False
 
+# пока рано плакать
+# image chapter_1 scene_2_marina_close = depth_scene(
+#     "ch1_2_mc_close_3_bg",
+#     ("ch1_2_mc_close_3_gg",
+#         At("ch1_2_mc_close_3_gg_tears", water(flow=(455, 602), start="c1s2_tear", delay=2.0))))
+
 image chapter_1 scene_2_marina_close = depth_scene(
     "ch1_2_mc_close_3_bg",
-    ("ch1_2_mc_close_3_gg",
-        At("ch1_2_mc_close_3_gg_tears", water(flow=(455, 602), start="c1s2_tear", delay=2.0))))
+    "ch1_2_mc_close_3_gg"
+    )
 
-## Руки на лице дрожат всё сильнее: от нуля до 0.1 px за 20 с с момента показа кадра.
+## Лицо и руки дрожат всё сильнее (shake_grow: размах, px, и секунды до максимума).
+## Слеза лежит между лицом и руками и склеена с лицом в одну группу — дрожит вместе с ним.
+## Слезы нет, пока сцена не взвела c1s2_tear_2 (после первой реплики кадра); с этого
+## момента она 15 с стекает по щеке (flow — участок слоя по вертикали, px), затем за 6 с
+## тускнеет до половины и такой остаётся.
+default c1s2_tear_2 = False
+
 image chapter_1 scene_2_marina_close_face = depth_scene(
     "ch1_2_mc_close_3_bg",
-    (At("ch1_2_mc_close_3_gg_2", shake_grow(1.05, 20.0)),
+    (At(Fixed("ch1_2_mc_close_3_gg_2",
+            At("ch1_2_mc_close_3_gg_2_tears",
+                water(flow=(455, 602), start="c1s2_tear_2", run=15.0, hold=0.0, fade=6.0, fade_to=0.5)),
+            xysize=(1920, 1080)),
+        shake_grow(1.05, 20.0)),
     At("ch1_2_mc_close_3_gg_2_hands", shake_grow(1.3, 20.0)))
     )
+
+## Темнота под ладонями — планы глубины: фон, дальняя ладонь, ближняя ладонь. Каждая — в
+## своём плане, шаг глубины удвоен (step): в тёмном кадре обычное расхождение не читается.
+## Ладони мелко дрожат, каждая сама по себе. Фон дышит втрое сильнее ладоней: к дыханию
+## всего кадра (в сцене, -0.05…-0.09) у него своя добавка +0.08…0 с тем же периодом 8 с —
+## в сумме +0.03…-0.09, нижняя граница та же. Период здесь и в сцене менять вместе.
+image chapter_1 scene_2_dark = depth_scene(
+    At("prologue_head_bg", breath_brightness(0.02, 0.07, 8.0)),
+    At("ch2_dark_r_hand", shake(0.6)),
+    At("ch2_dark_l_hand", shake(0.6)),
+    step=1.0)
 
 ## Спальня, общий план — слои: задник (пол и стена), Витя, кровать с Мариной. step=0 —
 ## слои склеены в один план: фигуры стоят вплотную, глубина между ними ломала бы кадр;
@@ -90,17 +124,20 @@ image chapter_1 scene_2_parents_room_vitya_1_say = depth_scene(
     "ch1_2_parents_bg", "c1s2_vitya_1_talk", "c1s2_parents_bed", step=0)
 image chapter_1 scene_2_parents_room_vitya_1 = depth_scene(
     "ch1_2_parents_bg", "ch1_2_parents_vitya_1_say", "c1s2_parents_bed", step=0)
-## В этой позе он орёт: рот двигается 3 с от реплики, перед которой сцена взводит
-## c1s2_vitya_shout (mouth_talk — эллипс рта в px картинки). Через те же 3 с, ещё на этой
-## реплике, орущая поза сама растворяется в позу 1 (FlagDissolve).
+## Крик — только на начало реплики («Знаешь что?! Хватит!»): 1.3 с от момента, когда сцена
+## взвела c1s2_vitya_shout, рот орущей позы двигается (mouth_talk — эллипс рта в px
+## картинки). Потом, ещё на этой же реплике, поза сама растворяется в спокойную позу 1,
+## и та договаривает остаток покадрово (FlagDissolve → TalkFrames по ключу "vit").
+## 1.3 стоит в двух местах — менять вместе.
 default c1s2_vitya_shout = False
 
 image chapter_1 scene_2_parents_room_vitya_2 = depth_scene(
     "ch1_2_parents_bg",
     FlagDissolve(
-        At("ch1_2_parents_vitya_2", mouth_talk((426, 213), (26, 19), time=3.0, start="c1s2_vitya_shout"),
+        At("ch1_2_parents_vitya_2", mouth_talk((426, 213), (26, 19), time=1.3, start="c1s2_vitya_shout"),
             offset(-139, 0)),
-        "ch1_2_parents_vitya_1_say", "c1s2_vitya_shout", 3.0, fade=0.2),
+        TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit", rate=0.7),
+        "c1s2_vitya_shout", 1.3, fade=0.2),
     "c1s2_parents_bed", step=0)
 ## Позы у кровати. Рот Вити двигается на каждой его реплике сам (ключ "vit" в characters.rpy):
 ## орущая поза — деформацией рта (mouth_talk), позы с разведёнными руками — сменой кадров:
@@ -219,11 +256,11 @@ label chapter_1_scene_2:
     pause 0.5
 
     $ c1s2_vitya_shout = True
-    vit "Знаешь что? Хватит. Это невозможно."
+    vit "Знаешь что?! Хватит! Это невозможно."
 
-    ## ▶ Обратно в позу 1: через 3 с реплики кадр уже перетёк в неё сам, здесь поза
-    ## закрепляется (и доигрывает переход, если кликнули раньше). Флаг не снимать: уходящий
-    ## кадр на растворении снова показал бы крик.
+    ## ▶ Обратно в позу 1: кадр перетёк в неё сам ещё на реплике, здесь поза закрепляется
+    ## (и доигрывает переход, если кликнули раньше). Флаг не снимать: уходящий кадр на
+    ## растворении снова показал бы крик.
     $ renpy.transition(Dissolve(0.2), layer="master")
     show chapter_1 scene_2_parents_room_vitya_1
 
@@ -269,39 +306,47 @@ label chapter_1_scene_2:
     scene black with Dissolve(2.0)
     camera at camera_push((0.17, 0.45), 1.03, 1.18, 70.0)
     scene chapter_1 scene_2_marina_close_face:
-        fade_brightness(-0.01, -0.13, 20.0)
+        fade_brightness(-0.02, -0.11, 20.0)
     with Dissolve(2.0)
 
 
     "Мы ещё не заходили так далеко. Впервые за восемь лет брака."
+    $ c1s2_tear_2 = True
     "Трещина между нами росла, дна не видно..."
     vit "Какой пример ты подаёшь Насте?"
     vit "Я тяну наше семейство, как могу. За всё плачу, всё покупаю, всё дома есть."
     vit "И прошу совсем немного! Здоровой атмосферы, счастливых лиц!"
     vit "Ты же знаешь... Я очень вас люблю..."
-    "И я тебя, Вить. До сих пор."
 
-    ## Кадр темнеет до нижней границы и замирает: дальше — темнота под ладонями.
-    show chapter_1 scene_2_marina_hands:
-        brightness_to(-0.09, 5.0)
-
-    "А тогда я не смогла тебе ответить: меня ломало изнутри, я пряталась в собственных ладонях, как хочется спрятаться и сейчас."
-
-    ## ══════════ КАДР 6 · ТЕМНОТА ══════════
+    pause 1.0
+        ## ══════════ КАДР 6 · ТЕМНОТА ══════════
     ## Единственный кадр без движения камеры.
-    window auto hide
     camera
     scene chapter_1 scene_2_dark:
-        breath_brightness(-0.05, -0.09, 8.0)
+        truecenter
+        subpixel True
+        zoom 1.0
+        parallel:
+            breath_brightness(-0.05, -0.09, 8.0)
+        parallel:
+            linear 30 zoom 1.13
     with Dissolve(3.0)
+
+    "И я тебя, Вить. До сих пор."
+    "А тогда я не смогла тебе ответить: меня ломало изнутри, я пряталась в собственных ладонях, как хочется спрятаться и сейчас."
 
     pause 1.0
 
-    "В этой темноте есть кто-то ещё."
+    show chapter_1 scene_2_dark:
+        shake_grow(3, 10.0)
+
+    "{sc=0.6:3}И мне до сих пор мерещится, что в этой темноте есть кто-то ещё.{/sc}"
 
     window auto hide
 
     pause 1.0
+
+    scene black with Dissolve(0.5)
 
     ## ══════════ КАДР 7 · МАРИНА НА КРОВАТИ ══════════
     ## Обратный ход первого кадра: камера отъезжает от Марины к двери.

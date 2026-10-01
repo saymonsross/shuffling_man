@@ -111,13 +111,15 @@ init -10 python:
     class TalkFrames(renpy.Displayable):
         """Покадровая речь: пока персонаж who говорит, кадры closed и opened меняются по
         слогам (mouth.rate в секунду, неровно); молчит — стоит closed. Оба кадра — одна
-        поза, различие только во рту. При «меньше движения» рот не мелькает."""
+        поза, различие только во рту. rate — множитель темпа для этого места: меньше 1 —
+        говорит медленнее. При «меньше движения» рот не мелькает."""
 
-        def __init__(self, closed, opened, who, **properties):
+        def __init__(self, closed, opened, who, rate=1.0, **properties):
             super(TalkFrames, self).__init__(**properties)
             self.closed = renpy.displayable(closed)
             self.opened = renpy.displayable(opened)
             self.who = who
+            self.rate = rate
 
         def visit(self):
             return [self.closed, self.opened]
@@ -127,7 +129,7 @@ init -10 python:
             renpy.redraw(self, 0 if t is not None else 1.0 / 30.0)
             frame = self.closed
             if t is not None:
-                beat = t * float(fx_cfg("mouth.rate"))
+                beat = t * float(fx_cfg("mouth.rate")) * self.rate
                 ## Чётные слоги рот открыт дольше нечётных.
                 if beat % 1.0 < (0.62 if int(beat) % 2 == 0 else 0.5):
                     frame = self.opened

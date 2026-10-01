@@ -1,9 +1,8 @@
-## Dev-старт: плашка в левом верхнем углу главного меню выбирает, с какой сцены начинается
-## «НОВАЯ ИГРА». Выбор живёт в persistent и действует при следующих запусках.
+## Dev-старт: плашка в левом верхнем углу главного меню запускает игру с выбранной сцены
+## кнопкой ▶; «НОВАЯ ИГРА» всегда начинает с начала. Выбор сцены живёт в persistent.
 ## game/dev/** не входит в дистрибутив; script.rpy дополнительно проверяет config.developer.
 ## Под test плашки нет: её подписи мешали бы click "НОВАЯ ИГРА".
 
-default persistent.sm_dev_start_on = True
 default persistent.sm_dev_start_label = "chapter_1_scene_2"
 
 init python:
@@ -43,14 +42,11 @@ screen dev_start_panel():
                 hbox:
                     spacing 10
 
-                    button:
-                        style "dev_hub_item"
-                        xfill False
-                        action [ToggleField(persistent, "sm_dev_start_on"), Function(renpy.save_persistent)]
-                        text ("☑ DEV-СТАРТ С:" if persistent.sm_dev_start_on else "☐ DEV-СТАРТ С:"):
-                            style "dev_hub_key"
-                            min_width 0
-                            substitute False
+                    text "DEV-СТАРТ С:":
+                        style "dev_hub_key"
+                        min_width 0
+                        yalign 0.5
+                        substitute False
 
                     button:
                         style "dev_hub_item"
@@ -59,7 +55,6 @@ screen dev_start_panel():
                             style "dev_hub_name"
                             substitute False
 
-                ## Разовый старт с выбранной сцены, даже если галка снята.
                 button:
                     style "dev_hub_item"
                     action [SetField(persistent, "sm_dev_start_once", True), Start()]

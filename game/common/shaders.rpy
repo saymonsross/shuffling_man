@@ -293,6 +293,7 @@ init python:
 ## до water.fade_to и такой остаётся. Пока тускнеет, может вытянуться вниз на water.stretch px.
 ## Всё выше y0 и ниже конца струйки видно всегда. start — имя store-флага: пока он False,
 ## струйки нет; через delay секунд после того, как сцена его взвела, она начинает стекать.
+## run, hold, fade, fade_to — свои тайминги стекания для этого места вместо общих water.*.
 init -10 python:
 
     fx_param("water.amp", 1.5, 0.0, 8.0, step=0.1, doc="качание слоя по горизонтали, px")
@@ -372,7 +373,7 @@ init -10 python:
             seen = _fx_state[(owner, flag)] = (value, now)
         return now - seen[1]
 
-    def water_f(flow, start, delay, trans, st, at):
+    def water_f(flow, start, delay, own, trans, st, at):
         import math
         trans.u_water_amp = float(fx_cfg("water.amp")) * sm_motion_scale()
         trans.u_water_wave = float(fx_cfg("water.wave"))
@@ -382,14 +383,15 @@ init -10 python:
         trans.u_water_t = 0.0 if sm_reduced_motion() else st % 3600.0
         y0, y1 = flow or (0.0, 0.0)
         trans.u_water_span = (float(y0), float(y1))
-        run, hold, fade = fx_cfg("water.run"), fx_cfg("water.hold"), fx_cfg("water.fade")
+        run, hold, fade, fade_to = [fx_cfg("water." + name) if value is None else value
+            for name, value in zip(("run", "hold", "fade", "fade_to"), own)]
         if start is None:
             t = st
         else:
             since = fx_flag_time("water", start)
             t = -1.0 if since is None else since - delay
         gone = t - run - hold
-        k = 0.0 if sm_reduced_motion() or gone <= 0.0 else min(1.0, gone / fade)
+        k = 0.0 if sm_reduced_motion() or gone <= 0.0 else min(1.0, gone / max(fade, 0.001))
         trans.u_water_stretch = float(fx_cfg("water.stretch")) * (1.0 - (1.0 - k) * (1.0 - k))
         if sm_reduced_motion() or t >= run:
             ## Запас: кромка проявления уходит за нижний край участка.
@@ -402,13 +404,13 @@ init -10 python:
             trans.u_water_front = y0 + (y1 - y0 + 20.0) * p
             trans.u_water_bead = float(fx_cfg("water.bead")) if t >= 0.0 else 0.0
             trans.u_water_stretch = 0.0
-        trans.u_water_fade = 1.0 - k * (1.0 - float(fx_cfg("water.fade_to")))
+        trans.u_water_fade = 1.0 - k * (1.0 - float(fade_to))
         return 1.0 / 30.0
 
-transform water(flow=None, start=None, delay=0.0):
+transform water(flow=None, start=None, delay=0.0, run=None, hold=None, fade=None, fade_to=None):
     mesh True
     shader "sm.water"
-    function renpy.curry(water_f)(flow, start, delay)
+    function renpy.curry(water_f)(flow, start, delay, (run, hold, fade, fade_to))
 
 ## Говорящий рот «пластикой»: нарисованный открытый рот сжимается по вертикали к своей
 ## середине и разжимается обратно в ритме речи. Сжатие — только внутри эллипса вокруг рта

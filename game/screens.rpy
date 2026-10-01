@@ -293,13 +293,22 @@ style textbox_choice_button_text:
 
 ## Быстрое меню
 
+## Полоса быстрого меню живёт вместе с окном диалога: видна, пока на экране реплика или
+## выбор в окне, и уходит вместе с ним (пауза, сценовые кнопки, кино без реплик).
+## quick_menu = False прячет её и при открытом окне; во время drag-мини-игры она скрыта
+## во избежание click-through.
+init python:
+
+    def sm_quick_menu_shown():
+        return bool(store.quick_menu and not renpy.get_screen("c1s1_mg_runtime")
+            and (renpy.get_screen("say") or renpy.get_screen("textbox")))
+
 screen quick_menu():
 
     zorder 100
 
-    ## Во время drag-мини-игры меню скрыто во избежание click-through.
     ## showif, а не if: только он шлёт детям show/hide для растворения.
-    showif quick_menu and not renpy.get_screen("c1s1_mg_runtime"):
+    showif sm_quick_menu_shown():
 
         frame:
             at show_hide(.3)
@@ -338,14 +347,15 @@ init python:
 
 default quick_menu = True
 
-## Быстрое меню спрятано (quick_menu = False или мини-игра): в правом нижнем углу остаётся
-## значок — клик открывает игровое меню, как Esc. zorder выше модальных экранов мини-игр и
-## блокировщика клика (1000): иначе значок был бы виден, но не нажимался.
+## Пока полосы быстрого меню нет (окно диалога скрыто, quick_menu = False или мини-игра),
+## в правом нижнем углу стоит значок — клик открывает игровое меню, как Esc. zorder выше
+## модальных экранов мини-игр и блокировщика клика (1000): иначе значок был бы виден, но
+## не нажимался.
 screen quick_menu_stub():
 
     zorder 1001
 
-    showif (not quick_menu or renpy.get_screen("c1s1_mg_runtime")) and not main_menu and not renpy.get_screen("confirm"):
+    showif not sm_quick_menu_shown() and not main_menu and not renpy.get_screen("confirm"):
 
         button:
             at show_hide(.3)
