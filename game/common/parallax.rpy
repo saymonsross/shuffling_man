@@ -4,6 +4,8 @@
 ## lockgame и UI не двигаются: хит-зоны мини-игр остаются под курсором.
 ## World-space кнопки повторяют сдвиг через follow_camera или parallax_follow,
 ## ближний план добавляет своё смещение трансформом parallax_near.
+## Многослойный кадр с глубиной — depth_scene(): планы от дальнего к ближнему, каждый едет
+## за мышью сильнее предыдущего и слегка увеличен, чтобы сдвиг не открывал края.
 
 ## Сцена гасит параллакс локально: $ sm_parallax_off = True … False.
 default sm_parallax_off = False
@@ -13,6 +15,7 @@ init -10 python:
     fx_param("parallax.amp", 22, 0, 60, doc="сдвиг слоя master при мыши у края экрана, px")
     fx_param("parallax.near", 6, 0, 60, doc="добавка ближнего плана к сдвигу слоя, px")
     fx_param("parallax.smooth", 0.1, 0.005, 1.0, step=0.005, doc="доля пути за кадр 60 Гц; меньше — плавнее")
+    fx_param("parallax.plane", 10, 0, 60, doc="шаг глубины между планами depth_scene, px на план")
     fx_group("parallax", "Параллакс")
 
     def sm_parallax_active():
@@ -80,6 +83,27 @@ init -10 python:
         trans.xoffset, trans.yoffset = _sm_parallax_shift(fx_cfg("parallax.near"), level, mx, my)
         return 1.0 / 60.0
 
+    def parallax_plane_f(depth, trans, st, at):
+        """План глубины depth: сдвиг depth·parallax.plane px и запас зума под него,
+        как у слоя master. depth 0 — задник, едет только вместе со слоем."""
+        level, mx, my = _sm_parallax_state()
+        amp = fx_cfg("parallax.plane") * depth
+        trans.xoffset, trans.yoffset = _sm_parallax_shift(amp, level, mx, my)
+        trans.zoom = 1.0 + 2.0 * (amp + 1.0) / config.screen_width * level if amp > 0 else 1.0
+        return 1.0 / 60.0
+
+    def depth_scene(*planes, **kwargs):
+        """Кадр из планов глубины, от дальнего к ближнему: план — образ или кортеж
+        образов на одной глубине, все холсты 1920×1080. step — множитель шага глубины.
+        Применяется как обычный кадр: scene … с breath_brightness и Dissolve."""
+        step = kwargs.pop("step", 1.0)
+        assert not kwargs, kwargs
+        items = []
+        for depth, plane in enumerate(planes):
+            for img in (plane if isinstance(plane, (tuple, list)) else (plane,)):
+                items.append(At(img, parallax_plane(depth * step)))
+        return Fixed(*items, xysize=(config.screen_width, config.screen_height))
+
     def parallax_follow_f(trans, st, at):
         trans.zoom, trans.rotate, trans.xoffset, trans.yoffset = sm_parallax_compose(1.0, 0.0, 0.0, 0.0)
         _fx_state["ui_follow"] = (trans.zoom, trans.rotate, trans.xoffset, trans.yoffset)
@@ -93,6 +117,11 @@ transform parallax_bg():
 transform parallax_near():
     subpixel True
     function parallax_near_f
+
+transform parallax_plane(depth=1.0):
+    subpixel True
+    align (0.5, 0.5)
+    function renpy.curry(parallax_plane_f)(depth)
 
 ## World-space UI без camera сцены: полноэкранный контейнер повторяет слой master.
 transform parallax_follow():

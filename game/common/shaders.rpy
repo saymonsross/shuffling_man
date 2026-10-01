@@ -285,6 +285,205 @@ init python:
         gl_FragColor.rgb += (u_breath_brightness + d / 255.0) * gl_FragColor.a;
         """)
 
+## Вода на отдельном слое (слеза, капля, струйка): волна бежит вниз по картинке и чуть
+## качает её по горизонтали, вместе с ней скользит блик. Слой — обычная картинка с альфой;
+## параметры общие, группа «Вода» в FX Tuner. При «меньше движения» вода стоит.
+## water(flow=(y0, y1)) — струйка ещё и стекает, один раз за показ: участок слоя между y0
+## и y1 (px картинки) проявляется сверху вниз за бегущей каплей, держится, потом тускнеет
+## до water.fade_to и такой остаётся. Пока тускнеет, может вытянуться вниз на water.stretch px.
+## Всё выше y0 и ниже конца струйки видно всегда. start — имя store-флага: пока он False,
+## струйки нет; через delay секунд после того, как сцена его взвела, она начинает стекать.
+init -10 python:
+
+    fx_param("water.amp", 1.5, 0.0, 8.0, step=0.1, doc="качание слоя по горизонтали, px")
+    fx_param("water.wave", 90, 10, 400, doc="длина волны по вертикали, px")
+    fx_param("water.speed", 40, 0, 300, doc="скорость стекания волны вниз, px/с")
+    fx_param("water.glint", 0.3, 0.0, 3.0, step=0.05, doc="яркость бегущего блика: 0 — без блика")
+    fx_param("water.run", 5.0, 0.5, 30.0, step=0.5, doc="за сколько секунд капля стекает по струйке")
+    fx_param("water.hold", 3.0, 0.0, 30.0, step=0.5, doc="сколько секунд струйка держится целиком")
+    fx_param("water.fade", 1.5, 0.1, 10.0, step=0.1, doc="за сколько секунд струйка тускнеет")
+    fx_param("water.fade_to", 0.5, 0.0, 1.0, step=0.05, doc="какой остаётся струйка после стекания: 1 — как была, 0 — исчезает")
+    fx_param("water.bead", 0.75, 0.0, 5.0, step=0.1, doc="яркость капли на конце струйки")
+    fx_param("water.stretch", 0, 0, 200, doc="на сколько px струйка вытягивается вниз, пока тускнеет")
+    fx_group("water", "Вода")
+
+    renpy.register_shader("sm.water",
+        variables="""
+        uniform sampler2D tex0;
+        uniform vec2 u_model_size;
+        uniform float u_water_t;
+        uniform float u_water_amp;
+        uniform float u_water_wave;
+        uniform float u_water_speed;
+        uniform float u_water_glint;
+        uniform vec2 u_water_span;
+        uniform float u_water_front;
+        uniform float u_water_fade;
+        uniform float u_water_bead;
+        uniform float u_water_stretch;
+        attribute vec2 a_tex_coord;
+        varying vec2 v_tex_coord;
+        """,
+        vertex_300="""
+        v_tex_coord = a_tex_coord;
+        """,
+        fragment_250="""
+        {
+            vec2 px = v_tex_coord * u_model_size;
+            float flow = px.y - u_water_t * u_water_speed;
+            float k = 6.2831853 / max(u_water_wave, 1.0);
+            float w = sin(flow * k) * 0.65 + sin(flow * k * 2.3 + px.x * 0.05) * 0.35;
+            vec2 uv = v_tex_coord + vec2(w * u_water_amp / u_model_size.x, 0.0);
+            bool flowing = u_water_span.y > u_water_span.x;
+            float end = u_water_span.y + u_water_stretch;
+            float inside = flowing ? step(u_water_span.x, px.y) * step(px.y, end) : 0.0;
+            if (inside > 0.5) {
+                // Участок растянут до end: выборка — из исходной, нерастянутой струйки.
+                float src = u_water_span.x + (px.y - u_water_span.x) * (u_water_span.y - u_water_span.x) / (end - u_water_span.x);
+                uv.y = src / u_model_size.y;
+            }
+            vec4 c = texture2D(tex0, uv);
+            float glint = pow(max(0.0, sin(flow * k * 0.5)), 8.0);
+            c.rgb = min(c.rgb * (1.0 + glint * u_water_glint), vec3(1.0));
+            if (flowing) {
+                float shown = 1.0 - smoothstep(u_water_front - 10.0, u_water_front, px.y);
+                float d = (px.y - (u_water_front - 8.0)) / 9.0;
+                float bead = exp(-d * d) * u_water_bead;
+                c.rgb = min(c.rgb * (1.0 + bead * inside), vec3(1.0));
+                c *= mix(1.0, shown * u_water_fade, inside);
+            }
+            gl_FragColor = c;
+        }
+        """)
+
+    def fx_flag_time(owner, flag):
+        """Секунды с момента, когда store-флаг flag впервые увиден взведённым; None — флаг
+        снят. Отсчёт — по часам кадра: st эффекта не годится, кадр показан раньше.
+        Флаг-счётчик перезапускает отсчёт каждым новым значением ($ flag += 1)."""
+        if renpy.predicting():
+            return None
+        value = getattr(store, flag, False)
+        if not value:
+            _fx_state.pop((owner, flag), None)
+            return None
+        now = _fx_frame_time()
+        seen = _fx_state.get((owner, flag))
+        if seen is None or seen[0] != value:
+            seen = _fx_state[(owner, flag)] = (value, now)
+        return now - seen[1]
+
+    def water_f(flow, start, delay, trans, st, at):
+        import math
+        trans.u_water_amp = float(fx_cfg("water.amp")) * sm_motion_scale()
+        trans.u_water_wave = float(fx_cfg("water.wave"))
+        trans.u_water_speed = float(fx_cfg("water.speed"))
+        trans.u_water_glint = float(fx_cfg("water.glint")) * sm_motion_scale()
+        ## Фаза — от времени показа: копить её между пересборками не нужно.
+        trans.u_water_t = 0.0 if sm_reduced_motion() else st % 3600.0
+        y0, y1 = flow or (0.0, 0.0)
+        trans.u_water_span = (float(y0), float(y1))
+        run, hold, fade = fx_cfg("water.run"), fx_cfg("water.hold"), fx_cfg("water.fade")
+        if start is None:
+            t = st
+        else:
+            since = fx_flag_time("water", start)
+            t = -1.0 if since is None else since - delay
+        gone = t - run - hold
+        k = 0.0 if sm_reduced_motion() or gone <= 0.0 else min(1.0, gone / fade)
+        trans.u_water_stretch = float(fx_cfg("water.stretch")) * (1.0 - (1.0 - k) * (1.0 - k))
+        if sm_reduced_motion() or t >= run:
+            ## Запас: кромка проявления уходит за нижний край участка.
+            trans.u_water_front = float(y1) + trans.u_water_stretch + 20.0
+            trans.u_water_bead = 0.0
+        else:
+            ## Капля идёт неровно: замирает и срывается, но всегда вниз.
+            p = max(0.0, t) / run
+            p += 0.04 * math.sin(p * 6.2831853 * 3.0)
+            trans.u_water_front = y0 + (y1 - y0 + 20.0) * p
+            trans.u_water_bead = float(fx_cfg("water.bead")) if t >= 0.0 else 0.0
+            trans.u_water_stretch = 0.0
+        trans.u_water_fade = 1.0 - k * (1.0 - float(fx_cfg("water.fade_to")))
+        return 1.0 / 30.0
+
+transform water(flow=None, start=None, delay=0.0):
+    mesh True
+    shader "sm.water"
+    function renpy.curry(water_f)(flow, start, delay)
+
+## Говорящий рот «пластикой»: нарисованный открытый рот сжимается по вертикали к своей
+## середине и разжимается обратно в ритме речи. Сжатие — только внутри эллипса вокруг рта
+## (center и radius в px картинки): край эллипса неподвижен, нос и подбородок не тянутся.
+## time — сколько секунд говорить; None — без ограничения. start — имя store-флага:
+## рот двигается с момента, когда сцена его взвела (без start — с момента показа);
+## флаг-счётчик ($ flag += 1) запускает рот заново на каждой реплике. who — ключ
+## talk_callback персонажа: рот двигается на каждой его реплике сам, time и start не нужны.
+## strength — множитель силы; отрицательный — для закрытого рта: губы не сжимаются,
+## а нижняя чуть отходит вниз.
+## При «меньше движения» рот стоит, как нарисован.
+init -10 python:
+
+    fx_param("mouth.close", 0.16, 0.0, 1.0, step=0.01, doc="насколько рот закрывается между слогами: 0 — не двигается")
+    fx_param("mouth.rate", 5.5, 0.5, 15.0, step=0.5, doc="слогов в секунду")
+    fx_param("mouth.chars", 16, 4, 60, doc="скорость речи, знаков в секунду: по длине реплики считается, сколько двигается рот")
+    fx_group("mouth", "Говорящий рот")
+
+    renpy.register_shader("sm.mouth",
+        variables="""
+        uniform sampler2D tex0;
+        uniform vec2 u_model_size;
+        uniform vec2 u_mouth_center;
+        uniform vec2 u_mouth_radius;
+        uniform float u_mouth_close;
+        attribute vec2 a_tex_coord;
+        varying vec2 v_tex_coord;
+        """,
+        vertex_300="""
+        v_tex_coord = a_tex_coord;
+        """,
+        fragment_250="""
+        {
+            vec2 px = v_tex_coord * u_model_size;
+            vec2 uv = v_tex_coord;
+            float qx = (px.x - u_mouth_center.x) / u_mouth_radius.x;
+            if (u_mouth_close != 0.0 && abs(qx) < 1.0) {
+                // Полувысота эллипса на этой вертикали; внутри неё высота рта сжимается
+                // степенной кривой, концы отрезка остаются на месте.
+                float half_h = u_mouth_radius.y * sqrt(1.0 - qx * qx);
+                float dy = px.y - u_mouth_center.y;
+                // Отрицательная сила приоткрывает закрытый рот: растягивается только
+                // нижняя половина, от линии губ вниз.
+                if (half_h > 0.5 && abs(dy) < half_h && (u_mouth_close > 0.0 || dy > 0.0)) {
+                    float t = pow(abs(dy) / half_h, 1.0 / (1.0 + 2.0 * u_mouth_close));
+                    uv.y = (u_mouth_center.y + sign(dy) * half_h * t) / u_model_size.y;
+                }
+            }
+            gl_FragColor = texture2D(tex0, uv);
+        }
+        """)
+
+    def mouth_talk_f(time, start, strength, who, trans, st, at):
+        import math
+        if who is not None:
+            t = talk_time(who)
+        else:
+            t = st if start is None else fx_flag_time("mouth", start)
+        if sm_reduced_motion() or t is None or (time is not None and t >= time):
+            trans.u_mouth_close = 0.0
+            return 1.0 / 20.0
+        beat = t * float(fx_cfg("mouth.rate")) * 6.2831853
+        ## Слоги неровные: вторая синусоида меняет силу соседних смыканий.
+        wave = (0.5 - 0.5 * math.cos(beat)) * (0.65 + 0.35 * math.sin(beat * 0.37 + 1.3))
+        trans.u_mouth_close = float(fx_cfg("mouth.close")) * strength * max(0.0, wave)
+        return 1.0 / 60.0
+
+transform mouth_talk(center, radius, time=None, start=None, strength=1.0, who=None):
+    mesh True
+    shader "sm.mouth"
+    u_mouth_center (float(center[0]), float(center[1]))
+    u_mouth_radius (float(radius[0]), float(radius[1]))
+    u_mouth_close 0.0
+    function renpy.curry(mouth_talk_f)(time, start, strength, who)
+
 ## «Дыхание» яркости lo → hi → lo, по t секунд в каждую сторону.
 transform breath_brightness(lo=-0.01, hi=-0.04, t=6.0):
     mesh True

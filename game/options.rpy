@@ -63,6 +63,12 @@ define config.window = "auto"
 define config.window_show_transition = Dissolve(0.3)
 define config.window_hide_transition = Dissolve(0.3)
 
+## Окно диалога само прячется на pause, with, scene, hide, call, menu и показе экранов
+## (7dots auto_hide). Включается при запуске игры, а не в сцене: иначе вход не с пролога
+## (загрузка сейва, dev-старт) оставлял бы окно висеть на паузах.
+init python:
+    auto_hide()
+
 ## Ren'Py по умолчанию не передаёт show/hide внутрь fixed/vbox: трансформы с on show /
 ## on hide (show_hide) у кнопок и рамок внутри контейнеров экранов иначе не играют.
 define config.containers_pass_transform_events = {"hover", "idle", "insensitive", "selected_hover", "selected_idle", "show", "hide"}

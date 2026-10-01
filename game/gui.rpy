@@ -67,7 +67,8 @@ init python:
     config.font_replacement_map["fonts/fira_sans_condensed_light.ttf", False, True] = ("fonts/fira_sans_condensed_light_italic.ttf", False, False)
     config.font_replacement_map["fonts/fira_sans_condensed_light.ttf", True, True] = ("fonts/fira_sans_condensed_bold_italic.ttf", False, False)
 
-define gui.name_text_font = gui.text_font
+## Имя говорящего — шрифтом быстрого меню.
+define gui.name_text_font = gui.quick_button_text_font
 
 ## Интерфейс (меню игры, настройки, сохранения, история) — Fira Sans Condensed Regular,
 ## как быстрое меню. Стрелок кроме ←↑→↓ ⇦–⇪ и фигур (●, ▸) в нём нет — их рисует
@@ -93,7 +94,7 @@ define gui.dialogue_text_size = 31
 ## Реплики чуть приглушённее чисто белого интерфейса.
 define gui.dialogue_text_color = "#e8e6e1"
 
-define gui.name_text_size = 40
+define gui.name_text_size = 34
 
 define gui.interface_text_size = 36
 
@@ -160,7 +161,7 @@ define gui.name_xalign = 0.0
 define gui.namebox_width = None
 define gui.namebox_height = None
 
-define gui.namebox_borders = Borders(20, 5, 20, 7)
+define gui.namebox_borders = Borders(18, 6, 18, 6)
 
 define gui.namebox_tile = False
 

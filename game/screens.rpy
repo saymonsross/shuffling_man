@@ -94,7 +94,7 @@ screen say(who, what):
             window:
                 id "namebox"
                 style "namebox"
-                text who id "who"
+                text who id "who" at scratch("show_text", tint=0.0, mix=0.49)
 
         text what id "what"
 
@@ -125,6 +125,10 @@ init -5 python:
 
 image ui_textbox_border = At(gui_outline(1205, 225, "tlr"), scratch("ui_border", tint=0.0))
 image ui_quick_border = At(gui_outline(1205, gui.quick_menu_height, "lrb"), scratch("ui_border", tint=0.0))
+## Плашка имени: тот же контур и заливка, что у окна диалога. Frame растягивает контур
+## под ширину имени.
+image ui_namebox_bg = Fixed(Solid("#000000c7"),
+    At(Frame(gui_outline(32, 32), 4, 4, 4, 4), scratch("ui_border", tint=0.0)))
 ## Контур любого размера: Frame растягивает рамку 32×32, штрих ложится поверх готового размера.
 image ui_frame_border = At(Frame(gui_outline(32, 32, color=gui.frame_line_color), 4, 4, 4, 4),
     scratch("ui_frame", tint=0.0))
@@ -162,18 +166,21 @@ style window:
         Transform("ui_textbox_border", xpos=358, ypos=gui.textbox_height - 225),
         )
 
+## Плашка имени — над окном диалога с зазором 5 px, вровень с его левым краем.
 style namebox:
     xpos gui.name_xpos
     xanchor gui.name_xalign
     xsize gui.namebox_width
-    ypos gui.name_ypos
+    ypos (gui.textbox_height - 225 - 5)
+    yanchor 1.0
     ysize gui.namebox_height
 
-    background Frame("gui/namebox.png", gui.namebox_borders, tile=gui.namebox_tile, xalign=gui.name_xalign)
+    background "ui_namebox_bg"
     padding gui.namebox_borders.padding
 
 style say_label:
     properties gui.text_properties("name", accent=True)
+    color gui.dialogue_text_color
     xalign gui.name_xalign
     yalign 0.5
 

@@ -802,7 +802,7 @@ label .piano:
 
     # scene black with Dissolve(2.0)
 
-    jump end_dev_yet
+    # jump end_dev_yet
 
 label .after_locks:
 

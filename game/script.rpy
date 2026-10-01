@@ -35,4 +35,14 @@ label start:
     scene black
     with Dissolve(0.6)
 
+    ## Dev-старт (dev/scene_navigation/dev_start.rpy): сцена из плашки главного меню.
+    ## В дистрибутиве config.developer выключен, persistent-полей нет.
+    if (config.developer and renpy.game.args.command != "test"
+            and (persistent.sm_dev_start_on or persistent.sm_dev_start_once)
+            and renpy.has_label(persistent.sm_dev_start_label or "")):
+        $ persistent.sm_dev_start_once = None
+        ## Параллакс выше гасится до пролога, а его включает пролог — здесь его не будет.
+        $ sm_parallax_off = False
+        jump expression persistent.sm_dev_start_label
+
     jump prologue_titles

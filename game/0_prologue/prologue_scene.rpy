@@ -84,8 +84,6 @@ label prologue_titles:
 
 label prologue_scene:
 
-    $ auto_hide()
-
     scene black with Dissolve(3.0)
 
     $ sm_parallax_off = False
