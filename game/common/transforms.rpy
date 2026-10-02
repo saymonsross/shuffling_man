@@ -113,7 +113,8 @@ init -10 python:
     def _talk_event(who, event, what=None, **kwargs):
         if event == "show" and what:
             now = _fx_frame_time()
-            text = renpy.filter_text_tags(what, allow=())
+            ## Тире перед репликой (what_prefix) не произносится.
+            text = renpy.filter_text_tags(what, allow=()).lstrip("—– ")
             cps = float(fx_cfg("mouth.chars"))
             _fx_state[("talk", who)] = (now, now + max(0.8, len(text) / cps), _talk_pauses(text, cps))
         elif event == "end":

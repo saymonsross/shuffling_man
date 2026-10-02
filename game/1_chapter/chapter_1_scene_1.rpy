@@ -807,6 +807,7 @@ label .piano:
 label .after_locks:
 
     $ sfxstop(handle=c1s1_metronome_audio, fadeout=1.2)
+    $ mstop(fadeout=5.5)
     $ c1s1_metronome_audio = None
 
     if c1s1_locks_outcome == "timeout":

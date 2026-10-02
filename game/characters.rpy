@@ -3,22 +3,26 @@
 ## в логике/сейвах сравнивать ключи, не отображаемые строки.
 ## Цвет имени общий для всех — стиль say_label (screens.rpy).
 
+## Реплика вслух начинается с тире — в отличие от мыслей рассказчицы. Тире ставит движок
+## всем, кто наследует speech: в текст реплик его не писать.
+define speech = Character(None, what_prefix="— ")
+
 ## talk_callback: на репликах персонажа двигается рот у кадров, которые слушают его ключ
 ## (common/transforms.rpy).
 
 ## Марина Александровна Шрайбер — главная героиня, рассказчица.
-define mar = Character(_("Марина"), callback=talk_callback("mar"))
+define mar = Character(_("Марина"), kind=speech, callback=talk_callback("mar"))
 
 ## Витя — муж Марины.
-define vit = Character(_("Витя"), callback=talk_callback("vit"))
+define vit = Character(_("Витя"), kind=speech, callback=talk_callback("vit"))
 define vit_d = Character(_("Витенька"), kind=vit)
 
 ## Настя — дочь Марины и Вити.
-define nas = Character(_("Настя"))
+define nas = Character(_("Настя"), kind=speech)
 define nas_d = Character(_("Настенька"), kind=nas)
 
-define pol = Character(_("Полли"))
+define pol = Character(_("Полли"), kind=speech)
 
-define sos = Character(_("Соседка"))
+define sos = Character(_("Соседка"), kind=speech)
 
-define psi = Character(_("Психолог"))
+define psi = Character(_("Психолог"), kind=speech)

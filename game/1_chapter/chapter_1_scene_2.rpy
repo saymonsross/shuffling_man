@@ -188,6 +188,8 @@ image chapter_1 scene_2_parents_room_vitya_5 = depth_scene(
 label chapter_1_scene_2:
 
     $ quick_menu = True
+    ## Виньетка на всю сцену; при входе прямо сюда её некому включить.
+    $ fx_vignette = True
 
     ## Клик проматывает только реплики. Постановка — выход из чёрного, смены кадра, паузы
     ## под звук — идёт под click_skip_block; Ctrl/«Пропуск» работают всегда.
@@ -237,6 +239,8 @@ label chapter_1_scene_2:
     $ click_skip_block = True
     window auto hide
     camera at camera_push((0.17, 0.40), 1.03, 1.10, 28.0)
+    ## Крупные планы Марины — без виньетки; она возвращается со следующим кадром.
+    $ fx_vignette = False
     scene chapter_1 scene_2_marina_close:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(3.5)
@@ -266,6 +270,7 @@ label chapter_1_scene_2:
         ## При «меньше движения» наезда нет вовсе: кадр остаётся общим, Витя не уходит за край.
         pause (86400.0 * (1.0 - sm_motion_scale()))
         ease 44.0 zoom 1.4 xoffset 134 yoffset -216
+    $ fx_vignette = True
     scene chapter_1 scene_2_parents_room_vitya_1:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(1.5)
@@ -341,6 +346,7 @@ label chapter_1_scene_2:
     window auto hide
     scene black with Dissolve(2.0)
     camera at camera_push((0.17, 0.45), 1.03, 1.18, 70.0)
+    $ fx_vignette = False
     scene chapter_1 scene_2_marina_close_face:
         fade_brightness(-0.03, -0.11, 20.0)
     with Dissolve(2.0)
@@ -369,6 +375,7 @@ label chapter_1_scene_2:
     ## ══════════ КАДР 6 · ТЕМНОТА ══════════
     ## Камера стоит, кадр сам медленно растёт. Дрожь ждёт флага c1s2_dark_shake.
     camera
+    $ fx_vignette = True
     scene chapter_1 scene_2_dark:
         truecenter
         subpixel True
@@ -385,7 +392,7 @@ label chapter_1_scene_2:
     $ click_skip_block = False
     $ c1s2_dark_shake = True
 
-    "И я тебя, Вить. До сих пор."
+    "И я тебя, Вить... До сих пор."
     "А тогда я не смогла тебе ответить: меня ломало изнутри, я пряталась в собственных ладонях, как хочется спрятаться и сейчас."
     
     $ click_skip_block = True
@@ -459,6 +466,8 @@ label chapter_1_scene_2:
 ## Бутерброды; отдельный вход каталога сцен.
 
 label .sandwiches:
+
+    $ fx_vignette = True
 
     ## ══════════ КАДР 9 · БУТЕРБРОДЫ ══════════
     ## Один наезд на тарелку — через все четыре кадра. Бутерброды исчезают по репликам:
