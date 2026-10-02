@@ -15,17 +15,76 @@ define C1S1_CLEANUP_ITEMS = (
 )
 define C1S1_CLEANUP_KEYS = tuple(item[0] for item in C1S1_CLEANUP_ITEMS)
 define C1S1_CLEANUP_DISSOLVE = Dissolve(0.22)
-define C1S1_CLEANUP_HOVER_SOUND = "hover"
+define C1S1_CLEANUP_HOVER_SOUND = "c1s1/c1s1_cleanup_hover"
+define C1S1_CLEANUP_HOVER_VOLUME = 0.23
+## Звук взятия — свой у каждого предмета (audio/sfx/c1s1/README.md); у кого своего нет — щелчок.
 define C1S1_CLEANUP_PICKUP_SOUND = "click"
+define C1S1_CLEANUP_PICKUP_SOUNDS = {
+    "blanket": "c1s1/c1s1_cleanup_blanket",
+    "pizza": "c1s1/c1s1_cleanup_pizza",
+    "ball": "c1s1/c1s1_cleanup_ball",
+    "stool_clothes": "c1s1/c1s1_cleanup_stool_clothes",
+    "arm_clothes": "c1s1/c1s1_cleanup_arm_clothes",
+    "mug": "c1s1/c1s1_cleanup_mug",
+    "juice": "c1s1/c1s1_cleanup_juice",
+    "album": "c1s1/c1s1_cleanup_album",
+    "wrapper": "c1s1/c1s1_cleanup_wrapper",
+    "back_clothes": "c1s1/c1s1_cleanup_back_clothes",
+    }
+## Подушка звучит одной из куч одежды, на 7% ниже (отдельные файлы pillow_*).
+define C1S1_CLEANUP_PILLOW_SOURCES = ("back_clothes", "arm_clothes", "stool_clothes")
+define C1S1_CLEANUP_PICKUP_VOLUME = 0.32
+## Наведённый предмет чуть темнеет, а под ним проявляется процарапанная обводка.
+define C1S1_CLEANUP_HOVER_BRIGHTNESS = -0.03
+define C1S1_CLEANUP_OUTLINE_ALPHA = 0.65
+define C1S1_CLEANUP_OUTLINE_FADE = 0.12
+## Подсказка: если долго ничего не брать, у одного из оставшихся предметов еле заметно
+## проявляется та же обводка — через DELAY секунд после последнего взятого, раз в PERIOD.
+## Предмет — случайный из POOL самых мелких оставшихся: застревают на мелочи. ORDER — от
+## мелких к крупным по площади непрозрачных пикселей PNG; при замене картинок пересчитать.
+define C1S1_CLEANUP_HINT_ORDER = ("juice", "mug", "album", "wrapper", "pizza", "stool_clothes",
+    "ball", "arm_clothes", "floor_pillow", "back_clothes", "blanket")
+define C1S1_CLEANUP_HINT_POOL = 5
+define C1S1_CLEANUP_HINT_DELAY = 8.0
+define C1S1_CLEANUP_HINT_PERIOD = 6.5
+define C1S1_CLEANUP_HINT_ALPHA = 0.3
+## Пауза на чистой комнате после последнего предмета.
+define C1S1_CLEANUP_DONE_PAUSE = 1.2
+## Дыхание яркости всей комнаты: от LO до HI и обратно, T секунд в одну сторону. Те же
+## числа — у кадра гостиной перед уборкой в сцене: оба дышат по часам кадра, в одной фазе,
+## и на стыке картинка не меняется. Менять вместе.
+define C1S1_CLEANUP_BREATH_LO = 0.0
+define C1S1_CLEANUP_BREATH_HI = -0.04
+define C1S1_CLEANUP_BREATH_T = 6.0
+## Доли bloom и виньетки на комнате (fx_frame) — те же, что у кадра гостиной перед уборкой.
+define C1S1_CLEANUP_FX_BLOOM = 0.0
+define C1S1_CLEANUP_FX_VIGNETTE = 0.6
+
+init -10 python:
+    scratch_params("cleanup_items", "Обводка предметов уборки", 2.1, 0.3, 2.1, 0.9)
+
+## Комната уборки — на своём слое мира под интерфейсом: её, как и кадры сцены, обрабатывают
+## эффекты слоя сцены (bloom, ретушь, постеризация), а виньетка ложится сверху. Надпись —
+## отдельным экраном на слое интерфейса, мимо обработки.
+init python:
+    if "cleanupgame" not in config.layers:
+        renpy.add_layer("cleanupgame", below="screens")
 
 default c1s1_cleanup_collected = ()
 default c1s1_cleanup_outcome = None
+default c1s1_cleanup_hint = None
 
 init python:
 
     def c1s1_cleanup_reset():
         store.c1s1_cleanup_collected = ()
         store.c1s1_cleanup_outcome = None
+        c1s1_cleanup_pick_hint()
+
+    def c1s1_cleanup_pick_hint():
+        ## renpy.random — тот же выбор после отката и загрузки.
+        left = [k for k in C1S1_CLEANUP_HINT_ORDER if k not in store.c1s1_cleanup_collected]
+        store.c1s1_cleanup_hint = renpy.random.choice(left[:C1S1_CLEANUP_HINT_POOL]) if left else None
 
     def c1s1_cleanup_collect(key):
         if (store.c1s1_cleanup_outcome is not None
@@ -34,7 +93,17 @@ init python:
             return False
         ## Новое значение tuple сохраняется и откатывается вместе с call screen.
         store.c1s1_cleanup_collected += (key,)
+        c1s1_cleanup_pick_hint()
         return True
+
+    def c1s1_cleanup_pickup_sound(key):
+        """Звук только что взятого предмета key. Подушке — одна из куч одежды, не звучавшая
+        на двух предыдущих взятых предметах: повтор подряд было бы слышно."""
+        if key == "floor_pillow":
+            recent = store.c1s1_cleanup_collected[-3:-1]
+            source = next(k for k in C1S1_CLEANUP_PILLOW_SOURCES if k not in recent)
+            return "c1s1/c1s1_cleanup_pillow_" + source
+        return C1S1_CLEANUP_PICKUP_SOUNDS.get(key, C1S1_CLEANUP_PICKUP_SOUND)
 
     def c1s1_cleanup_complete():
         return len(store.c1s1_cleanup_collected) == len(C1S1_CLEANUP_KEYS)
@@ -49,81 +118,92 @@ init python:
 
 ## Все предметы и фон рисуются в одной системе координат без отдельной камеры UI.
 ## imagebutton/focus_mask повторяет принцип 7dots test_bg_inventory/game_items.
-screen c1s1_cleanup_minigame():
+## Интерфейса нет: прогресс — сама комната, которая пустеет. waiting — экран вызван ждать
+## клика: только тогда он сам завершает уборку, когда убрано всё (в том числе кодом).
+## Показ через show screen — лишь растворение взятого предмета, его не обрывает.
+## finished — пауза на чистой комнате: экран вызван и сам закрывается своим таймером.
+## pause здесь не годится: модальный экран глушит и её таймер.
+screen c1s1_cleanup_minigame(waiting=False, finished=False):
+    layer "cleanupgame"
     modal True
     roll_forward True
     use sm_skippable_interaction
 
-    add "chapter_1_cleanup_room" id "cleanup_background"
+    if waiting and c1s1_cleanup_complete():
+        timer 0.01 action Return("done")
+    if finished:
+        timer C1S1_CLEANUP_DONE_PAUSE action Return()
 
-    for key, item_image, item_pos, item_caption in C1S1_CLEANUP_ITEMS:
-        if key not in c1s1_cleanup_collected:
-            imagebutton:
-                id "cleanup_" + key
-                idle item_image
-                hover At(item_image, brightness(0.18))
-                focus_mask item_image
-                pos item_pos
-                alt item_caption
-                hovered SPlay(C1S1_CLEANUP_HOVER_SOUND, ext="ogg")
-                action Return(key)
+    default cleanup_hover = None
 
-    $ collected_count = len(c1s1_cleanup_collected)
-    $ total_count = len(C1S1_CLEANUP_KEYS)
-    $ cleanup_percent = int(100 * collected_count / total_count)
+    ## Комната с предметами повторяет камеру и параллакс слоя сцены: отъезд кадра перед
+    ## уборкой доезжает уже во время неё, и на стыке картинка не прыгает. Дышит яркостью,
+    ## как кадры сцены. Фаза — от часов кадра: экран пересоздаётся на каждом взятом предмете.
+    fixed:
+        at follow_camera(zoom_pad=1.0), breath_brightness_clock(C1S1_CLEANUP_BREATH_LO, C1S1_CLEANUP_BREATH_HI, C1S1_CLEANUP_BREATH_T), fx_frame(bloom=C1S1_CLEANUP_FX_BLOOM, vignette=C1S1_CLEANUP_FX_VIGNETTE)
 
-    frame:
-        xalign 0.5
-        ypos 28
-        xsize 760
-        padding (28, 16)
-        background Solid("#17131ce6")
+        add "chapter_1_cleanup_room" id "cleanup_background"
 
-        vbox:
-            spacing 10
+        for key, item_image, item_pos, item_caption in C1S1_CLEANUP_ITEMS:
+            if key not in c1s1_cleanup_collected:
+                ## Таймер подсказки идёт от показа экрана — от последнего взятого предмета.
+                if key == c1s1_cleanup_hint:
+                    add item_image pos item_pos at c1s1_cleanup_hint_pulse
+                ## Обводка — отдельный слой под кнопкой: запас текстуры под штрих сбил бы
+                ## размер и зону клика самой кнопки.
+                showif cleanup_hover == key:
+                    add item_image pos item_pos at c1s1_cleanup_outline
+                imagebutton:
+                    id "cleanup_" + key
+                    idle item_image
+                    hover At(item_image, brightness(C1S1_CLEANUP_HOVER_BRIGHTNESS))
+                    focus_mask item_image
+                    pos item_pos
+                    alt item_caption
+                    hovered [SetScreenVariable("cleanup_hover", key), SPlay(C1S1_CLEANUP_HOVER_SOUND, ext="ogg", volume=C1S1_CLEANUP_HOVER_VOLUME)]
+                    unhovered SetScreenVariable("cleanup_hover", None)
+                    action Return(key)
 
-            text _("Собрано предметов: [collected_count] / [total_count] · [cleanup_percent]%"):
-                style "c1s1_cleanup_text"
-                xalign 0.5
-
-            bar:
-                id "cleanup_progress"
-                value StaticValue(collected_count, total_count)
-                xfill True
-                ysize 14
-                left_bar Solid("#e2cea4")
-                right_bar Solid("#4c444b")
-                thumb None
-
-    if c1s1_cleanup_complete():
-        frame:
-            id "cleanup_complete"
-            align (0.5, 0.5)
-            xsize 660
-            padding (36, 28)
-            background Solid("#17131cee")
-            at show_hide(0.22)
-
-            vbox:
-                spacing 22
-                xalign 0.5
-
-                text _("Всё убрано"):
-                    style "c1s1_cleanup_text"
-                    xalign 0.5
-                    size 38
-
-                textbutton _("Продолжить"):
-                    id "cleanup_continue"
-                    xalign 0.5
-                    hovered SPlay(C1S1_CLEANUP_HOVER_SOUND, ext="ogg")
-                    action [SPlay(C1S1_CLEANUP_PICKUP_SOUND, ext="ogg"), Return("done")]
+## Держится до конца уборки и уходит вместе с растворением последнего предмета: пропав
+## раньше, читалась бы как «готово».
+screen c1s1_cleanup_prompt():
+    if not c1s1_cleanup_complete():
+        text _("ПРИБЕРИТЕСЬ В КОМНАТЕ"):
+            id "cleanup_prompt"
+            style "c1s1_cleanup_prompt"
+            at scratch("scene_choice_text", tint=0.0)
 
 
-style c1s1_cleanup_text is gui_text:
-    color "#f1e9db"
-    size 28
-    textalign 0.5
+## Белый силуэт предмета: штрих (tint 1 — белый) рвёт его край наружу, как у деталей замков.
+transform c1s1_cleanup_outline():
+    alpha 0.0
+    parallel:
+        scratch("cleanup_items", tint=1.0, idle_color="#ffffff", hover_color="#ffffff", pad=24)
+    parallel:
+        on show:
+            linear C1S1_CLEANUP_OUTLINE_FADE alpha C1S1_CLEANUP_OUTLINE_ALPHA
+        on hide:
+            linear C1S1_CLEANUP_OUTLINE_FADE alpha 0.0
+
+## Не c1s1_cleanup_hint: так называется переменная с ключом предмета, она затёрла бы трансформ.
+transform c1s1_cleanup_hint_pulse():
+    alpha 0.0
+    parallel:
+        scratch("cleanup_items", tint=1.0, idle_color="#ffffff", hover_color="#ffffff", pad=24)
+    parallel:
+        pause C1S1_CLEANUP_HINT_DELAY
+        block:
+            ease (C1S1_CLEANUP_HINT_PERIOD * 0.25) alpha C1S1_CLEANUP_HINT_ALPHA
+            ease (C1S1_CLEANUP_HINT_PERIOD * 0.35) alpha 0.0
+            pause (C1S1_CLEANUP_HINT_PERIOD * 0.4)
+            repeat
+
+
+## Голос сценовых действий — как подписи кнопок в сценах («Зажечь свет»).
+style c1s1_cleanup_prompt is glow_button_text:
+    size 34
+    xalign 0.5
+    yalign 0.97
 
 
 label chapter_1_scene_1_minigame_cleanup hide:
@@ -131,22 +211,23 @@ label chapter_1_scene_1_minigame_cleanup hide:
     $ dismiss_off()
     $ quick_menu = False
     window hide
-    camera
+    ## Камера кадра перед уборкой не сбрасывается: её повторяет комната мини-игры.
     scene chapter_1_cleanup_room
 
     if not renpy.is_skipping():
         show screen c1s1_cleanup_minigame
+        show screen c1s1_cleanup_prompt
         with C1S1_CLEANUP_DISSOLVE
 
     while c1s1_cleanup_outcome is None:
         if not renpy.is_skipping():
             ## Return создаёт отдельный checkpoint для каждого взятого предмета.
             ## _with_none=False сохраняет предыдущий кадр для dissolve одного слоя.
-            call screen c1s1_cleanup_minigame(_with_none=False)
+            call screen c1s1_cleanup_minigame(waiting=True, _with_none=False)
 
             if _return in C1S1_CLEANUP_KEYS:
                 if c1s1_cleanup_collect(_return):
-                    $ splay(C1S1_CLEANUP_PICKUP_SOUND, ext="ogg")
+                    $ sm_sfx(c1s1_cleanup_pickup_sound(_return), volume=C1S1_CLEANUP_PICKUP_VOLUME)
                 show screen c1s1_cleanup_minigame
                 with C1S1_CLEANUP_DISSOLVE
             elif _return == "done":
@@ -156,7 +237,13 @@ label chapter_1_scene_1_minigame_cleanup hide:
         else:
             $ c1s1_cleanup_finish(skipped=True)
 
+    ## Пауза на чистой комнате — тем же экраном: call screen прячет его при возврате, и
+    ## паузу держала бы голая комната слоя сцены — с параллаксом, кадр дёрнулся бы.
+    if c1s1_cleanup_outcome == "done":
+        call screen c1s1_cleanup_minigame(finished=True, _with_none=False)
+
     hide screen c1s1_cleanup_minigame
+    hide screen c1s1_cleanup_prompt
     $ dismiss_on()
     $ quick_menu = True
     return

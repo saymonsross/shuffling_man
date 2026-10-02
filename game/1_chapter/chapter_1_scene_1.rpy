@@ -12,15 +12,20 @@ image chapter_1_lamp_hand pull_wide = Fixed(
 image chapter_1_lamp_hand metronome_wide = Fixed(
     Transform("chapter_1_lamp_hand light_metronome", pos=(0, 21)), xysize=(937, 1012))
 
-## Телевизоры с помехами на экране.
-image chapter_1 scene_1_tv_close = sm_tv_scene("images/1_chapter/chapter_1 scene_1_tv_close.png",
-    C1S1_TV_NOISE_POS, C1S1_TV_NOISE_SIZE, C1S1_TV_NOISE_CORNERS)
-image chapter_1 scene_1_sofa_tv_night = sm_tv_scene("images/1_chapter/chapter_1 scene_1_sofa_tv_night.png",
-    C1S1_TV_WIDE_POS, C1S1_TV_WIDE_SIZE, ((2, 2), (402, 2), (402, 282), (2, 282)))
-image chapter_1 scene_1_tv_close_night = sm_tv_scene("images/1_chapter/chapter_1 scene_1_tv_close_night.png",
-    C1S1_TV_NOISE_POS, C1S1_TV_NOISE_SIZE, C1S1_TV_NOISE_CORNERS)
+## Телевизор крупно, днём и ночью — планы глубины (depth_scene, common/parallax.rpy):
+## комната с экраном и перед ней рука с пультом. Задник — путём к файлу: по имени образ
+## сослался бы сам на себя.
+image chapter_1 scene_1_tv_close = depth_scene(
+    "images/1_chapter/chapter_1 scene_1_tv_close.png",
+    "images/1_chapter/chapter_1 scene_1_tv_close_hand.png")
+image chapter_1 scene_1_tv_close_night = depth_scene(
+    "images/1_chapter/chapter_1 scene_1_tv_close_night.png",
+    "images/1_chapter/chapter_1 scene_1_tv_close_night_hand.png")
 
-image chapter_1 scene_1_living_room_mess = "images/1_chapter/cleanup/chapter_1_cleanup_mess.png"
+## Гостиная перед уборкой — чистая комната и те же предметы на тех же местах, что в
+## мини-игре: склейка в неё незаметна.
+image chapter_1 scene_1_living_room_mess = Fixed("chapter_1_cleanup_room",
+    *[Transform(item[1], pos=item[2]) for item in C1S1_CLEANUP_ITEMS], xysize=(1920, 1080))
 
 ## Константы сцены
 
@@ -446,7 +451,7 @@ label chapter_1_scene_1:
 
     ## Щелчок и мгновенная смена освещения без сброса камеры.
     $ sm_sfx("lamp_on", volume=0.9)
-    $ fx_bloom_strength = 1.4
+    $ fx_bloom_snap(1.4)
     ## Нижняя часть корпуса закрывает пивот стрелки, руки остаются перед метрономом.
     scene chapter_1 lamp_light:
         breath_brightness(-0.04, -0.08, 6.0)
@@ -709,17 +714,17 @@ label .piano:
         breath_brightness(-0.04, -0.09, 6.0)
     ## Внутри групп zorder растёт по порядку предметов; швабра поверх всех.
     ## Второе число — сила подскока от стука.
-    show chapter_1_hall_door zorder 3 at c1s1_hall_item((634, 128), 1.0)
+    show chapter_1_hall_door zorder 3 at c1s1_hall_item((634, 128), 0.3)
     show chapter_1_hall_boots zorder 10 at c1s1_hall_item((1077, 564))
     show chapter_1_hall_packet zorder 10 + 1 at c1s1_hall_item((1075, 594))
-    show chapter_1_hall_toy zorder 10 + 2 at c1s1_hall_item((1102, 618))
+    show chapter_1_hall_toy zorder 10 + 2 at c1s1_hall_item((1102, 618), 1.0)
     show chapter_1_hall_paper zorder 20 at c1s1_hall_item((343, 521))
     show chapter_1_hall_bag zorder 20 + 1 at c1s1_hall_item((431, 413))
-    show chapter_1_hall_bottles zorder 20 + 2 at c1s1_hall_item((334, 463), 2.0)
-    show chapter_1_hall_umbrella_1 zorder 30 at c1s1_hall_item((267, 562), 3.0)
-    show chapter_1_hall_umbrella_2 zorder 30 + 1 at c1s1_hall_item((374, 655), 2.5)
-    show chapter_1_hall_mirror zorder 35 at c1s1_hall_item((328, 86), 1.5)
-    show chapter_1_hall_mop zorder 40 at c1s1_hall_item((924, 302), 4.0)
+    show chapter_1_hall_bottles zorder 20 + 2 at c1s1_hall_item((334, 463), 0.0)
+    show chapter_1_hall_umbrella_1 zorder 30 at c1s1_hall_item((267, 562), 1.0)
+    show chapter_1_hall_umbrella_2 zorder 30 + 1 at c1s1_hall_item((374, 655), 1.0)
+    show chapter_1_hall_mirror zorder 35 at c1s1_hall_item((328, 86), 1.0)
+    show chapter_1_hall_mop zorder 40 at c1s1_hall_item((924, 302), 2.0)
     with Dissolve(1.0)
 
     ## ▶ СТУК А (тише, 0.75) — сразу после растворения (1.0 с). Вещи подпрыгивают сами через
@@ -864,7 +869,7 @@ label .after_locks:
 label .tv:
 
     ## ══════════ КАДР 9 · ПУЛЬТ ══════════
-    ## Наезд на экран с помехами.
+    ## Наезд на экран.
     window auto hide
     camera at camera_push((0.58, 0.30), 1.03, 1.12, 20.0)
     scene chapter_1 scene_1_tv_close:
@@ -880,12 +885,18 @@ label .tv_dialogue:
 label .cleanup:
 
     ## ══════════ КАДР 10 · ГОСТИНАЯ ══════════
-    ## Отъезд открывает бардак и оседает на зуме 1.0, дыхание мелкое: уборка стартует
-    ## без камеры и без затемнения, склейка в неё почти незаметна.
+    ## Отъезд открывает бардак и медленно оседает на зуме 1.0 — уже во время уборки: её
+    ## комната повторяет эту камеру. Дыхание — по часам кадра и с теми же числами, что у
+    ## мини-игры (C1S1_CLEANUP_BREATH_*): на стыке яркость не скачет.
+    ## Гостиная и уборка — без bloom (светлые обои под ним уходят в белёсую дымку) и с
+    ## виньеткой на 40% слабее; те же доли — у комнаты мини-игры (C1S1_CLEANUP_FX_*).
     window auto hide
-    camera at camera_settle((0.5, 0.5), 1.08, 1.0, 2.5)
+    camera at camera_settle((0.5, 0.5), 1.01, 1.0, 12.5)
     scene chapter_1 scene_1_living_room_mess:
-        breath_brightness(0.0, -0.04, 6.0)
+        parallel:
+            breath_brightness_clock(0.0, -0.04, 6.0)
+        parallel:
+            fx_frame(bloom=0.0, vignette=0.6)
     with Dissolve(1.5)
 
     "Разбросанные носки, не опускающийся стульчак, как типично!"

@@ -56,8 +56,7 @@ testcase c1s1_cleanup_pixel_clicks_and_completion:
     assert screen "c1s1_cleanup_minigame" timeout 3.0
     assert eval (c1s1_cleanup_collected == ())
     assert eval (renpy.get_displayable('c1s1_cleanup_minigame', 'cleanup_background').name == ('chapter_1_cleanup_room',))
-    assert eval (renpy.get_displayable('c1s1_cleanup_minigame', 'cleanup_progress').adjustment.value == 0)
-    assert not id "cleanup_complete"
+    assert id "cleanup_prompt"
 
     ## Прозрачный угол PNG мяча и стена не являются кнопками.
     click pos (110, 720)
@@ -69,14 +68,15 @@ testcase c1s1_cleanup_pixel_clicks_and_completion:
     click pos (1490, 846)
     assert eval (c1s1_cleanup_collected == ("blanket",)) timeout 1.0
     assert not id "cleanup_blanket"
-    assert eval (renpy.get_displayable('c1s1_cleanup_minigame', 'cleanup_progress').adjustment.value == 1)
     click pos (1490, 846)
     assert eval (c1s1_cleanup_collected == ("blanket",))
 
     click pos (1455, 676)
     assert eval (len(c1s1_cleanup_collected) == 2) timeout 1.0
+    assert id "cleanup_prompt"
     click pos (220, 790)
     assert eval (len(c1s1_cleanup_collected) == 3) timeout 1.0
+    assert id "cleanup_prompt"
     click pos (584, 635)
     assert eval (len(c1s1_cleanup_collected) == 4) timeout 1.0
     click pos (1740, 1003)
@@ -92,12 +92,9 @@ testcase c1s1_cleanup_pixel_clicks_and_completion:
     click pos (619, 426)
     assert eval (len(c1s1_cleanup_collected) == 10) timeout 1.0
     click pos (1430, 424)
-    assert id "cleanup_complete" timeout 1.0
-    assert eval (c1s1_cleanup_complete() and c1s1_cleanup_outcome is None)
-    assert id "cleanup_progress"
-    assert eval (renpy.get_displayable('c1s1_cleanup_minigame', 'cleanup_progress').adjustment.value == 11)
-    click id "cleanup_continue"
-    assert screen "sm_test_cleanup_finished" timeout 1.0
+    assert eval (c1s1_cleanup_complete()) timeout 1.0
+    assert not id "cleanup_prompt" timeout 1.0
+    assert screen "sm_test_cleanup_finished" timeout 4.0
     assert not screen "c1s1_cleanup_minigame"
     assert eval (c1s1_cleanup_outcome == "done")
     run MainMenu(confirm=False)

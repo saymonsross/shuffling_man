@@ -43,6 +43,10 @@ label start:
         if renpy.has_label(persistent.sm_dev_start_label or ""):
             ## Параллакс выше гасится до пролога, а его включает пролог — здесь его не будет.
             $ sm_parallax_off = False
+            ## Главное меню гасит quick_menu, а входы в середину сцены его не включают.
+            $ quick_menu = True
+            ## Флаг уже погашен, а persistent откат не возвращает: откат сюда увёл бы в пролог.
+            $ renpy.block_rollback()
             jump expression persistent.sm_dev_start_label
 
     jump prologue_titles

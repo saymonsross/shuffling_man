@@ -254,7 +254,8 @@ define FX_CHROMA_DEFAULT = 1.0
 default fx_chroma_strength = FX_CHROMA_DEFAULT
 
 ## Bloom — так же: сила по сюжету fx_bloom_strength (0..FX_BLOOM_MAX, множитель к
-## bloom.intensity). Выше текущей сила встаёт сразу, плавно идёт только спад.
+## bloom.intensity), меняется плавно в обе стороны (bloom.relax). Мгновенно — через
+## fx_bloom_snap(сила): например, свет щёлкнул выключателем.
 define FX_BLOOM_DEFAULT = 1.0
 define FX_BLOOM_MAX = 3.0
 default fx_bloom_strength = FX_BLOOM_DEFAULT
@@ -313,12 +314,15 @@ init -10 python:
         return (fx_cfg("grade.brightness") == 0.0 and fx_cfg("grade.contrast") == 1.0
             and fx_cfg("grade.saturation") == 1.0)
 
-    def _fx_story_level(key, var, default, relax, hi=1.0, snap_up=False):
-        """(сглаженная сила от сцены, цель); превью тюнера подменяет цель полной."""
+    def _fx_story_level(key, var, default, relax, hi=1.0, snap_up=False, frame=None):
+        """(сглаженная сила от сцены, цель); превью тюнера подменяет цель полной.
+        frame — доля от fx_frame показанного кадра (None — кадр её не задал)."""
         if fx_cfg_runtime["preview"]:
             target = 1.0
         else:
             target = _fx_num(getattr(store, var, default), default, 0.0, hi)
+            if frame is not None:
+                target = min(hi, target * frame)
         ## _fx_step после подстановки всё равно нужен: он ведёт часы накопителя.
         if snap_up and target > _fx_state.get(key, target):
             _fx_state[key] = target
@@ -340,7 +344,34 @@ init -10 python:
 
     def _fx_bloom_level():
         return _fx_story_level("bloom_level", "fx_bloom_strength",
-            FX_BLOOM_DEFAULT, fx_cfg("bloom.relax"), hi=FX_BLOOM_MAX, snap_up=True)
+            FX_BLOOM_DEFAULT, fx_cfg("bloom.relax"), hi=FX_BLOOM_MAX, frame=fx_frame_value("bloom"))
+
+    ## Эффекты кадра: fx_frame в ATL кадра при каждой отрисовке отмечает свои доли, эффекты
+    ## берут отметку не старше FX_FRAME_TTL секунд. Кадр ушёл — отметка устарела, и эффекты
+    ## сами плавно возвращаются к сюжетным: возвращать руками нечего, в сейвы не попадает.
+    ## Слой эффектов рисуется раньше кадра внутри него и видит отметку прошлой отрисовки.
+    FX_FRAME_TTL = 0.25
+
+    def fx_frame_f(bloom, vignette, trans, st, at):
+        if not renpy.predicting():
+            now = _fx_frame_time()
+            if bloom is not None:
+                _fx_state[("fx_frame", "bloom")] = (float(bloom), now)
+            if vignette is not None:
+                _fx_state[("fx_frame", "vignette")] = (float(vignette), now)
+        return 0
+
+    def fx_frame_value(name):
+        mark = _fx_state.get(("fx_frame", name))
+        if mark is None or _fx_frame_time() - mark[1] > FX_FRAME_TTL:
+            return None
+        return mark[0]
+
+    def fx_bloom_snap(strength):
+        """Сила bloom сразу, без сглаживания. Накопитель визуальный: после отката или
+        загрузки сила придёт к той же цели плавно."""
+        store.fx_bloom_strength = strength
+        _fx_state["bloom_level"] = _fx_num(strength, FX_BLOOM_DEFAULT, 0.0, FX_BLOOM_MAX)
 
     ## Трансформ слоя попадает в сейвы вместе со SceneLists: после релиза не
     ## переименовывать fx_layer и fx_layer_f.
@@ -438,6 +469,11 @@ init -10 python:
 
 transform fx_layer(scope="scene"):
     function renpy.curry(fx_layer_f)(scope)
+
+## Доли эффектов, пока кадр на экране: bloom=0.0 — без свечения, vignette=0.6 — виньетка на
+## 40% слабее. В ATL кадра — отдельной веткой parallel: функция не завершается.
+transform fx_frame(bloom=None, vignette=None):
+    function renpy.curry(fx_frame_f)(bloom, vignette)
 
 ## init 999 — после всех add_layer. layer_transforms работают снаружи camera,
 ## поэтому эффекты не спорят с camera at сцен.

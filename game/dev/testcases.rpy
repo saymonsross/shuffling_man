@@ -366,10 +366,8 @@ testcase story_full_route:
         for key in C1S1_CLEANUP_KEYS:
             c1s1_cleanup_collect(key)
         renpy.restart_interaction()
-    assert id "cleanup_continue" timeout 1.0
-    click id "cleanup_continue"
-    assert eval (c1s1_cleanup_outcome == 'done')
-    assert "Ты в магазин зашёл?" timeout 3.0
+    assert eval (c1s1_cleanup_outcome == 'done') timeout 3.0
+    assert "Ты в магазин зашёл?" timeout 6.0
     advance until "Я потеряла способность закрывать на эти мелочи глаза." timeout 15.0
     assert eval (sprite_showed('chapter_1 scene_2_parents_room_door'))
     advance until "Ладно, пойдём поедим. Я состряпаю чего-нибудь." timeout 15.0

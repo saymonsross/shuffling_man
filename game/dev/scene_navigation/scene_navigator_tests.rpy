@@ -77,9 +77,7 @@ testcase dev_scene_navigator_starts_chapter_1:
         for key in C1S1_CLEANUP_KEYS:
             c1s1_cleanup_collect(key)
         renpy.restart_interaction()
-    assert id "cleanup_complete" timeout 1.0
-    click id "cleanup_continue"
-    assert "Ты в магазин зашёл?" timeout 3.0
+    assert "Ты в магазин зашёл?" timeout 6.0
     assert eval (sprite_showed('chapter_1 scene_1_kitchen_sink'))
     assert eval (c1s1_cleanup_outcome == 'done' and can_dismiss)
     advance until "Не-а." timeout 3.0
@@ -177,10 +175,8 @@ testcase dev_scene_navigator_continues_household:
     click pos (619, 426)
     assert eval (len(c1s1_cleanup_collected) == 10) timeout 1.0
     click pos (1430, 424)
-    assert id "cleanup_complete" timeout 1.0
-    click id "cleanup_continue"
 
-    assert "Ты в магазин зашёл?" timeout 3.0
+    assert "Ты в магазин зашёл?" timeout 6.0
     assert eval (sprite_showed('chapter_1 scene_1_kitchen_sink'))
     assert not screen "c1s1_cleanup_minigame"
     assert eval (c1s1_cleanup_outcome == 'done' and can_dismiss)

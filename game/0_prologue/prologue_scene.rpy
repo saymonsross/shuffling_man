@@ -264,10 +264,11 @@ label .letter:
     ## Координаты — карандаш в кадре без зума; follow_camera переносит их за камерой.
     if not renpy.is_skipping():
         menu(screen="scene_choice", follow=follow_camera(), skippable=True):
-            "ВЗЯТЬ" (bg="light", pos=(1264, 431), size=(260, 140),
+            "ВЗЯТЬ" (bg="light", pos=(1264, 431), size=(260, 140), click_volume=0.75,
                     hovered=SetVariable("note_hover_pencil", True),
                     unhovered=SetVariable("note_hover_pencil", False)):
-                $ sm_sfx("prologue/pencil_take", volume=0.8)
+                ## Тишина в очереди канала отодвигает звук от клика, не задерживая сцену.
+                $ sm_audio_play(("<silence 0.5>", "audio/sfx/prologue/pencil_grab.ogg"), overlap=True)
             with Dissolve(0.2)
 
     ## После закрытия экрана unhovered не вызывается.
@@ -329,13 +330,13 @@ label .letter:
 
     $ mstop(fadeout=14.0)
 
+    ## Граница между прологом и первой главой. Камера сбрасывается уже на чёрном:
+    ## до растворения сброс рывком отъехал бы от наезда кадра.
+    scene black with Dissolve(2.0)
     camera:
         zoom 1.0
         truecenter
         subpixel True
-
-    ## Граница между прологом и первой главой.
-    scene black with Dissolve(2.0)
     $ fx_vignette = False
     $ pause(1.2)
 

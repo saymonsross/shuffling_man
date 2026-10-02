@@ -27,6 +27,18 @@
 | `big_lock_open.ogg` | 0.3 с | лязг механизма: ригель большого замка отошёл (из Splice `ESM_Ancient_Game_Metal_Lock_Close_Gear_Open_Slide_Texture.wav`) | вертушка провёрнута до конца, второй замок открыт (`C1S1_BIG_LOCK_SOUND`) |
 | `handle_squeak.ogg` | 0.8 с, петля | скрип ручки под нажимом (из Splice `ESM_HDGM_Cinematic_FX_squeak_thin_package_handling_stress_04.wav`, хвост тишины обрезан) | пока ручку третьего замка тянут вниз; громкость по скорости (`C1S1_HANDLE_SLIDE_*`) |
 | `handle_open.ogg` | — | щелчок язычка дверной ручки | ручка довёрнута, третий замок открыт (`C1S1_HANDLE_SOUND`) |
+| `c1s1_cleanup_hover.ogg` | 0.10 с | тонкий металлический тап (Splice `ESM_FX_ui_metal_tap_hover_over_indicate_thin_metal_03.wav`) | уборка: наведение на предмет, громкость `C1S1_CLEANUP_HOVER_VOLUME` |
+| `c1s1_cleanup_blanket.ogg` | 0.42 с | ткань: плед сдёрнули с дивана (Splice `ESM_Explainer_Video_One_Shot_Foley_Cloth_Backpack_Gear_Bag_Grab_Pick_Up_3.wav`) | уборка: взят плед |
+| `c1s1_cleanup_back_clothes.ogg` | 1.07 с | ткань: ворох одежды (Splice `ESM_Battle_Game_Bag_Foley_Cloth_Grab_Body_Equipment_Satchel_Crafting_1_One_Shot.wav`) | уборка: одежда со спинки дивана |
+| `c1s1_cleanup_arm_clothes.ogg` | 1.02 с | ткань: тот же ворох одежды, что у спинки дивана, на 5% выше (Splice `ESM_Battle_Game_Bag_Foley_Cloth_Grab_Body_Equipment_Satchel_Crafting_1_One_Shot.wav`) | уборка: рубашка на подлокотнике |
+| `c1s1_cleanup_stool_clothes.ogg` | 0.24 с | ткань: короткий хват (Splice `ClothGrab_SFXB.824.wav`) | уборка: одежда с табурета у пианино |
+| `c1s1_cleanup_pillow_back_clothes.ogg`<br>`c1s1_cleanup_pillow_arm_clothes.ogg`<br>`c1s1_cleanup_pillow_stool_clothes.ogg` | 1.15 / 1.10 / 0.26 с | звуки одежды со спинки, с подлокотника и с табурета, на 7% ниже | уборка: подушка с пола — тот из трёх, что не звучал на двух предыдущих предметах |
+| `c1s1_cleanup_juice.ogg` | 0.19 с | пакет сока (Splice `ClothGrab_SFXB.825.wav`) | уборка: пакет сока |
+| `c1s1_cleanup_album.ogg` | 0.63 с | бумага с шорохом: раскраски и карандаши (Splice `ESM_Battle_Game_Grab_Foley_Paper_Item_Pick_Up_Rustle_Crackle_2_Slide_Quick_One_Shot.wav`) | уборка: альбом и карандаши |
+| `c1s1_cleanup_wrapper.ogg` | 0.65 с | хрустящая пачка чипсов (Splice `ESM_HDS2_Cinematic_FX_plastic_bag_crinkle_squeeze_handling_34.wav`) | уборка: упаковка на пианино |
+| `c1s1_cleanup_pizza.ogg` | 0.24 с | картонная коробка (Splice `CardboardBoxGrab_S011FO.118.wav`) | уборка: коробка пиццы |
+| `c1s1_cleanup_mug.ogg` | 0.48 с | кружку подняли с деревянной поверхности (Splice `ESM_Explainer_Video_One_Shot_Foley_Cup_Drink_Glass_Pick_Up_Off_Wood_Surface_1.wav`) | уборка: кружка |
+| `c1s1_cleanup_ball.ogg` | 0.44 с | резиновый мяч, хват (Splice `ESM_HDS2_Cinematic_FX_rubber_ball_bouncy_toy_grab_hit_catch_20.wav`) | уборка: мяч |
 
 Тройки `_1/_2/_3` — варианты одного удара, код выбирает случайный, чтобы
 серия не звучала как петля. Можно положить и один файл, но тогда убрать

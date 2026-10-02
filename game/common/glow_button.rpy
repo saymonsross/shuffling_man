@@ -141,7 +141,8 @@ style glow_button_text is default:
 
 ## rift — разлом сцены под кнопкой: "follow" — кнопка едет за камерой, "screen" — стоит на экране.
 ## icon — картинка вместо подписи; label остаётся ключом рифта, переводов и Choice Placer.
-screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), size=None, text_size=None, hovered=None, unhovered=None, sensitive=True, pulse="breath", visual_at=None, rift=None, icon=None):
+## click_volume — громкость звука нажатия.
+screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), size=None, text_size=None, hovered=None, unhovered=None, sensitive=True, pulse="breath", visual_at=None, rift=None, icon=None, click_volume=1.0):
 
     $ _g_w, _g_h = size or GLOW_BASE_SIZE
     $ _g_gw, _g_gh = GLOW_ICON_GLOW_SIZE if icon is not None else (_g_w, _g_h)
@@ -173,7 +174,7 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
         background None
         sensitive sensitive
         alt label
-        action [SPlay("click"), action]
+        action [SPlay("click", volume=click_volume), action]
         hovered [SPlay("hover"), (hovered or NullAction()), Function(sm_rift_hover, _g_key, True)]
         unhovered [(unhovered or NullAction()), Function(sm_rift_hover, _g_key, False)]
 

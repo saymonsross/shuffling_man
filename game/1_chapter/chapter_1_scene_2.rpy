@@ -236,8 +236,13 @@ label chapter_1_scene_2:
         pause (86400.0 * (1.0 - sm_motion_scale()))
         ease 44.0 zoom 1.4 xoffset 134 yoffset -216
     $ fx_vignette = True
+    ## Виньетка на ссоре на 25% слабее (fx_frame); позы Вити меняются show без ATL — доля
+    ## держится на весь разговор.
     scene chapter_1 scene_2_parents_room_vitya_1:
-        breath_brightness(-0.04, -0.09, 6.0)
+        parallel:
+            breath_brightness(-0.04, -0.09, 6.0)
+        parallel:
+            fx_frame(vignette=0.75)
     with Dissolve(1.5)
 
     $ click_skip_block = False
@@ -372,7 +377,7 @@ label chapter_1_scene_2:
     show expression prologue_title(_("{sc=2.5:4.5}что в этой темноте...{/sc}"), 70, slow_cps=15, color="#ebebeb") as c1s2_whisper_2:
         anchor (0.0, 0.5) pos (750, 520)
         fade_out_on("c1s2_whisper_out", 7.0, faster="c1s2_whisper_rush", pulse=0.3, pulse_out=0.5)
-    pause 2.3
+    pause 1.6
     show expression prologue_title(_("{sc=4.5:6.6}есть кто-то ещё.{/sc}"), 70, slow_cps=15, color="#ebebeb") as c1s2_whisper_3:
         anchor (0.0, 0.5) pos (1070, 640)
         fade_out_on("c1s2_whisper_out", 7.0, faster="c1s2_whisper_rush", pulse=0.3, pulse_out=0.5)
@@ -408,7 +413,7 @@ label chapter_1_scene_2:
 
     pause 0.5
 
-    $ sm_sfx("c1s2/c1s2_shakr_shark_shark", volume=1.5)
+    $ sm_sfx("c1s2/c1s2_shakr_shark_shark", volume=1.7)
 
     pause 6.0
 

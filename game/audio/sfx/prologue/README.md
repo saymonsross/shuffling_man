@@ -7,4 +7,4 @@
 
 | Файл | Длит. | Что это | Где вызывается |
 |---|---|---|---|
-| `pencil_take.ogg` | 0.55 с | три сухих деревянных щелчка (первые 0.55 с из Splice `PencilSharpener_S08OF.362.wav`, финальный громкий щелчок обрезан) | клик по «ВЗЯТЬ» у карандаша в письме (`prologue_scene.letter`) |
+| `pencil_grab.ogg` | 0.07 с | короткий сухой пластиковый щелчок-хват (Splice `ESM_HDLM_fx_foley_prop_digital_mouth_thermometer_plastic_case_cap_off_grab_single_03.wav`) | через 0.5 с после клика по «ВЗЯТЬ» у карандаша в письме (`prologue_scene.letter`) |

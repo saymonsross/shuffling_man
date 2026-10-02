@@ -496,6 +496,22 @@ transform breath_brightness(lo=-0.01, hi=-0.04, t=6.0):
         ease t u_breath_brightness float(lo)
         repeat
 
+init -10 python:
+
+    def _breath_clock_f(lo, hi, t, trans, st, at):
+        import math
+        x = (_fx_frame_time() / t) % 2.0
+        x = x if x < 1.0 else 2.0 - x
+        trans.u_breath_brightness = lo + (hi - lo) * (0.5 - 0.5 * math.cos(math.pi * x))
+        return 0
+
+## То же дыхание, но фаза идёт от часов кадра, а не от показа: экран, который пересоздаётся
+## на каждом действии (повторный show screen), дышит без скачков.
+transform breath_brightness_clock(lo=-0.01, hi=-0.04, t=6.0):
+    mesh True
+    shader "sm.breath"
+    function renpy.curry(_breath_clock_f)(lo, hi, t)
+
 ## Яркость в один конец: → end за t секунд, дальше держится. Старт — текущая яркость
 ## картинки (например, с breath_brightness в момент смены ATL): uniform наследуется.
 transform brightness_to(end=-0.04, t=6.0):

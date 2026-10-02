@@ -55,9 +55,14 @@ init -10 python:
             _fx_state["vignette_level"] = level
             _fx_state["vignette_time"] = now
 
+        ## Доля кадра (fx_frame) — плавно: на конце растворения кадра она меняется разом.
+        share = fx_frame_value("vignette")
+        share = 1.0 if share is None else share
+        share = _fx_step("vignette_frame", share, 0.05, start=share)
+
         period = fx_cfg("vignette.breath_period")
         breath = math.sin(2.0 * math.pi * (now % period) / period)
-        trans.u_vig_strength = fx_cfg("vignette.strength") * level
+        trans.u_vig_strength = fx_cfg("vignette.strength") * level * share
         trans.u_vig_radius = fx_cfg("vignette.radius") + fx_cfg("vignette.breath_amp") * breath * sm_motion_scale()
         trans.u_vig_softness = fx_cfg("vignette.softness")
         trans.u_vig_aspect = config.screen_width / float(config.screen_height)
