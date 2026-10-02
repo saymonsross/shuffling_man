@@ -55,6 +55,28 @@ transform shake_grow(power=1.5, t=10.0, start=None, delay=0.0):
     xoffset 0.0 yoffset 0.0
     function renpy.curry(_shake_grow_f)(power, t, start, delay)
 
+init -10 python:
+
+    def _float_drift_axis(amp, side, wave):
+        return amp * wave if not side else amp * side * (1.0 + wave) * 0.5
+
+    def _float_drift_f(amp, speed, side, trans, st, at):
+        import math
+        t = _fx_frame_time() * speed
+        k = sm_motion_scale()
+        trans.xoffset = k * _float_drift_axis(amp[0], side[0], 0.6 * math.sin(t * 0.997) + 0.4 * math.sin(t * 1.698 + 1.1))
+        trans.yoffset = k * _float_drift_axis(amp[1], side[1], 0.6 * math.sin(t * 1.232 + 0.7) + 0.4 * math.sin(t * 2.167 + 2.3))
+        return 0
+
+## Медленное плавание по кадру (рука с пультом и т. п.): amp — размах (x, y), px. Время —
+## часы кадра, не st: при смене кадра с тем же трансформом плавание продолжается без рывка.
+## side — у спрайта, срезанного краем кадра: -1/1 по оси держат сдвиг только в эту сторону
+## (влево/вверх или вправо/вниз), чтобы у края не открывалась щель; 0 — в обе стороны.
+transform float_drift(amp=(4.0, 3.0), speed=1.0, side=(0, 0)):
+    subpixel True
+    xoffset 0.0 yoffset 0.0
+    function renpy.curry(_float_drift_f)(amp, speed, side)
+
 ## Дрожь по наведению для текста кнопки: hover/idle кнопка передаёт вложенным трансформам.
 transform hover_shake(power=1.0):
     subpixel True
@@ -120,9 +142,34 @@ transform fade_out_on(flag, t=1.0, faster=None, k=2.0, pulse=0.0, pulse_in=0.2, 
 ## Речь персонажа: Character(..., callback=talk_callback("ключ")) отмечает начало каждой
 ## его реплики, и всё, что слушает этот ключ (TalkFrames, mouth_talk(who=...)), двигает рот
 ## само, без строк в сценарии. Рот двигается столько, сколько длилась бы фраза вслух
-## (mouth.chars знаков в секунду, не меньше 0.8 с), и замирает, когда реплику пролистнули.
-## На знаках препинания внутри реплики рот ненадолго закрывается: фразы не сливаются.
+## (mouth.chars знаков в секунду, не меньше 0.8 с). На знаках препинания внутри реплики
+## рот ненадолго закрывается: фразы не сливаются.
+## Движения рта идут по слогам самой реплики: слог — одна гласная, его время — по позиции
+## в тексте; рот открывается в начале слога (или группы из mouth.per_move слогов) и
+## закрывается к концу. «При-вет» — два движения. Реплику пролистнули — начатое движение
+## доигрывает до закрытия, новых нет.
 init -10 python:
+
+    _TALK_VOWELS = u"аеёиоуыэюяaeiouy"
+    _TALK_BREAKS = u".!?…,;:—–"
+
+    def _talk_syllables(text, cps):
+        """Слоги реплики: (начало, конец, после знака препинания) в секундах. Граница
+        слогов — посередине между соседними гласными; слог перед знаком препинания
+        кончается на знаке, не залезая в паузу после него."""
+        vowels = [i for i, c in enumerate(text) if c.lower() in _TALK_VOWELS]
+        if not vowels:
+            return ((0.0, max(1.0, len(text)) / cps, False),)
+        rv = []
+        for k, v in enumerate(vowels):
+            start = (vowels[k - 1] + v) / 2.0 if k else max(0.0, v - 1.0)
+            end = (v + vowels[k + 1]) / 2.0 if k + 1 < len(vowels) else v + 1.5
+            stop = next((i for i in range(v + 1, int(end) + 1) if i < len(text) and text[i] in _TALK_BREAKS), None)
+            if stop is not None:
+                end = min(end, float(stop))
+            gap = text[vowels[k - 1]:v] if k else u""
+            rv.append((start / cps, end / cps, any(c in _TALK_BREAKS for c in gap)))
+        return tuple(rv)
 
     def _talk_pauses(text, cps):
         """Окна молчания (от, до) в секундах от начала реплики: конец предложения — 0.3 с,
@@ -144,9 +191,15 @@ init -10 python:
             ## Тире перед репликой (what_prefix) не произносится.
             text = renpy.filter_text_tags(what, allow=()).lstrip("—– ")
             cps = float(fx_cfg("mouth.chars"))
-            _fx_state[("talk", who)] = (now, now + max(0.8, len(text) / cps), _talk_pauses(text, cps))
+            syllables = _talk_syllables(text, cps)
+            ## Последний слог дотягивает до конца: иначе рот обрывался бы на нём.
+            length = max(0.8, len(text) / cps, syllables[-1][1])
+            _fx_state[("talk", who)] = (now, now + length, _talk_pauses(text, cps), syllables, None)
         elif event == "end":
-            _fx_state.pop(("talk", who), None)
+            ## Пролистнули — отметка обрыва: начатое движение доигрывает (talk_open).
+            state = _fx_state.get(("talk", who))
+            if state is not None and state[4] is None:
+                _fx_state[("talk", who)] = state[:4] + (_fx_frame_time() - state[0],)
 
     def talk_callback(who):
         return renpy.partial(_talk_event, who)
@@ -166,11 +219,44 @@ init -10 python:
                 return None
         return t
 
+    def talk_open(who, rate=1.0):
+        """Раскрытие рта персонажа who сейчас, 0..1: дуга внутри открытой части движения,
+        0 — между движениями; None — молчит. rate меньше 1 — движения реже: одно на
+        несколько слогов. Знак препинания начинает новое движение. После обрыва реплики
+        доигрывает только движение, начатое до него."""
+        import math
+        t = talk_time(who)
+        if t is None:
+            return None
+        state = _fx_state[("talk", who)]
+        cut = state[4]
+        per = max(1.0, float(fx_cfg("mouth.per_move"))) / max(rate, 0.05)
+        share = float(fx_cfg("mouth.open_share"))
+        group = None
+        acc = 0.0
+        for start, end, after_break in state[3] + ((None, None, True),):
+            if group is not None and (after_break or acc >= per - 1e-6):
+                g0, g1 = group
+                if cut is not None and g0 >= cut:
+                    return None
+                if t < g0:
+                    return 0.0
+                g_open = g0 + share * (g1 - g0)
+                if t < g_open:
+                    return math.sin(math.pi * (t - g0) / max(g_open - g0, 1e-3))
+                acc = 0.0 if after_break else acc - per
+                group = None
+            if start is None:
+                break
+            group = (start, end) if group is None else (group[0], end)
+            acc += 1.0
+        return 0.0 if cut is None else None
+
     class TalkFrames(renpy.Displayable):
         """Покадровая речь: пока персонаж who говорит, кадры closed и opened меняются по
-        слогам (mouth.rate в секунду, неровно); молчит — стоит closed. Оба кадра — одна
-        поза, различие только во рту. rate — множитель темпа для этого места: меньше 1 —
-        говорит медленнее. При «меньше движения» рот не мелькает."""
+        слогам реплики (talk_open); молчит — стоит closed. Оба кадра — одна поза, различие
+        только во рту. rate меньше 1 — рот двигается реже. При «меньше движения» рот не
+        мелькает."""
 
         def __init__(self, closed, opened, who, rate=1.0, **properties):
             super(TalkFrames, self).__init__(**properties)
@@ -183,14 +269,9 @@ init -10 python:
             return [self.closed, self.opened]
 
         def render(self, width, height, st, at):
-            t = None if sm_reduced_motion() else talk_time(self.who)
-            renpy.redraw(self, 0 if t is not None else 1.0 / 30.0)
-            frame = self.closed
-            if t is not None:
-                beat = t * float(fx_cfg("mouth.rate")) * self.rate
-                ## Чётные слоги рот открыт дольше нечётных.
-                if beat % 1.0 < (0.62 if int(beat) % 2 == 0 else 0.5):
-                    frame = self.opened
+            opened = None if sm_reduced_motion() else talk_open(self.who, self.rate)
+            renpy.redraw(self, 0 if opened is not None else 1.0 / 30.0)
+            frame = self.opened if opened else self.closed
             ## place учитывает offset кадра.
             rv = renpy.Render(width, height)
             rv.place(frame, 0, 0, width, height, st=st, at=at)

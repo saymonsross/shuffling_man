@@ -419,13 +419,16 @@ transform water(flow=None, start=None, delay=0.0, run=None, hold=None, fade=None
 ## рот двигается с момента, когда сцена его взвела (без start — с момента показа);
 ## флаг-счётчик ($ flag += 1) запускает рот заново на каждой реплике. who — ключ
 ## talk_callback персонажа: рот двигается на каждой его реплике сам, time и start не нужны.
+## rate — множитель темпа mouth.rate, когда рот идёт не по репликам (без who).
 ## strength — множитель силы; отрицательный — для закрытого рта: губы не сжимаются,
 ## а нижняя чуть отходит вниз.
 ## При «меньше движения» рот стоит, как нарисован.
 init -10 python:
 
     fx_param("mouth.close", 0.16, 0.0, 1.0, step=0.01, doc="насколько рот закрывается между слогами: 0 — не двигается")
-    fx_param("mouth.rate", 5.5, 0.5, 15.0, step=0.5, doc="слогов в секунду")
+    fx_param("mouth.rate", 5.5, 0.5, 15.0, step=0.5, doc="слогов в секунду, когда рот идёт по флагу, а не по реплике")
+    fx_param("mouth.per_move", 1, 1, 3, doc="слогов реплики на одно движение рта")
+    fx_param("mouth.open_share", 0.6, 0.2, 0.9, step=0.05, doc="какую долю слога рот открыт")
     fx_param("mouth.chars", 16, 4, 60, doc="скорость речи, знаков в секунду: по длине реплики считается, сколько двигается рот")
     fx_group("mouth", "Говорящий рот")
 
@@ -436,6 +439,7 @@ init -10 python:
         uniform vec2 u_mouth_center;
         uniform vec2 u_mouth_radius;
         uniform float u_mouth_close;
+        uniform float u_mouth_shade;
         attribute vec2 a_tex_coord;
         varying vec2 v_tex_coord;
         """,
@@ -447,6 +451,7 @@ init -10 python:
             vec2 px = v_tex_coord * u_model_size;
             vec2 uv = v_tex_coord;
             float qx = (px.x - u_mouth_center.x) / u_mouth_radius.x;
+            float shade = 0.0;
             if (u_mouth_close != 0.0 && abs(qx) < 1.0) {
                 // Полувысота эллипса на этой вертикали; внутри неё высота рта сжимается
                 // степенной кривой, концы отрезка остаются на месте.
@@ -457,34 +462,126 @@ init -10 python:
                 if (half_h > 0.5 && abs(dy) < half_h && (u_mouth_close > 0.0 || dy > 0.0)) {
                     float t = pow(abs(dy) / half_h, 1.0 / (1.0 + 2.0 * u_mouth_close));
                     uv.y = (u_mouth_center.y + sign(dy) * half_h * t) / u_model_size.y;
+                    // Тень в раскрытом рту: гуще у линии губ, к краям эллипса сходит на нет.
+                    if (dy > 0.0) {
+                        shade = u_mouth_shade * (1.0 - dy / half_h) * (1.0 - qx * qx);
+                    }
                 }
             }
             gl_FragColor = texture2D(tex0, uv);
+            gl_FragColor.rgb *= 1.0 - shade;
         }
         """)
 
-    def mouth_talk_f(time, start, strength, who, trans, st, at):
+    def mouth_talk_f(time, start, strength, who, rate, trans, st, at):
         import math
         if who is not None:
-            t = talk_time(who)
-        else:
-            t = st if start is None else fx_flag_time("mouth", start)
+            ## По слогам реплики: нарисованный закрытым (strength < 0) рот раскрывается на
+            ## слоге, нарисованный открытым смыкается между слогами.
+            opened = None if sm_reduced_motion() else talk_open(who)
+            amount = 0.0 if opened is None else (opened if strength < 0 else 1.0 - opened)
+            trans.u_mouth_close = float(fx_cfg("mouth.close")) * strength * amount
+            return 1.0 / 60.0 if opened is not None else 1.0 / 20.0
+        t = st if start is None else fx_flag_time("mouth", start)
         if sm_reduced_motion() or t is None or (time is not None and t >= time):
             trans.u_mouth_close = 0.0
             return 1.0 / 20.0
-        beat = t * float(fx_cfg("mouth.rate")) * 6.2831853
+        beat = t * float(fx_cfg("mouth.rate")) * rate * 6.2831853
         ## Слоги неровные: вторая синусоида меняет силу соседних смыканий.
         wave = (0.5 - 0.5 * math.cos(beat)) * (0.65 + 0.35 * math.sin(beat * 0.37 + 1.3))
         trans.u_mouth_close = float(fx_cfg("mouth.close")) * strength * max(0.0, wave)
         return 1.0 / 60.0
 
-transform mouth_talk(center, radius, time=None, start=None, strength=1.0, who=None):
+transform mouth_talk(center, radius, time=None, start=None, strength=1.0, who=None, rate=1.0):
     mesh True
     shader "sm.mouth"
     u_mouth_center (float(center[0]), float(center[1]))
     u_mouth_radius (float(radius[0]), float(radius[1]))
     u_mouth_close 0.0
-    function renpy.curry(mouth_talk_f)(time, start, strength, who)
+    u_mouth_shade 0.0
+    function renpy.curry(mouth_talk_f)(time, start, strength, who, rate)
+
+init -10 python:
+
+    def mouth_loop_f(strength, period, hold, ease, dark, trans, st, at):
+        if sm_reduced_motion():
+            trans.u_mouth_close = 0.0
+            trans.u_mouth_shade = 0.0
+            return 1.0 / 20.0
+        ph = st % period
+        if ph < ease:
+            k = ph / ease
+        elif ph < ease + hold:
+            k = 1.0
+        elif ph < 2.0 * ease + hold:
+            k = 1.0 - (ph - ease - hold) / ease
+        else:
+            k = 0.0
+        opened = k * k * (3.0 - 2.0 * k)
+        trans.u_mouth_close = float(fx_cfg("mouth.close")) * strength * opened
+        trans.u_mouth_shade = dark * opened
+        return 0
+
+## Рот по кругу тем же шейдером: плавно приоткрывается за ease секунд, держится hold
+## секунд, плавно смыкается и стоит до конца period; раскрытый рот темнеет на долю dark.
+## При «меньше движения» рот стоит.
+transform mouth_loop(center, radius, strength=-2.0, period=4.0, hold=2.0, ease=0.6, dark=0.0):
+    mesh True
+    shader "sm.mouth"
+    u_mouth_center (float(center[0]), float(center[1]))
+    u_mouth_radius (float(radius[0]), float(radius[1]))
+    u_mouth_close 0.0
+    u_mouth_shade 0.0
+    function renpy.curry(mouth_loop_f)(strength, period, hold, ease, dark)
+
+## Ветер в волосах (или ткани) на картинке: внутри эллипса center/radius (px картинки)
+## пиксели колышутся бегущими волнами на amp px. У anchor (корень — макушка) смещения нет,
+## к краю эллипса оно сходит на нет: лицо и всё вне эллипса стоят. speed — темп волн.
+## При «меньше движения» стоит.
+init -10 python:
+
+    renpy.register_shader("sm.wind",
+        variables="""
+        uniform sampler2D tex0;
+        uniform vec2 u_model_size;
+        uniform vec2 u_wind_center;
+        uniform vec2 u_wind_radius;
+        uniform vec2 u_wind_anchor;
+        uniform float u_wind_amp;
+        uniform float u_wind_time;
+        attribute vec2 a_tex_coord;
+        varying vec2 v_tex_coord;
+        """,
+        vertex_300="""
+        v_tex_coord = a_tex_coord;
+        """,
+        fragment_250="""
+        {
+            vec2 px = v_tex_coord * u_model_size;
+            vec2 q = (px - u_wind_center) / u_wind_radius;
+            float inside = 1.0 - smoothstep(0.55, 1.0, length(q));
+            float reach = smoothstep(0.0, 1.0, length(px - u_wind_anchor) / max(u_wind_radius.x, u_wind_radius.y));
+            float t = u_wind_time;
+            vec2 wave = vec2(sin(px.y * 0.09 - t * 2.3) + 0.5 * sin(px.x * 0.05 - t * 1.4),
+                0.6 * cos(px.x * 0.08 - t * 1.9));
+            gl_FragColor = texture2D(tex0, (px + wave * u_wind_amp * inside * reach) / u_model_size);
+        }
+        """)
+
+    def wind_warp_f(speed, amp, trans, st, at):
+        trans.u_wind_time = (_fx_frame_time() * speed) % 1000.0
+        trans.u_wind_amp = amp * sm_motion_scale()
+        return 0
+
+transform wind_warp(center, radius, anchor, amp=2.5, speed=1.0):
+    mesh True
+    shader "sm.wind"
+    u_wind_center (float(center[0]), float(center[1]))
+    u_wind_radius (float(radius[0]), float(radius[1]))
+    u_wind_anchor (float(anchor[0]), float(anchor[1]))
+    u_wind_amp 0.0
+    u_wind_time 0.0
+    function renpy.curry(wind_warp_f)(speed, amp)
 
 ## «Дыхание» яркости lo → hi → lo, по t секунд в каждую сторону.
 transform breath_brightness(lo=-0.01, hi=-0.04, t=6.0):

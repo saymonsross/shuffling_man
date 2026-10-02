@@ -2,8 +2,8 @@ define SM_TV_NOISE_SIZE = (603, 443)
 define SM_TV_NOISE_FRAME_T = 0.18
 define SM_TV_NOISE_GRAIN_SCALE = 3.0
 define SM_TV_NOISE_BASE = "#202020"
-define SM_TV_NOISE_CURVATURE = 0.16
-define SM_TV_NOISE_CORNER_RADIUS = 26.0
+define SM_TV_NOISE_CURVATURE = 0.04
+define SM_TV_NOISE_CORNER_RADIUS = 11.0
 define SM_TV_NOISE_VIGNETTE = 0.28
 
 init python:
@@ -19,12 +19,24 @@ init python:
             (0, 0), Solid(SM_TV_NOISE_BASE, xysize=SM_TV_NOISE_SIZE),
             (0, 0), texture)
 
-    def sm_tv_screen(size, corners, displayable="sm_tv_noise"):
+    def sm_tv_screen(size, corners, displayable="sm_tv_noise", turn=(0.0, 0.0)):
         return At(displayable, xysize(*size),
             sm_crt_glass(sm_crt_projection(corners, size),
                 curvature=SM_TV_NOISE_CURVATURE,
                 corner_radius=SM_TV_NOISE_CORNER_RADIUS * size[0] / SM_TV_NOISE_SIZE[0],
-                vignette=SM_TV_NOISE_VIGNETTE))
+                vignette=SM_TV_NOISE_VIGNETTE, turn=turn))
+
+    def sm_tv_set(background, picture, pos, size, corners, glow=None, turn=(0.0, 0.0)):
+        """Кадр с работающим телевизором — один полноэкранный слой: картинка в экране под
+        фоном (корпус перекрывает шов), фон, поверх — свет экрана. pos/size — прямоугольник
+        экрана в кадре, чуть шире прозрачной дыры в фоне; corners — углы картинки в нём.
+        glow — отдельная картинка для света, например неподвижный исходник живой картинки:
+        свету движение не нужно. turn — (сжатие к дальнему правому краю, рост ближнего
+        левого по высоте): картинка поворачивается вместе с корпусом, рамка остаётся."""
+        center = (pos[0] + size[0] // 2, pos[1] + size[1] // 2)
+        screen = sm_tv_screen(size, corners, At(picture, sm_tv_signal()), turn)
+        return Fixed(Transform(screen, pos=pos), background,
+            At(glow or picture, xysize(*size), sm_tv_glow(center)), xysize=(1920, 1080))
 
     def sm_tv_scene(background, pos, size, corners):
         ## Эффект внутри самого кадра сохраняется при любом входе и загрузке игры.

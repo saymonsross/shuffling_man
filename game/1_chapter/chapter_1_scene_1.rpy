@@ -12,15 +12,82 @@ image chapter_1_lamp_hand pull_wide = Fixed(
 image chapter_1_lamp_hand metronome_wide = Fixed(
     Transform("chapter_1_lamp_hand light_metronome", pos=(0, 21)), xysize=(937, 1012))
 
-## Телевизор крупно, днём и ночью — планы глубины (depth_scene, common/parallax.rpy):
-## комната с экраном и перед ней рука с пультом. Задник — путём к файлу: по имени образ
-## сослался бы сам на себя.
+## Телевизор работает (sm_tv_set, common/tv_noise.rpy): днём — новости, вечером — футбол
+## на общем плане и «Конан-варвар» крупно. Крупно — планы глубины (depth_scene,
+## common/parallax.rpy): комната с экраном и перед ней рука с пультом. Задник — путём к
+## файлу: по имени образ сослался бы сам на себя. Прямоугольник экрана — на 4 px шире
+## прозрачной дыры в фоне, углы картинки — на 3 px за её краем: корпус перекрывает шов.
+## Ночью свет экрана мерцает и ложится на верхний слой (sm_tv_light): на крупном плане — на
+## руку с пультом, на общем — на весь кадр, Витя там нарисован вместе с комнатой.
+## Ведущая новостей говорит без остановки: рот (эллипс в px картинки) приоткрывается в
+## ровном темпе mouth.rate; губы нарисованы сомкнутыми — сила отрицательная.
+## В бегущей строке — отсылка к «Штанишкам на мальчика» Романа Чёрного (рынок «Жилмаш»);
+## лента стартует с неё: на кадре одна реплика.
+image c1s1_tv_news = Fixed(
+    At("images/1_chapter/tv/tv_news.png", mouth_talk((175, 163), (16, 8), strength=-1.3)),
+    sm_tv_ticker([
+        _("В МОСКВЕ ОЖИДАЕТСЯ ПОХОЛОДАНИЕ ДО МИНУС 15"),
+        _("МЭРИЯ МОСКВЫ ОБЪЯВИЛА О РЕМОНТЕ ТРЁХ СТАНЦИЙ МЕТРО"),
+        _("РАЗЫСКИВАЕТСЯ МАЛЬЧИК 7 ЛЕТ, ПРОПАВШИЙ НА РЫНКЕ «ЖИЛМАШ». БЫЛ ОДЕТ В СИНЮЮ КУРТКУ. ВИДЕВШИХ ПРОСЯТ ПОЗВОНИТЬ ПО ТЕЛЕФОНУ 02"),
+        _("СБОРНАЯ РОССИИ ПО ФУТБОЛУ ПРОВЕДЁТ ТОВАРИЩЕСКИЙ МАТЧ"),
+        ], (0, 354, 572, 34), first=2, lead=1.5, speed=50.0),
+    xysize=(591, 416))
+## У Конана рот по кругу плавно приоткрывается на 2 с и смыкается, волосы за головой
+## развеваются — эллипсы и корень волос в px картинки.
+image c1s1_tv_konan = At("images/1_chapter/tv/tv_konan.png",
+    mouth_loop((315, 147), (8, 7), strength=-2.0, period=4.0, hold=2.0, ease=0.6, dark=0.5),
+    wind_warp((250, 150), (60, 62), (300, 108), amp=1.6, speed=1.0))
+## Днём телевизор сначала выключен (кадр _off: чёрная картинка в том же стекле), рука с
+## пультом выползает снизу вдоль предплечья на своё место и еле заметно плавает (то же
+## плавание в рабочем кадре — по часам кадра, без рывка на включении). Рабочий кадр ставят в момент
+## включения: его экран начинает с чёрного и разгорается сам (sm_tv_power,
+## common/crt_tv.rpy), бегущая строка стартует с этой же секунды; рука в нём уже на месте.
+transform c1s1_tv_hand_rise:
+    subpixel True
+    offset (-420, 560)
+    easein 1.0 offset (0, 0)
+
+image chapter_1 scene_1_tv_close_off = depth_scene(
+    sm_tv_set("images/1_chapter/chapter_1 scene_1_tv_close.png", Solid("#000", xysize=(591, 416)),
+        (831, 111), (579, 420), ((1, 1), (577, 17), (576, 418), (1, 417)), turn=(0.2, 0.04)),
+    At("images/1_chapter/chapter_1 scene_1_tv_close_hand.png", c1s1_tv_hand_rise, float_drift((5.0, 4.0), speed=1.0, side=(-1, 1))))
+## В рабочем кадре большой палец в момент включения жмёт кнопку пульта и отпускает её.
+image c1s1_tv_hand_click:
+    "images/1_chapter/chapter_1 scene_1_tv_close_hand_click.png"
+    pause 0.35
+    "images/1_chapter/chapter_1 scene_1_tv_close_hand.png" with Dissolve(0.15)
 image chapter_1 scene_1_tv_close = depth_scene(
-    "images/1_chapter/chapter_1 scene_1_tv_close.png",
-    "images/1_chapter/chapter_1 scene_1_tv_close_hand.png")
+    sm_tv_set("images/1_chapter/chapter_1 scene_1_tv_close.png", At("c1s1_tv_news", sm_tv_power(0.58)),
+        (831, 111), (579, 420), ((1, 1), (577, 17), (576, 418), (1, 417)), turn=(0.2, 0.04)),
+    At("c1s1_tv_hand_click", float_drift((5.0, 4.0), speed=1.0, side=(-1, 1))))
 image chapter_1 scene_1_tv_close_night = depth_scene(
-    "images/1_chapter/chapter_1 scene_1_tv_close_night.png",
-    "images/1_chapter/chapter_1 scene_1_tv_close_night_hand.png")
+    sm_tv_set("images/1_chapter/chapter_1 scene_1_tv_close_night.png", "c1s1_tv_konan",
+        (831, 111), (579, 420), ((1, 1), (577, 17), (576, 418), (1, 417)), turn=(0.2, 0.04)),
+    At("images/1_chapter/chapter_1 scene_1_tv_close_night_hand.png",
+        sm_tv_light((835, 115, 1406, 527), (1.0, 0.82, 0.62), radius=260.0, strength=0.3)))
+## Футбол живой: камера трансляции чуть плывёт, игроки едва заметно двигаются; трибуны
+## выше доли top высоты картинки стоят.
+image c1s1_tv_football = At("images/1_chapter/tv/tv_football.png", sm_tv_players(top=0.36, amp=1.5, pan=10.0, pan_t=26.0))
+image chapter_1 scene_1_sofa_tv_night = At(sm_tv_set(
+    "images/1_chapter/chapter_1 scene_1_sofa_tv_night.png", "c1s1_tv_football",
+    (1237, 121), (396, 277), ((1, 1), (394, 1), (394, 275), (1, 275)),
+    glow="images/1_chapter/tv/tv_football.png"),
+    sm_tv_light((1241, 125, 1629, 394), (0.85, 1.0, 0.72)))
+
+## Витя в дверях — планы глубины: прихожая сзади, Витя спереди. Рот двигается сам на его
+## репликах (ключ "vit" в characters.rpy): кадры «молчит» и «говорит» меняются по слогам.
+## Слои — путями к файлам: под этим именем лежит и старый цельный кадр.
+image chapter_1 scene_1_vitya_door = depth_scene(
+    "images/1_chapter/chapter_1 scene_1_vitya_door_bg.png",
+    TalkFrames("images/1_chapter/chapter_1 scene_1_vitya_door_vitya_silence.png",
+        "images/1_chapter/chapter_1 scene_1_vitya_door_vitya_say.png", "vit"))
+
+## Витя в холле — слои: холл сзади, Витя спереди. step=0 — слои едут за мышью вместе:
+## Витя стоит в глубине, в дверях, и отдельный сдвиг отрывал бы его от проёма.
+## Слои — путями к файлам: фон лежит под тем же именем.
+image chapter_1 scene_1_hall_vitya = depth_scene(
+    "images/1_chapter/chapter_1 scene_1_hall_vitya.png",
+    "images/1_chapter/chapter_1 scene_1_hall_vitya with_vitya.png", step=0)
 
 ## Гостиная перед уборкой — чистая комната и те же предметы на тех же местах, что в
 ## мини-игре: склейка в неё незаметна.
@@ -823,28 +890,36 @@ label .after_locks:
     ## почти встык, камера оседает с крупного плана: Витя на взводе.
     window auto hide
     if c1s1_locks_outcome == "fast":
-        camera at camera_push((0.47, 0.30), 1.03, 1.10, 16.0)
-        scene chapter_1 scene_1_vitya_outcome_fast:
-            breath_brightness(-0.04, -0.09, 6.0)
+        camera at camera_push((0.47, 0.30), 1.00, 1.05, 26.0)
+        scene chapter_1 scene_1_vitya_door:
+            breath_brightness(-0.02, -0.06, 6.0)
         with Dissolve(1.5)
     else:
-        camera at camera_settle((0.47, 0.30), 1.14, 1.06, 1.2)
-        scene chapter_1 scene_1_vitya_outcome_normal:
-            breath_brightness(-0.04, -0.09, 6.0)
+        camera at camera_settle((0.47, 0.30), 1.00, 1.05, 21.2)
+        scene chapter_1 scene_1_vitya_door:
+            breath_brightness(-0.02, -0.06, 6.0)
         with Dissolve(0.3)
     $ quick_menu = True
 
     if c1s1_locks_outcome == "fast":
         vit "Привет."
+
+        pause 0.5
+
+        vit "Чё уснула чтоли?"
     else:
-        vit "Ну наконец-то, бля."
+        vit "Ну наконец-то..."
+
+        pause 0.5
+
+        vit "Я уже думал, то снова выбивать дверь придётся."
 
     ## ══════════ КАДР 7 · ВИТЯ В ХОЛЛЕ ══════════
     ## Общий план. Долгий наезд на дверь идёт через этот и следующий кадр.
     window auto hide
     camera at camera_push((0.39, 0.45), 1.02, 1.12, 40.0)
     scene chapter_1 scene_1_hall_vitya:
-        breath_brightness(-0.04, -0.09, 6.0)
+        breath_brightness(-0.02, -0.04, 7.0)
     with Dissolve(1.5)
 
     "Часто Витя бывал просто невыносим."
@@ -854,7 +929,7 @@ label .after_locks:
     window auto hide
     scene chapter_1 scene_1_hall_mess:
         breath_brightness(-0.04, -0.09, 6.0)
-    with Dissolve(2.0)
+    with Dissolve(0.7)
 
     "Ничего серьёзного: какие-то банальности, быт... И эти его дурацкие, неискоренимые привычки."
 
@@ -869,12 +944,30 @@ label .after_locks:
 label .tv:
 
     ## ══════════ КАДР 9 · ПУЛЬТ ══════════
-    ## Наезд на экран.
+    ## Наезд на тёмный экран. Телевизор включает игрок.
+    ## Рука выползает 1.0 с (c1s1_tv_hand_rise) — внутри растворения, клик его не
+    ## проматывает: кнопка появляется, когда рука на месте, иначе на включении рука
+    ## прыгнула бы в рабочий кадр.
+    $ click_skip_block = True
     window auto hide
-    camera at camera_push((0.58, 0.30), 1.03, 1.12, 20.0)
-    scene chapter_1 scene_1_tv_close:
-        breath_brightness(-0.03, -0.08, 6.0)
+    camera at camera_push((0.58, 0.30), 1.00, 1.07, 24.0)
+    scene chapter_1 scene_1_tv_close_off:
+        breath_brightness(-0.03, -0.07, 6.0)
     with Dissolve(1.5)
+    $ click_skip_block = False
+
+    ## Координаты — центр экрана в кадре без зума; follow_camera переносит их за камерой.
+    if not renpy.is_skipping():
+        menu(screen="scene_choice", follow=follow_camera(), skippable=True):
+            "ВКЛЮЧИТЬ" (pos=(1120, 321), size=(330, 165)):
+                pass
+            with Dissolve(0.5)
+
+    ## Рабочий кадр встаёт вместо тёмного без перехода: его экран разгорается сам. show без
+    ## ATL оставляет кадру дыхание, камера не сбрасывается.
+    show chapter_1 scene_1_tv_close
+    window auto hide
+    pause 1.5
 
 label .tv_dialogue:
 
