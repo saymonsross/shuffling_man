@@ -89,6 +89,34 @@ transform flag_fade(pos_xy, flags, visible_when=True, relax=0.15):
     pos pos_xy
     function renpy.curry(_flag_alpha_f)(flags, visible_when, relax)
 
+init -10 python:
+
+    def _fade_out_on_f(flag, t, faster, k, pulse, pulse_in, pulse_out, trans, st, at):
+        import math
+        since = fx_flag_time("fade_out_on", flag)
+        if since is None:
+            trans.alpha = 1.0
+            return 1.0 / 30.0
+        rush = fx_flag_time("fade_out_on", faster) if faster else None
+        done = since if rush is None else since + (k - 1.0) * min(rush, since)
+        alpha = max(0.0, 1.0 - done / t) if t > 0.0 else 0.0
+        if rush is not None and rush < pulse_in + pulse_out:
+            if rush < pulse_in:
+                bump = math.sin(0.5 * math.pi * rush / max(pulse_in, 0.001))
+            else:
+                bump = math.cos(0.5 * math.pi * (rush - pulse_in) / max(pulse_out, 0.001))
+            alpha *= 1.0 + pulse * sm_motion_scale() * bump
+        trans.alpha = min(1.0, alpha)
+        return 0 if alpha > 0.0 else 1.0 / 30.0
+
+## Угасание по флагу: пока store-флаг flag снят — картинка видна; с момента, как сцена его
+## взвела, линейно гаснет за t секунд. Всё с одним флагом гаснет синхронно. Ставится в ATL
+## показа заранее: новый show … с ATL посреди кадра сбросил бы позицию и анимации.
+## faster — второй флаг: с его взвода угасание идёт в k раз быстрее, а картинка один раз
+## вспыхивает — ярче на долю pulse: за pulse_in секунд разгорается, за pulse_out спадает.
+transform fade_out_on(flag, t=1.0, faster=None, k=2.0, pulse=0.0, pulse_in=0.2, pulse_out=0.2):
+    function renpy.curry(_fade_out_on_f)(flag, t, faster, k, pulse, pulse_in, pulse_out)
+
 ## Речь персонажа: Character(..., callback=talk_callback("ключ")) отмечает начало каждой
 ## его реплики, и всё, что слушает этот ключ (TalkFrames, mouth_talk(who=...)), двигает рот
 ## само, без строк в сценарии. Рот двигается столько, сколько длилась бы фраза вслух

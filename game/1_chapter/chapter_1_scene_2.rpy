@@ -56,10 +56,7 @@ default c1s2_tear = False
 #     ("ch1_2_mc_close_3_gg",
 #         At("ch1_2_mc_close_3_gg_tears", water(flow=(455, 602), start="c1s2_tear", delay=2.0))))
 
-image chapter_1 scene_2_marina_close = depth_scene(
-    "ch1_2_mc_close_3_bg",
-    "ch1_2_mc_close_3_gg"
-    )
+image chapter_1 scene_2_marina_close = depth_scene("ch1_2_mc_close_3_bg", "ch1_2_mc_close_3_gg")
 
 ## Лицо и руки дрожат всё сильнее (shake_grow: размах, px, и секунды до максимума).
 ## Слеза лежит между лицом и руками и склеена с лицом в одну группу — дрожит вместе с ним.
@@ -77,14 +74,17 @@ image chapter_1 scene_2_marina_close_face = depth_scene(
                 water(flow=(455, 602), start="c1s2_tear_2", run=15.0, hold=0.0, fade=6.0, fade_to=0.5)),
             xysize=(1920, 1080)),
         shake_grow(1.05, 20.0)),
-    At("ch1_2_mc_close_3_gg_2_hands", shake_grow(1.3, 20.0)))
-    )
+    At("ch1_2_mc_close_3_gg_2_hands", shake_grow(1.3, 20.0))))
 
 ## Темнота под ладонями — планы глубины: фон, дальняя ладонь, ближняя ладонь, каждая в
 ## своём плане. Ладони мелко дрожат, каждая сама по себе. У фона своя добавка яркости
 ## поверх дыхания всего кадра из сцены; периоды здесь и в сцене одинаковые, добавки
 ## складываются.
 default c1s2_dark_shake = False
+## Титры последней фразы этого кадра гаснут с момента, как сцена взвела c1s2_whisper_out;
+## с c1s2_whisper_rush один раз еле заметно вспыхивают и гаснут вдвое быстрее.
+default c1s2_whisper_out = False
+default c1s2_whisper_rush = False
 
 image chapter_1 scene_2_dark = depth_scene(
     At("prologue_head_bg", breath_brightness(0.02, 0.07, 8.0)),
@@ -92,45 +92,10 @@ image chapter_1 scene_2_dark = depth_scene(
     At("ch2_dark_l_hand", shake(0.6)),
     step=1.0)
 
-## Последняя реплика тёмного кадра распадается. Экран — двойник окна диалога с той же
-## вёрсткой и тем же текстом (берётся из только что сказанной реплики, без копии в коде),
-## разрезанным на начало и хвост из tail_words последних слов. hold секунд двойник стоит
-## как настоящее окно, потом окно с началом растворяется в штрихе, а хвост остаётся
-## отдельным дрожащим текстом, хаотично уходит на fly px — к центру экрана — и распадается
-## следом. Невидимая половина строки ({alpha=0}) держит видимую на её месте.
-## sc — размах дрожи букв в начале и конце реплики, как в её теге {sc}.
-screen c1s2_line_shatter(tail_words, sc, fly, hold):
-    $ ls_words = renpy.filter_text_tags(_last_say_what or "", allow=()).split(" ")
-    $ ls_head = " ".join(ls_words[:-tail_words]) + " "
-    $ ls_tail = " ".join(ls_words[-tail_words:])
-    $ ls_mid = sc[0] + (sc[1] - sc[0]) * len(ls_head) / max(1.0, len(ls_head) + len(ls_tail) - 1.0)
-    window:
-        style "window"
-        at scratch_out(2.0, delay=hold)
-        text ("{sc=%.1f:%.1f}" % (sc[0], ls_mid) + ls_head + "{/sc}{alpha=0.0}" + ls_tail + "{/alpha}"):
-            style "say_dialogue"
-            substitute False
-    window:
-        style "window"
-        background None
-        text ("{alpha=0.0}" + ls_head + "{/alpha}{sc=%.1f:%.1f}" % (ls_mid, sc[1]) + ls_tail + "{/sc}"):
-            style "say_dialogue"
-            substitute False
-            at scratch_out(2.2, delay=hold + 1.0), shake_grow(10, 2.6, delay=hold), c1s2_line_fly(fly[0], fly[1], hold)
-
-## Путь хвоста реплики к (dx, dy) — рывками, с заносами в стороны.
-transform c1s2_line_fly(dx, dy, hold):
-    subpixel True
-    xoffset 0.0 yoffset 0.0
-    pause (hold + 0.5)
-    easeout 0.5 xoffset ((dx * 0.10 + 26) * sm_motion_scale()) yoffset ((dy * 0.12 - 10) * sm_motion_scale())
-    ease 0.45 xoffset ((dx * 0.30 - 38) * sm_motion_scale()) yoffset ((dy * 0.38 + 16) * sm_motion_scale())
-    ease 0.5 xoffset ((dx * 0.62 + 22) * sm_motion_scale()) yoffset ((dy * 0.66 - 18) * sm_motion_scale())
-    easein 0.75 xoffset (dx * sm_motion_scale()) yoffset (dy * sm_motion_scale())
-
 ## Спальня, общий план — слои: задник (пол и стена), Витя, кровать с Мариной. step=0 —
 ## слои склеены в один план: фигуры стоят вплотную, глубина между ними ломала бы кадр;
 ## за мышью кадр едет целиком.
+
 ## Кровать с Мариной. На её репликах губы чуть приоткрываются (mouth_talk — эллипс рта в
 ## px картинки; сила отрицательная: рот нарисован закрытым).
 image c1s2_parents_bed = At("ch1_2_parents_krovvat_gg",
@@ -144,6 +109,7 @@ image chapter_1 scene_2_parents_room_vitya_1 = depth_scene(
     "ch1_2_parents_bg",
     TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit"),
     "c1s2_parents_bed", step=0)
+
 ## Крик — только на начало реплики («Знаешь что?! Хватит!»): 1.3 с от момента, когда сцена
 ## взвела c1s2_vitya_shout, рот орущей позы двигается. Потом, ещё на этой же реплике, поза
 ## сама растворяется в спокойную позу 1, и та договаривает остаток (FlagDissolve →
@@ -159,6 +125,7 @@ image chapter_1 scene_2_parents_room_vitya_2 = depth_scene(
         TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit", rate=0.7),
         "c1s2_vitya_shout", 1.3, fade=0.2),
     "c1s2_parents_bed", step=0)
+
 ## Позы у кровати: орущая — рот двигается деформацией (mouth_talk), с разведёнными руками —
 ## сменой кадров: слои vitya_3 (рот закрыт) и vitya_4 (говорит) — одна поза, в исходнике в
 ## 223 px друг от друга, отличаются только ртом.
@@ -199,7 +166,6 @@ label chapter_1_scene_2:
     ## Из чёрного. Долгий наезд в дверной проём, к кровати.
     window auto hide
 
-
     ## Камера стоит до клика; явный трансформ сбрасывает наезд прошлой сцены и отдаёт
     ## зоне проёма (follow_camera) своё положение.
     camera at camera_push((0.72, 0.52), 1.0, 1.0, 0.0)
@@ -220,7 +186,6 @@ label chapter_1_scene_2:
     camera at camera_push((0.72, 0.52), 1.0, 1.15, 25.0)
 
     $ mplay("chapter_1/sora_chapter_start", fadein=0.0, volume=2.0, tag="chapter_1_music_1", loop=True)
-    # $ sm_sfx("hover")
 
     pause 1.5
 
@@ -288,7 +253,7 @@ label chapter_1_scene_2:
     show chapter_1 scene_2_parents_room_vitya_2
 
     pause 0.5
-    
+
     $ mplay("chapter_1/sora_suspense_chapter_1", fadein=18.0, volume=0.9, tag="chapter_1_music_2")
 
     $ c1s2_vitya_shout = True
@@ -316,6 +281,7 @@ label chapter_1_scene_2:
     vit "Только решёток на окнах нет. А стоило бы, да?"
 
     pause 0.5
+
     $ renpy.transition(Dissolve(0.3), layer="master")
     show chapter_1 scene_2_parents_room_vitya_4_1
     vit "Тамара не помогает! Не знал, что на болтовню с подружкой можно сжечь столько денег..."
@@ -340,7 +306,7 @@ label chapter_1_scene_2:
     show chapter_1 scene_2_parents_room_vitya_3
     vit "Выйди на улицу. Перестань копаться в себе. Поговори с дочкой в конце концов!"
 
-    ## ══════════ КАДР 5 · ЛАДОНИ ══════════
+    ## ══════════ КАДР 4 · ЛАДОНИ ══════════
     ## Самый долгий наезд сцены: Марина прячется в ладонях, Витя говорит за кадром.
     $ click_skip_block = True
     window auto hide
@@ -350,7 +316,6 @@ label chapter_1_scene_2:
     scene chapter_1 scene_2_marina_close_face:
         fade_brightness(-0.03, -0.11, 20.0)
     with Dissolve(2.0)
-
 
     $ click_skip_block = False
     "Мы ещё не заходили так далеко. Впервые за восемь лет брака."
@@ -362,8 +327,8 @@ label chapter_1_scene_2:
     vit "И прошу совсем немного! Здоровой атмосферы, счастливых лиц!"
     vit "Ты же знаешь... Я очень вас люблю..."
 
-    ## Плач уходит вглубь, как метроном перед стуком: за 7 с глохнет (low-pass, Гц) и
-    ## обрастает эхом (wet — доля эха, dry — доля чистого звука).
+    ## Плач уходит вглубь, как метроном перед стуком: за duration секунд глохнет (low-pass,
+    ## Гц) и обрастает эхом (wet — доля эха, dry — доля чистого звука).
     $ sm_audio_set_filter(c1s2_crying_audio, [
         renpy.audio.filter.Lowpass(2200.0),
         renpy.audio.filter.Reverb(resonance=0.72, dampening=2400.0, wet=0.55, dry=0.85, delay_multiplier=1.8),
@@ -372,7 +337,7 @@ label chapter_1_scene_2:
     $ click_skip_block = True
     pause 1.0
 
-    ## ══════════ КАДР 6 · ТЕМНОТА ══════════
+    ## ══════════ КАДР 5 · ТЕМНОТА ══════════
     ## Камера стоит, кадр сам медленно растёт. Дрожь ждёт флага c1s2_dark_shake.
     camera
     $ fx_vignette = True
@@ -380,7 +345,6 @@ label chapter_1_scene_2:
         truecenter
         subpixel True
         zoom 1.0
-        # xalign 0.3
         parallel:
             breath_brightness(-0.05, -0.09, 8.0)
         parallel:
@@ -394,25 +358,41 @@ label chapter_1_scene_2:
 
     "И я тебя, Вить... До сих пор."
     "А тогда я не смогла тебе ответить: меня ломало изнутри, я пряталась в собственных ладонях, как хочется спрятаться и сейчас."
-    
-    $ click_skip_block = True
 
+    $ click_skip_block = True
     pause 1.0
 
-    $ click_skip_block = False
+    ## Последняя фраза — не в окне, а титром лесенкой по центру: куски печатаются по буквам
+    ## (slow_cps) и дрожат всё сильнее ({sc}, px). С появлением последнего гаснут все разом
+    ## (fade_out_on: секунды, вспышка pulse) и догорают поверх головы в КАДРЕ 6.
+    show expression prologue_title(_("{sc=1.3:2.5}И мне до сих пор мерещится...{/sc}"), 70, slow_cps=15, color="#ebebeb") as c1s2_whisper_1:
+        anchor (0.0, 0.5) pos (370, 400)
+        fade_out_on("c1s2_whisper_out", 7.0, faster="c1s2_whisper_rush", pulse=0.3, pulse_out=0.5)
+    pause 2.5
+    show expression prologue_title(_("{sc=2.5:4.5}что в этой темноте...{/sc}"), 70, slow_cps=15, color="#ebebeb") as c1s2_whisper_2:
+        anchor (0.0, 0.5) pos (750, 520)
+        fade_out_on("c1s2_whisper_out", 7.0, faster="c1s2_whisper_rush", pulse=0.3, pulse_out=0.5)
+    pause 2.3
+    show expression prologue_title(_("{sc=4.5:6.6}есть кто-то ещё.{/sc}"), 70, slow_cps=15, color="#ebebeb") as c1s2_whisper_3:
+        anchor (0.0, 0.5) pos (1070, 640)
+        fade_out_on("c1s2_whisper_out", 7.0, faster="c1s2_whisper_rush", pulse=0.3, pulse_out=0.5)
+    $ c1s2_whisper_out = True
+    pause 3.0
 
-    "{sc=0.6:3}И мне до сих пор мерещится, что в этой темноте есть кто-то ещё.{/sc}"
-
+    ## ══════════ КАДР 6 · КТО-ТО ЕЩЁ ══════════
+    ## Голова из пролога в темноте и шарканье. Тёмный кадр уходит через hide, а не scene:
+    ## scene убрала бы и титры фразы, а они догорают поверх головы. Чёрная подложка
+    ## закрывает углы под повёрнутой головой.
     $ click_skip_block = True
 
-    ## Плач обрывается за cut секунд, эхо его фильтра доигрывает; tail — запас на хвост.
+    ## Сам плач гаснет за cut секунд, его эхо — за fadeout; tail — секунды от этой строки
+    ## до освобождения канала, запас на хвост эха.
     $ sm_audio_stop_tail(c1s2_crying_audio, cut=1.2, fadeout=2.0, tail=12.0)
 
-
-    scene black 
-    show prologue_head_bg:
+    hide chapter_1
+    show black behind c1s2_whisper_1
+    show prologue_head_bg behind c1s2_whisper_1:
         truecenter
-        # subpixel True
         zoom 1.0
         xpos 0.44 ypos 0.45
         parallel:
@@ -420,21 +400,17 @@ label chapter_1_scene_2:
         parallel:
             shake_grow(3, 4.0)
         parallel:
-            linear 26 zoom 1.43 rotate -25.0      
+            linear 26 zoom 1.43 rotate -25.0
     with Dissolve(1.5)
 
     $ mstop(fadeout=0.2)
+    $ c1s2_whisper_rush = True
 
     pause 0.5
 
-
     $ sm_sfx("c1s2/c1s2_shakr_shark_shark", volume=1.5)
 
-    $ quick_menu_hold = False
-
     pause 6.0
-
-    hide screen c1s2_line_shatter
 
     camera
     scene black with Dissolve(2.0)

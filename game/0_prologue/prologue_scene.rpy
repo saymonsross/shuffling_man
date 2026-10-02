@@ -31,9 +31,10 @@ style prologue_titles_text is default:
     slow_cps 0
 
 ## Титр: штрих группы show_text (tint 0 — свой цвет стиля), шрифт примеряется F8 (dev).
+## Остальные аргументы — свойства текста, например slow_cps=25: титр печатается по буквам.
 init python:
-    def prologue_title(text, size):
-        return At(sm_font_preview_text(text, style="prologue_titles_text", size=size),
+    def prologue_title(text, size, **properties):
+        return At(sm_font_preview_text(text, style="prologue_titles_text", size=size, **properties),
             scratch("show_text", tint=0.0))
 
 default note_hover_pencil = False
