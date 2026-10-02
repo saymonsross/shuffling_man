@@ -3,11 +3,13 @@
 ## в логике/сейвах сравнивать ключи, не отображаемые строки.
 ## Цвет имени общий для всех — стиль say_label (screens.rpy).
 
-## Марина Александровна Шрайбер — главная героиня, рассказчица.
-define mar = Character(_("Марина"))
+## talk_callback: на репликах персонажа двигается рот у кадров, которые слушают его ключ
+## (common/transforms.rpy).
 
-## Витя — муж Марины. talk_callback: на его репликах двигается рот у кадров, которые
-## слушают ключ "vit" (common/transforms.rpy).
+## Марина Александровна Шрайбер — главная героиня, рассказчица.
+define mar = Character(_("Марина"), callback=talk_callback("mar"))
+
+## Витя — муж Марины.
 define vit = Character(_("Витя"), callback=talk_callback("vit"))
 define vit_d = Character(_("Витенька"), kind=vit)
 

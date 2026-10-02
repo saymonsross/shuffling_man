@@ -131,6 +131,44 @@ init -11 python:
         ## Редкая перерисовка подхватывает правки тюнера.
         return 0.1
 
+    def scratch_out_f(t, delay, amp, trans, st, at):
+        p = 1.0 if t <= 0.0 else max(0.0, min(1.0, (st - delay) / t))
+        trans.u_scratch_on = 1.0
+        ## Штрих включается за первую восьмую пути: до начала распада картинка не меняется.
+        trans.u_scratch_mix = min(1.0, p * 8.0)
+        trans.u_scratch_amp = amp * p ** 1.5
+        trans.u_scratch_spread = 1.0 + 3.0 * p
+        ## Порог волокон выше единицы не оставляет от картинки ничего.
+        trans.u_scratch_fiber_cut = -0.05 + 1.15 * p * p
+        trans.u_scratch_seed = 0.0 if sm_reduced_motion() else float(int(st / 0.1) % SCRATCH_SEED_LOOP)
+        return 0 if p < 1.0 else 0.25
+
+## Распад в штрихе: за t секунд (после delay) дрожание контура растёт до amp px — это
+## максимум шкалы штриха, — копии разъезжаются, волокна рвут картинку, и она исчезает
+## совсем. До начала распада выглядит как исходник: годится, чтобы подменить им только что
+## показанный элемент. pad — запас текстуры под размах.
+transform scratch_out(t=2.0, delay=0.0, amp=10.0, pad=32):
+    mesh True
+    mesh_pad (pad, pad, pad, pad)
+    shader "sm.scratch"
+    u_scratch_tint 0.0
+    u_scratch_group_mix 1.0
+    u_scratch_idle_mix 1.0
+    u_scratch_hover 0.0
+    u_scratch_idle_color (1.0, 1.0, 1.0, 1.0)
+    u_scratch_hover_color (1.0, 1.0, 1.0, 1.0)
+    u_scratch_jitter_freq (0.02, 0.6)
+    u_scratch_fiber_freq (1.0, 0.05)
+    u_scratch_copies 3.0
+    u_scratch_copy_alpha 0.55
+    u_scratch_on 1.0
+    u_scratch_mix 0.0
+    u_scratch_amp 0.0
+    u_scratch_spread 1.0
+    u_scratch_fiber_cut -0.05
+    u_scratch_seed 0.0
+    function renpy.curry(scratch_out_f)(t, delay, amp)
+
 ## Текст, показанный в сценах через show (титры и т. п.): своя группа, тюнер — Text Tuner.
 init -10 python:
     scratch_params("show_text", "Текст на экране (show text)", 2.0, 0.3, 1.0, 0.55)

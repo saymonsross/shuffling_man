@@ -296,12 +296,15 @@ style textbox_choice_button_text:
 ## Полоса быстрого меню живёт вместе с окном диалога: видна, пока на экране реплика или
 ## выбор в окне, и уходит вместе с ним (пауза, сценовые кнопки, кино без реплик).
 ## quick_menu = False прячет её и при открытом окне; во время drag-мини-игры она скрыта
-## во избежание click-through.
+## во избежание click-through. quick_menu_hold = True держит полосу без окна диалога —
+## для сцен, где окно подменено своим экраном-двойником.
+default quick_menu_hold = False
+
 init python:
 
     def sm_quick_menu_shown():
         return bool(store.quick_menu and not renpy.get_screen("c1s1_mg_runtime")
-            and (renpy.get_screen("say") or renpy.get_screen("textbox")))
+            and (renpy.get_screen("say") or renpy.get_screen("textbox") or store.quick_menu_hold))
 
 screen quick_menu():
 

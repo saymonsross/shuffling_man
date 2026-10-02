@@ -2,6 +2,7 @@ default last_music_fn = ""
 
 init -200 python:
     import math as sm_audio_math
+    import time as sm_audio_time
 
     SM_AUDIO_CHANNELS = {
         line: tuple("sm_{}_{}".format(line, index) for index in range(5))
@@ -192,6 +193,69 @@ init -200 python:
             replace=True, duration=duration)
         return True
 
+    def _sm_audio_tail_filter(current, cut, fadeout):
+        """Цепочка current с «кранами» на входе. Объекты фильтров те же: накопленное эхо
+        цело. Если цепочка кончается эхом (Reverb, WetDry), прямой звук и посыл в эхо
+        гаснут порознь — за cut и за fadeout; иначе весь вход гаснет за fadeout."""
+        af = renpy.audio.filter
+
+        def gate(t):
+            return af.Crossfade(af.Null(), af.Multiply(0.0), t)
+
+        parts = list(current.__reduce__()[1]) if isinstance(current, af.Sequence) else [current]
+        if isinstance(parts[-1], af.WetDry):
+            echo, wet, dry = parts[-1].__reduce__()[1]
+            parts[-1] = af.Mix([gate(fadeout), echo, af.Multiply(wet)], [gate(cut), af.Multiply(dry)])
+            return parts
+        return [gate(fadeout)] + parts
+
+    def sm_audio_stop_tail(handle, cut=0.2, fadeout=None, tail=6.0):
+        """Останавливает звук, оставляя хвост его фильтра (эхо). cut — за сколько секунд
+        гаснет сам звук; fadeout — за сколько гаснет его посыл в эхо: эхо звука тянется
+        дольше него самого (по умолчанию равен cut); tail — секунды от вызова до
+        освобождения канала, запас на хвост. Без фильтра звук просто гаснет за cut.
+        False — handle устарел или звук уже остановлен."""
+        cut = _sm_audio_number(cut, "cut")
+        fadeout = cut if fadeout is None else _sm_audio_number(fadeout, "fadeout")
+        tail = _sm_audio_number(tail, "tail")
+        serial, saved_slots = _sm_audio_state()
+        slot = next((slot for slot in saved_slots.values()
+            if slot["handle"] == handle and slot["active"]), None)
+        if slot is None or not _sm_audio_busy(slot["channel"]):
+            return False
+        channel = slot["channel"]
+        current = renpy.audio.audio.get_channel(channel).context.raw_audio_filter
+        if current is None:
+            _sm_audio_stop(handle=handle, fadeout=cut)
+            return True
+        ## Смена без перехода: звук не щёлкает. Обычная остановка гасит выход фильтра —
+        ## вместе с хвостом, поэтому канал играет дальше вхолостую и освобождается по
+        ## времени (_sm_audio_release_tails).
+        renpy.music.set_audio_filter(channel, _sm_audio_tail_filter(current, cut, fadeout),
+            replace=True, duration=0)
+        slots = dict(saved_slots)
+        slots[channel] = dict(slot, active=False,
+            release=sm_audio_time.time() + max(tail, cut, fadeout))
+        _sm_audio_store(serial, slots)
+        return True
+
+    def _sm_audio_release_tails(force=False):
+        serial, saved_slots = _sm_audio_state()
+        now = sm_audio_time.time()
+        due = [channel for channel, slot in saved_slots.items()
+            if slot.get("release") is not None and (force or now >= slot["release"])]
+        if not due:
+            return
+        slots = dict(saved_slots)
+        for channel in due:
+            renpy.music.stop(channel=channel, fadeout=0.05)
+            slots[channel] = dict(saved_slots[channel], release=None)
+        _sm_audio_store(serial, slots)
+
+    config.periodic_callbacks.append(_sm_audio_release_tails)
+    ## После загрузки «краны» цепочки открыты заново: хвост не доигрывается, канал свободен.
+    config.after_load_callbacks.append(renpy.partial(_sm_audio_release_tails, True))
+
     def sm_audio_snapshot(line=None):
         if line is not None and line not in SM_AUDIO_CHANNELS:
             raise ValueError("Unknown audio line: {}".format(line))
@@ -249,8 +313,9 @@ init -190 python:
     ## Отсутствующие файлы не должны ронять сцену, пока звук не записан.
     _sm_sfx_missing = set()
 
-    def sm_sfx(names, volume=1.0, tag=None, ext="ogg"):
-        """Играет один эффект из audio/sfx; кортеж имён = случайный вариант."""
+    def sm_sfx(names, volume=1.0, tag=None, ext="ogg", fadein=0, fadeout=0, loop=False):
+        """Играет один эффект из audio/sfx; кортеж имён = случайный вариант.
+        loop=True — по кругу, пока не остановят: sm_audio_stop(tag=...) или по handle."""
         if not names:
             return None
         if not isinstance(names, str):
@@ -264,7 +329,9 @@ init -190 python:
                 _sm_sfx_missing.add(filename)
                 renpy.log("sm_sfx: нет файла {}".format(filename))
             return None
-        return splay(names, ext=ext, tag=tag, overlap=True, volume=volume)
+        if loop:
+            return sfxplay(names, loop=True, fadein=fadein, fadeout=fadeout, ext=ext, tag=tag, overlap=True, volume=volume)
+        return splay(names, fadein=fadein, fadeout=fadeout, ext=ext, tag=tag, overlap=True, volume=volume)
 
     def sm_sfx_f(names, volume, trans, st, at):
         """ATL-колбек: `function renpy.curry(sm_sfx_f)(names, volume)` — один вызов."""

@@ -39,15 +39,21 @@ transform shake(power=1.5):
 
 init -10 python:
 
-    def _shake_grow_f(power, t, trans, st, at):
-        return _shake_f(power * (1.0 if t <= 0.0 else min(1.0, st / t)), trans, st, at)
+    def _shake_grow_f(power, t, start, delay, trans, st, at):
+        since = st if start is None else fx_flag_time("shake_grow", start)
+        if since is not None:
+            since -= delay
+        k = 0.0 if since is None or since <= 0.0 else (1.0 if t <= 0.0 else min(1.0, since / t))
+        return _shake_f(power * k, trans, st, at)
 
-## Нарастающая дрожь: с момента показа размах растёт от нуля до power px за t секунд
-## и дальше держится.
-transform shake_grow(power=1.5, t=10.0):
+## Нарастающая дрожь: размах растёт от нуля до power px за t секунд и дальше держится.
+## Отсчёт — с момента показа; start — имя store-флага: дрожи нет, пока сцена его не взвела.
+## С флагом трансформ ставится в ATL кадра заранее отдельным parallel: новый show … с ATL
+## посреди кадра оборвал бы его остальные анимации. delay — секунды покоя перед ростом.
+transform shake_grow(power=1.5, t=10.0, start=None, delay=0.0):
     subpixel True
     xoffset 0.0 yoffset 0.0
-    function renpy.curry(_shake_grow_f)(power, t)
+    function renpy.curry(_shake_grow_f)(power, t, start, delay)
 
 ## Дрожь по наведению для текста кнопки: hover/idle кнопка передаёт вложенным трансформам.
 transform hover_shake(power=1.0):
@@ -87,13 +93,29 @@ transform flag_fade(pos_xy, flags, visible_when=True, relax=0.15):
 ## его реплики, и всё, что слушает этот ключ (TalkFrames, mouth_talk(who=...)), двигает рот
 ## само, без строк в сценарии. Рот двигается столько, сколько длилась бы фраза вслух
 ## (mouth.chars знаков в секунду, не меньше 0.8 с), и замирает, когда реплику пролистнули.
+## На знаках препинания внутри реплики рот ненадолго закрывается: фразы не сливаются.
 init -10 python:
+
+    def _talk_pauses(text, cps):
+        """Окна молчания (от, до) в секундах от начала реплики: конец предложения — 0.3 с,
+        запятая и тире — 0.15 с. Знаки в самом конце реплики окна не дают."""
+        rv = []
+        last = len(text.rstrip(" .!?…,;:—–-"))
+        for i, c in enumerate(text[:last]):
+            if i + 1 < len(text) and text[i + 1] in ".!?…,;:":
+                continue
+            if c in ".!?…":
+                rv.append((i / cps, i / cps + 0.3))
+            elif c in ",;:—–":
+                rv.append((i / cps, i / cps + 0.15))
+        return tuple(rv)
 
     def _talk_event(who, event, what=None, **kwargs):
         if event == "show" and what:
             now = _fx_frame_time()
-            spoken = len(renpy.filter_text_tags(what, allow=()))
-            _fx_state[("talk", who)] = (now, now + max(0.8, spoken / float(fx_cfg("mouth.chars"))))
+            text = renpy.filter_text_tags(what, allow=())
+            cps = float(fx_cfg("mouth.chars"))
+            _fx_state[("talk", who)] = (now, now + max(0.8, len(text) / cps), _talk_pauses(text, cps))
         elif event == "end":
             _fx_state.pop(("talk", who), None)
 
@@ -101,12 +123,19 @@ init -10 python:
         return renpy.partial(_talk_event, who)
 
     def talk_time(who):
-        """Секунды с начала текущей реплики персонажа who; None — молчит."""
+        """Секунды с начала текущей реплики персонажа who; None — молчит (реплики нет,
+        фраза договорена или пауза на знаке препинания)."""
         state = _fx_state.get(("talk", who))
         if state is None or renpy.predicting():
             return None
         now = _fx_frame_time()
-        return max(0.0, now - state[0]) if now < state[1] else None
+        if now >= state[1]:
+            return None
+        t = max(0.0, now - state[0])
+        for t0, t1 in state[2]:
+            if t0 <= t < t1:
+                return None
+        return t
 
     class TalkFrames(renpy.Displayable):
         """Покадровая речь: пока персонаж who говорит, кадры closed и opened меняются по
