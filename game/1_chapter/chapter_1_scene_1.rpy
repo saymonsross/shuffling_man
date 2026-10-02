@@ -73,6 +73,14 @@ image chapter_1 scene_1_sofa_tv_night = At(sm_tv_set(
     (1237, 121), (396, 277), ((1, 1), (394, 1), (394, 275), (1, 275)),
     glow="images/1_chapter/tv/tv_football.png"),
     sm_tv_light((1241, 125, 1629, 394), (0.85, 1.0, 0.72)))
+## Витя на диване кричит: кадры «молчит» и «кричит» меняются по репликам. Движение одно
+## на четыре слога (rate), рот открыт почти всё движение (share): на «Не ори!» открывается
+## на «Н» и закрывается в конце фразы; на «Ты опять начинаешь?!» движения два, между ними
+## рот закрыт не меньше gap секунд. Кадры растворяются друг в друга за fade секунд.
+## Кадр «кричит» лежит под именем образа, поэтому оба — путями к файлам.
+image chapter_1 scene_1_vitya_sofa = TalkFrames(
+    "images/1_chapter/chapter_1 scene_1_vitya_sofa_silence.png",
+    "images/1_chapter/chapter_1 scene_1_vitya_sofa.png", "vit", rate=0.5, share=0.95, fade=0.08, gap=0.25, trim=0.1)
 
 ## Витя в дверях — планы глубины: прихожая сзади, Витя спереди. Рот двигается сам на его
 ## репликах (ключ "vit" в characters.rpy): кадры «молчит» и «говорит» меняются по слогам.
@@ -888,6 +896,9 @@ label .after_locks:
     ## ══════════ КАДР 6 · ВИТЯ В ДВЕРЯХ ══════════
     ## Открыла быстро — мягкое растворение и медленный наезд на лицо. Возилась — склейка
     ## почти встык, камера оседает с крупного плана: Витя на взводе.
+    ## Постановка до самой ссоры — смены кадра, паузы — идёт под click_skip_block: клик
+    ## проматывает только реплики; Ctrl/«Пропуск» работают всегда.
+    $ click_skip_block = True
     window auto hide
     if c1s1_locks_outcome == "fast":
         camera at camera_push((0.47, 0.30), 1.00, 1.05, 26.0)
@@ -900,37 +911,46 @@ label .after_locks:
             breath_brightness(-0.02, -0.06, 6.0)
         with Dissolve(0.3)
     $ quick_menu = True
+    $ click_skip_block = False
 
     if c1s1_locks_outcome == "fast":
         vit "Привет."
 
+        $ click_skip_block = True
         pause 0.5
+        $ click_skip_block = False
 
         vit "Чё уснула чтоли?"
     else:
         vit "Ну наконец-то..."
 
+        $ click_skip_block = True
         pause 0.5
+        $ click_skip_block = False
 
         vit "Я уже думал, то снова выбивать дверь придётся."
 
     ## ══════════ КАДР 7 · ВИТЯ В ХОЛЛЕ ══════════
     ## Общий план. Долгий наезд на дверь идёт через этот и следующий кадр.
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.39, 0.45), 1.02, 1.12, 40.0)
     scene chapter_1 scene_1_hall_vitya:
         breath_brightness(-0.02, -0.04, 7.0)
     with Dissolve(1.5)
 
+    $ click_skip_block = False
     "Часто Витя бывал просто невыносим."
 
     ## ══════════ КАДР 8 · ХОЛЛ БЕЗ ВИТИ ══════════
     ## Камера не сбрасывается: Витя растворяется, в холле остаются его вещи.
+    $ click_skip_block = True
     window auto hide
     scene chapter_1 scene_1_hall_mess:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(0.7)
 
+    $ click_skip_block = False
     "Ничего серьёзного: какие-то банальности, быт... И эти его дурацкие, неискоренимые привычки."
 
     ## Кадр темнеет до нижней границы и замирает.
@@ -966,8 +986,10 @@ label .tv:
     ## Рабочий кадр встаёт вместо тёмного без перехода: его экран разгорается сам. show без
     ## ATL оставляет кадру дыхание, камера не сбрасывается.
     show chapter_1 scene_1_tv_close
+    $ click_skip_block = True
     window auto hide
     pause 1.5
+    $ click_skip_block = False
 
 label .tv_dialogue:
 
@@ -983,6 +1005,7 @@ label .cleanup:
     ## мини-игры (C1S1_CLEANUP_BREATH_*): на стыке яркость не скачет.
     ## Гостиная и уборка — без bloom (светлые обои под ним уходят в белёсую дымку) и с
     ## виньеткой на 40% слабее; те же доли — у комнаты мини-игры (C1S1_CLEANUP_FX_*).
+    $ click_skip_block = True
     window auto hide
     camera at camera_settle((0.5, 0.5), 1.01, 1.0, 12.5)
     scene chapter_1 scene_1_living_room_mess:
@@ -992,29 +1015,35 @@ label .cleanup:
             fx_frame(bloom=0.0, vignette=0.6)
     with Dissolve(1.5)
 
+    ## Блокировщик выше предметов мини-игры и съел бы клики по ним.
+    $ click_skip_block = False
     "Разбросанные носки, не опускающийся стульчак, как типично!"
 
     call chapter_1_scene_1_minigame_cleanup from _call_c1s1_household_cleanup
 
     ## ══════════ КАДР 11 · РАКОВИНА ══════════
     ## Наезд на гору посуды.
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.45, 0.62), 1.03, 1.10, 20.0)
     scene chapter_1 scene_1_kitchen_sink:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(1.5)
 
+    $ click_skip_block = False
     mar "Ты в магазин зашёл?"
     "Нарушенные обещания..."
 
     ## ══════════ КАДР 12 · ВИТЯ У ТЕЛЕВИЗОРА, НОЧЬ ══════════
     ## День сменился ночью: долгое растворение, один медленный наезд на весь разговор.
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.60, 0.38), 1.02, 1.12, 40.0)
     scene chapter_1 scene_1_sofa_tv_night:
         breath_brightness(-0.05, -0.09, 6.0)
     with Dissolve(2.5)
 
+    $ click_skip_block = False
     vit "Не-а."
     "Ну, мелочь. И ещё одна. И ещё одна. День за днём."
     mar "У нас на завтра..."
@@ -1022,40 +1051,59 @@ label .cleanup:
 
     ## ══════════ КАДР 13 · ЭКРАН ══════════
     ## Наезд на экран: Витя смотрит в него, не на Марину.
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.58, 0.30), 1.04, 1.12, 14.0)
     scene chapter_1 scene_1_tv_close_night:
         breath_brightness(-0.05, -0.09, 6.0)
     with Dissolve(0.8)
 
+    $ click_skip_block = False
     vit "Не, завтра не могу никак."
     mar "Но мы договаривались!"
 
     ## ══════════ КАДР 14 · ССОРА ══════════
-    ## Склейка встык на крик, окно диалога остаётся (show, не scene). Камера бьёт в лицо
-    ## и оседает.
-    camera at camera_settle((0.40, 0.38), 1.16, 1.06, 0.5)
+    ## Склейка встык на крик, окно диалога остаётся (show, не scene). Камера входит крупно
+    ## и плавно оседает; каждый следующий наезд начинается с зума, на котором кончился
+    ## предыдущий, — без рывков.
+    $ click_skip_block = True
+    camera at camera_settle((0.40, 0.38), 1.0, 1.08, 31.2)
     show chapter_1 scene_1_vitya_sofa:
         breath_brightness(-0.05, -0.09, 6.0)
 
+    pause 0.3
+    $ click_skip_block = False
+
     vit "Не ори!"
     mar "Сам не ори!"
-    "Скандалишь, наконец. Но тебя не слышат. Как это выводило меня из себя."
 
-    ## Второй удар камерой — на новый крик.
-    camera at camera_settle((0.40, 0.38), 1.13, 1.08, 0.4)
+    $ click_skip_block = True
+    pause 0.5
+    $ click_skip_block = False
+
+    "Скандалишь, наконец. Но тебя не слышат."
+    "Как жэ это выводило меня из себя."
+
+    $ click_skip_block = True
+    pause 0.5
+    $ click_skip_block = False
 
     vit "Ты опять начинаешь?!"
 
-    ## Круг замыкается: медленный наезд, кадр темнеет до нижней границы.
-    camera at camera_push((0.40, 0.38), 1.08, 1.14, 12.0)
+    $ click_skip_block = True
+    pause 0.5
+    $ click_skip_block = False
+
     show chapter_1 scene_1_vitya_sofa:
         brightness_to(-0.09, 4.0)
 
     "И так по кругу. Снова и снова."
 
+    ## Дальше блокировщик держит и начало второй сцены: она сама ставит его заново.
+    $ click_skip_block = True
     window auto hide
     scene black with Dissolve(2.0)
+    camera
 
     pause 0.6
 

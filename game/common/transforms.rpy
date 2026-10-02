@@ -219,11 +219,15 @@ init -10 python:
                 return None
         return t
 
-    def talk_open(who, rate=1.0):
+    def talk_open(who, rate=1.0, share=None, gap=0.0, trim=0.0):
         """Раскрытие рта персонажа who сейчас, 0..1: дуга внутри открытой части движения,
         0 — между движениями; None — молчит. rate меньше 1 — движения реже: одно на
-        несколько слогов. Знак препинания начинает новое движение. После обрыва реплики
-        доигрывает только движение, начатое до него."""
+        несколько слогов. share — доля движения, пока рот открыт (по умолчанию
+        mouth.open_share); gap — не меньше стольких секунд рот закрыт перед следующим
+        движением, даже если share держал бы его открытым дольше; trim — столько секунд
+        срезается с конца каждого открытия. Знак препинания
+        начинает новое движение. После обрыва реплики доигрывает только движение,
+        начатое до него."""
         import math
         t = talk_time(who)
         if t is None:
@@ -231,7 +235,7 @@ init -10 python:
         state = _fx_state[("talk", who)]
         cut = state[4]
         per = max(1.0, float(fx_cfg("mouth.per_move"))) / max(rate, 0.05)
-        share = float(fx_cfg("mouth.open_share"))
+        share = float(fx_cfg("mouth.open_share")) if share is None else float(share)
         group = None
         acc = 0.0
         for start, end, after_break in state[3] + ((None, None, True),):
@@ -242,6 +246,9 @@ init -10 python:
                 if t < g0:
                     return 0.0
                 g_open = g0 + share * (g1 - g0)
+                if start is not None and gap > 0.0:
+                    g_open = min(g_open, start - gap)
+                g_open = max(g0 + 0.05, g_open - trim)
                 if t < g_open:
                     return math.sin(math.pi * (t - g0) / max(g_open - g0, 1e-3))
                 acc = 0.0 if after_break else acc - per
@@ -255,26 +262,60 @@ init -10 python:
     class TalkFrames(renpy.Displayable):
         """Покадровая речь: пока персонаж who говорит, кадры closed и opened меняются по
         слогам реплики (talk_open); молчит — стоит closed. Оба кадра — одна поза, различие
-        только во рту. rate меньше 1 — рот двигается реже. При «меньше движения» рот не
-        мелькает."""
+        только во рту. rate меньше 1 — рот двигается реже. share — доля движения, пока
+        рот открыт (по умолчанию mouth.open_share); threshold (0..1) — с какого раскрытия
+        показывать opened: выше — рот открыт короче. fade — секунды растворения между
+        кадрами в обе стороны (0 — смена встык); шейдер перехода Dissolve, поэтому
+        полупрозрачные края не мигают. gap — минимум секунд закрытого рта между
+        движениями; trim — секунды, срезаемые с конца каждого открытия. При «меньше
+        движения» рот не мелькает."""
 
-        def __init__(self, closed, opened, who, rate=1.0, **properties):
+        def __init__(self, closed, opened, who, rate=1.0, share=None, threshold=0.0, fade=0.0, gap=0.0, trim=0.0, **properties):
             super(TalkFrames, self).__init__(**properties)
             self.closed = renpy.displayable(closed)
             self.opened = renpy.displayable(opened)
             self.who = who
             self.rate = rate
+            self.share = share
+            self.gap = gap
+            self.trim = trim
+            self.threshold = threshold
+            self.fade = fade
 
         def visit(self):
             return [self.closed, self.opened]
 
-        def render(self, width, height, st, at):
-            opened = None if sm_reduced_motion() else talk_open(self.who, self.rate)
-            renpy.redraw(self, 0 if opened is not None else 1.0 / 30.0)
-            frame = self.opened if opened else self.closed
-            ## place учитывает offset кадра.
+        def _full(self, d, width, height, st, at):
+            ## place учитывает offset кадра; шейдеру оба кадра нужны одного размера.
             rv = renpy.Render(width, height)
-            rv.place(frame, 0, 0, width, height, st=st, at=at)
+            rv.place(d, 0, 0, width, height, st=st, at=at)
+            return rv
+
+        def render(self, width, height, st, at):
+            opened = None if sm_reduced_motion() else talk_open(self.who, self.rate, self.share, self.gap, self.trim)
+            target = 1.0 if opened is not None and opened > self.threshold else 0.0
+            if self.fade <= 0.0 or renpy.predicting():
+                k = target
+            else:
+                ## Доля открытого кадра идёт к цели по часам кадра, ключ — сам объект.
+                key = ("talk_fade", self.who, id(self))
+                level, seen = _fx_state.get(key, (target, None))
+                now = _fx_frame_time()
+                dt = 0.0 if seen is None else max(0.0, min(now - seen, 0.1))
+                step = dt / self.fade
+                k = min(target, level + step) if level < target else max(target, level - step)
+                _fx_state[key] = (k, now)
+            renpy.redraw(self, 0 if opened is not None or k != target else 1.0 / 30.0)
+            if k <= 0.0:
+                return self._full(self.closed, width, height, st, at)
+            if k >= 1.0:
+                return self._full(self.opened, width, height, st, at)
+            rv = renpy.Render(width, height)
+            rv.mesh = True
+            rv.add_shader("renpy.dissolve")
+            rv.add_uniform("u_renpy_dissolve", k)
+            rv.blit(self._full(self.closed, width, height, st, at), (0, 0))
+            rv.blit(self._full(self.opened, width, height, st, at), (0, 0))
             return rv
 
 init -5 python:
