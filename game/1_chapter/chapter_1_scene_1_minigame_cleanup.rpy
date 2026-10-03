@@ -16,7 +16,10 @@ define C1S1_CLEANUP_ITEMS = (
 define C1S1_CLEANUP_KEYS = tuple(item[0] for item in C1S1_CLEANUP_ITEMS)
 define C1S1_CLEANUP_DISSOLVE = Dissolve(0.22)
 define C1S1_CLEANUP_HOVER_SOUND = "c1s1/c1s1_cleanup_hover"
-define C1S1_CLEANUP_HOVER_VOLUME = 0.23
+define C1S1_CLEANUP_HOVER_VOLUME = 0.044
+## Звуки уборки идут через общий фильтр комнаты: доля глухого low-pass 700 Гц и доля эха.
+define C1S1_CLEANUP_LOWPASS = 0.10
+define C1S1_CLEANUP_REVERB = 0.15
 ## Звук взятия — свой у каждого предмета (audio/sfx/c1s1/README.md); у кого своего нет — щелчок.
 define C1S1_CLEANUP_PICKUP_SOUND = "click"
 define C1S1_CLEANUP_PICKUP_SOUNDS = {
@@ -33,7 +36,7 @@ define C1S1_CLEANUP_PICKUP_SOUNDS = {
     }
 ## Подушка звучит одной из куч одежды, на 7% ниже (отдельные файлы pillow_*).
 define C1S1_CLEANUP_PILLOW_SOURCES = ("back_clothes", "arm_clothes", "stool_clothes")
-define C1S1_CLEANUP_PICKUP_VOLUME = 0.32
+define C1S1_CLEANUP_PICKUP_VOLUME = 0.30
 ## Наведённый предмет чуть темнеет, а под ним проявляется процарапанная обводка.
 define C1S1_CLEANUP_HOVER_BRIGHTNESS = -0.03
 define C1S1_CLEANUP_OUTLINE_ALPHA = 0.65
@@ -105,6 +108,14 @@ init python:
             return "c1s1/c1s1_cleanup_pillow_" + source
         return C1S1_CLEANUP_PICKUP_SOUNDS.get(key, C1S1_CLEANUP_PICKUP_SOUND)
 
+    def c1s1_cleanup_play(name, volume):
+        sm_audio_set_filter(sm_sfx(name, volume=volume), [
+            renpy.audio.filter.WetDry(renpy.audio.filter.Lowpass(700.0),
+                wet=C1S1_CLEANUP_LOWPASS, dry=1.0 - C1S1_CLEANUP_LOWPASS),
+            renpy.audio.filter.Reverb(resonance=0.72, dampening=2400.0,
+                wet=C1S1_CLEANUP_REVERB, dry=1.0 - C1S1_CLEANUP_REVERB, delay_multiplier=1.8),
+            ], duration=0)
+
     def c1s1_cleanup_complete():
         return len(store.c1s1_cleanup_collected) == len(C1S1_CLEANUP_KEYS)
 
@@ -160,7 +171,7 @@ screen c1s1_cleanup_minigame(waiting=False, finished=False):
                     focus_mask item_image
                     pos item_pos
                     alt item_caption
-                    hovered [SetScreenVariable("cleanup_hover", key), SPlay(C1S1_CLEANUP_HOVER_SOUND, ext="ogg", volume=C1S1_CLEANUP_HOVER_VOLUME)]
+                    hovered [SetScreenVariable("cleanup_hover", key), Function(c1s1_cleanup_play, C1S1_CLEANUP_HOVER_SOUND, C1S1_CLEANUP_HOVER_VOLUME)]
                     unhovered SetScreenVariable("cleanup_hover", None)
                     action Return(key)
 
@@ -227,7 +238,7 @@ label chapter_1_scene_1_minigame_cleanup hide:
 
             if _return in C1S1_CLEANUP_KEYS:
                 if c1s1_cleanup_collect(_return):
-                    $ sm_sfx(c1s1_cleanup_pickup_sound(_return), volume=C1S1_CLEANUP_PICKUP_VOLUME)
+                    $ c1s1_cleanup_play(c1s1_cleanup_pickup_sound(_return), C1S1_CLEANUP_PICKUP_VOLUME)
                 show screen c1s1_cleanup_minigame
                 with C1S1_CLEANUP_DISSOLVE
             elif _return == "done":

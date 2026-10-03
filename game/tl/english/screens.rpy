@@ -173,8 +173,26 @@ translate english strings:
     new "VOICE"
 
     # game/screens.rpy:869
-    old "БЕЗ ЗВУКА"
-    new "MUTE ALL"
+    old "ВЕСЬ ЗВУК"
+    new "ALL SOUND"
+
+    old "ВКЛЮЧЁН"
+    new "ON"
+
+    old "ВЫКЛЮЧЕН"
+    new "OFF"
+
+    old "ТЕМП СЦЕН"
+    new "SCENE PACING"
+
+    old "АВТОРСКИЙ"
+    new "AUTHORED"
+
+    old "ПО КЛИКУ"
+    new "ON CLICK"
+
+    old "Сцены идут в том темпе, в каком их задумал автор: клик не обрывает паузы и переходы между кадрами. Выберите «По клику», чтобы проматывать их кликом, как обычный текст. Ctrl и «Пропуск» работают в любом случае."
+    new "Scenes play at the pace the author intended: a click won't cut pauses or transitions between shots. Choose On Click to skip them with a click like regular text. Ctrl and Skip always work."
 
     # game/screens.rpy:1030
     old "ИСТОРИЯ ДИАЛОГОВ ПУСТА."

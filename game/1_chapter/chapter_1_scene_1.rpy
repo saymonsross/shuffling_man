@@ -68,11 +68,17 @@ image chapter_1 scene_1_tv_close_night = depth_scene(
 ## Футбол живой: камера трансляции чуть плывёт, игроки едва заметно двигаются; трибуны
 ## выше доли top высоты картинки стоят.
 image c1s1_tv_football = At("images/1_chapter/tv/tv_football.png", sm_tv_players(top=0.36, amp=1.5, pan=10.0, pan_t=26.0))
-image chapter_1 scene_1_sofa_tv_night = At(sm_tv_set(
-    "images/1_chapter/chapter_1 scene_1_sofa_tv_night.png", "c1s1_tv_football",
-    (1237, 121), (396, 277), ((1, 1), (394, 1), (394, 275), (1, 275)),
-    glow="images/1_chapter/tv/tv_football.png"),
-    sm_tv_light((1241, 125, 1629, 394), (0.85, 1.0, 0.72)))
+## Контур Вити, подсвеченный экраном, — отдельный слой с нарисованным бликом на прозрачном
+## (sm_tv_rim), мерцает синхронно со светом экрана на кадре. Пока файла нет, слой пустой.
+image chapter_1 scene_1_sofa_tv_night = Fixed(
+    At(sm_tv_set(
+        "images/1_chapter/chapter_1 scene_1_sofa_tv_night.png", "c1s1_tv_football",
+        (1237, 121), (396, 277), ((1, 1), (394, 1), (394, 275), (1, 275)),
+        glow="images/1_chapter/tv/tv_football.png"),
+        sm_tv_light((1241, 125, 1629, 394), (0.85, 1.0, 0.72))),
+    At("images/1_chapter/chapter_1 scene_1_sofa_tv_night_rim.png", sm_tv_rim())
+        if renpy.loadable("images/1_chapter/chapter_1 scene_1_sofa_tv_night_rim.png") else Null(),
+    xysize=(1920, 1080))
 ## Витя на диване кричит: кадры «молчит» и «кричит» меняются по репликам. Движение одно
 ## на четыре слога (rate), рот открыт почти всё движение (share): на «Не ори!» открывается
 ## на «Н» и закрывается в конце фразы; на «Ты опять начинаешь?!» движения два, между ними
@@ -490,6 +496,9 @@ label chapter_1_scene_1:
     ## Лампа.
     $ fx_vignette = True
 
+    ## Постановка до замков — кино без реплик: клик её не проматывает; Ctrl/«Пропуск»
+    ## работают. Блокировщик снимается только перед сценовыми кнопками и мини-играми.
+    $ click_skip_block = True
     camera at camera_push(C1S1_LAMP_FOCUS, 1.04, 1.14, 25.0)
     scene chapter_1 lamp_dark:
         breath_brightness(-0.05, -0.08, 6.0)
@@ -501,12 +510,15 @@ label chapter_1_scene_1:
     # pause 1.0
 
     ## Интерактивы не создают развилок и пропускаются вместе со сценой.
+    $ click_skip_block = False
     if not renpy.is_skipping():
         menu(screen="scene_choice", follow=follow_camera(), skippable=True):
             "ВКЛЮЧИТЬ" (pos=(475, 530), size=(330, 165)):
                 pass
             with Dissolve(0.5)
 
+    ## Рука, шнур и щелчок света идут по таймингам ATL: клик сбил бы их.
+    $ click_skip_block = "hard"
     show chapter_1_lamp_hand dark_reach zorder 5:
         subpixel True
         anchor (0, 0)
@@ -567,13 +579,16 @@ label chapter_1_scene_1:
             repeat
 
     ## Метроном доступен только после включения света.
+    $ click_skip_block = False
     if not renpy.is_skipping():
         menu(screen="scene_choice", follow=follow_camera(), skippable=True):
             "ЗАПУСТИТЬ" (pos=(1017, 547), size=(430, 190)):
                 pass
             with Dissolve(0.5)
 
-    ## Та же рука из качания дотягивается кончиками пальцев до палки маятника.
+    ## Та же рука из качания дотягивается кончиками пальцев до палки маятника. Толчок,
+    ## стрелка и такт звука синхронны — клик их не проматывает ни при какой настройке.
+    $ click_skip_block = "hard"
     show chapter_1_lamp_hand metronome_wide:
         ease 0.6 xoffset 372 yoffset 251
     pause 0.6
@@ -674,10 +689,13 @@ label .piano:
         function renpy.curry(c1s1_pendulum_f)(14.0)
     with Dissolve(3.2)
 
+    ## Блокировщик выше клавиш мини-игры и съел бы клики по ним.
+    $ click_skip_block = False
     call chapter_1_scene_1_minigame_piano from _call_c1s1_minigame_piano_scene
 
-    ## Стук — постановка целиком: клик её не проматывает до самых замков; Ctrl/«Пропуск» работают.
-    $ click_skip_block = True
+    ## Стук — постановка целиком под звук: клик её не проматывает до самых замков ни при
+    ## какой настройке; Ctrl/«Пропуск» работают.
+    $ click_skip_block = "hard"
 
     ## ▶ СТУК А — мини-игра вернулась в момент обрушения нот (игрок собрал предпоследний
     ## шаг). Вместо нот — фальшь, муж долбит в дверь, камера вздрагивает по ударам.
@@ -937,7 +955,8 @@ label .after_locks:
     camera at camera_push((0.39, 0.45), 1.02, 1.12, 40.0)
     scene chapter_1 scene_1_hall_vitya:
         breath_brightness(-0.02, -0.04, 7.0)
-    with Dissolve(1.5)
+    with Dissolve(2.0)
+    pause 0.5
 
     $ click_skip_block = False
     "Часто Витя бывал просто невыносим."
@@ -948,7 +967,7 @@ label .after_locks:
     window auto hide
     scene chapter_1 scene_1_hall_mess:
         breath_brightness(-0.04, -0.09, 6.0)
-    with Dissolve(0.7)
+    with Dissolve(1.5)
 
     $ click_skip_block = False
     "Ничего серьёзного: какие-то банальности, быт... И эти его дурацкие, неискоренимые привычки."
@@ -966,9 +985,9 @@ label .tv:
     ## ══════════ КАДР 9 · ПУЛЬТ ══════════
     ## Наезд на тёмный экран. Телевизор включает игрок.
     ## Рука выползает 1.0 с (c1s1_tv_hand_rise) — внутри растворения, клик его не
-    ## проматывает: кнопка появляется, когда рука на месте, иначе на включении рука
-    ## прыгнула бы в рабочий кадр.
-    $ click_skip_block = True
+    ## проматывает ни при какой настройке: кнопка появляется, когда рука на месте, иначе
+    ## на включении рука прыгнула бы в рабочий кадр.
+    $ click_skip_block = "hard"
     window auto hide
     camera at camera_push((0.58, 0.30), 1.00, 1.07, 24.0)
     scene chapter_1 scene_1_tv_close_off:
@@ -994,6 +1013,11 @@ label .tv:
 label .tv_dialogue:
 
     vit "Наконец-то..."
+    vit "Всё, больше меня сегодня не трогать. Новости."
+
+    $ click_skip_block = True
+    pause 1.0
+    $ click_skip_block = False
 
 ## Уборка; отдельный вход каталога сцен.
 
@@ -1013,7 +1037,8 @@ label .cleanup:
             breath_brightness_clock(0.0, -0.04, 6.0)
         parallel:
             fx_frame(bloom=0.0, vignette=0.6)
-    with Dissolve(1.5)
+    with Dissolve(2.5)
+    pause 0.5
 
     ## Блокировщик выше предметов мини-игры и съел бы клики по ним.
     $ click_skip_block = False
@@ -1025,56 +1050,101 @@ label .cleanup:
     ## Наезд на гору посуды.
     $ click_skip_block = True
     window auto hide
-    camera at camera_push((0.45, 0.62), 1.03, 1.10, 20.0)
+    camera at camera_push((0.45, 0.62), 1.0, 1.10, 40.0)
     scene chapter_1 scene_1_kitchen_sink:
         breath_brightness(-0.04, -0.09, 6.0)
-    with Dissolve(1.5)
+    with Dissolve(2.0)
+    pause 1.5
 
     $ click_skip_block = False
+
     mar "Ты в магазин зашёл?"
+
+    $ click_skip_block = True
+    pause 1.5
+    $ click_skip_block = False
+
     "Нарушенные обещания..."
+
+    $ click_skip_block = True
+    pause 1.5
 
     ## ══════════ КАДР 12 · ВИТЯ У ТЕЛЕВИЗОРА, НОЧЬ ══════════
     ## День сменился ночью: долгое растворение, один медленный наезд на весь разговор.
-    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.60, 0.38), 1.02, 1.12, 40.0)
     scene chapter_1 scene_1_sofa_tv_night:
         breath_brightness(-0.05, -0.09, 6.0)
     with Dissolve(2.5)
+    pause 0.5
 
     $ click_skip_block = False
     vit "Не-а."
-    "Ну, мелочь. И ещё одна. И ещё одна. День за днём."
-    mar "У нас на завтра..."
-    "Раз за разом просишь, напоминаешь, умоляешь…"
+
+    $ click_skip_block = True
+    pause 1.5
+    $ click_skip_block = False
+
+    "Ну, мелочь. Потом ещё одна..."
+    "И ещё одна. И ещё одна. День за днём."
+
+    $ click_skip_block = True
+    pause 1.5
+    $ click_skip_block = False
+
+    mar "Витя, ты помнишь у нас на завтра..."
+
+    $ click_skip_block = True
+    pause 1.5
+    $ click_skip_block = False
+
+    "Раз за разом просишь... напоминаешь, умоляешь…"
+
+    $ click_skip_block = True
+    pause 1.5
 
     ## ══════════ КАДР 13 · ЭКРАН ══════════
     ## Наезд на экран: Витя смотрит в него, не на Марину.
-    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.58, 0.30), 1.04, 1.12, 14.0)
     scene chapter_1 scene_1_tv_close_night:
         breath_brightness(-0.05, -0.09, 6.0)
-    with Dissolve(0.8)
+    with Dissolve(1.5)
+
+    pause 1.0
 
     $ click_skip_block = False
-    vit "Не, завтра не могу никак."
+    vit "Нет, завтра не могу никак."
+
+    $ click_skip_block = True
+    pause 1.5
+    $ click_skip_block = False
+
     mar "Но мы договаривались!"
 
-    ## ══════════ КАДР 14 · ССОРА ══════════
-    ## Склейка встык на крик, окно диалога остаётся (show, не scene). Камера входит крупно
-    ## и плавно оседает; каждый следующий наезд начинается с зума, на котором кончился
-    ## предыдущий, — без рывков.
     $ click_skip_block = True
+    pause 1.0
+
+    ## ══════════ КАДР 14 · ССОРА ══════════
+    ## Кадр растворяется под окном диалога (show, не scene; переход — renpy.transition по
+    ## слою master: оператор with спрятал бы окно). Камера входит крупно и плавно оседает;
+    ## каждый следующий наезд начинается с зума, на котором кончился предыдущий, — без
+    ## рывков.
+    $ renpy.transition(Dissolve(0.6), layer="master")
     camera at camera_settle((0.40, 0.38), 1.0, 1.08, 31.2)
     show chapter_1 scene_1_vitya_sofa:
         breath_brightness(-0.05, -0.09, 6.0)
 
-    pause 0.3
+    ## Пауза не короче перехода: иначе он оборвётся.
+    pause 1.0
     $ click_skip_block = False
 
     vit "Не ори!"
+
+    $ click_skip_block = True
+    pause 0.7
+    $ click_skip_block = False
+
     mar "Сам не ори!"
 
     $ click_skip_block = True
@@ -1085,13 +1155,13 @@ label .cleanup:
     "Как жэ это выводило меня из себя."
 
     $ click_skip_block = True
-    pause 0.5
+    pause 1.0
     $ click_skip_block = False
 
     vit "Ты опять начинаешь?!"
 
     $ click_skip_block = True
-    pause 0.5
+    pause 1.0
     $ click_skip_block = False
 
     show chapter_1 scene_1_vitya_sofa:
@@ -1105,6 +1175,6 @@ label .cleanup:
     scene black with Dissolve(2.0)
     camera
 
-    pause 0.6
+    pause 1.0
 
     jump chapter_1_scene_2

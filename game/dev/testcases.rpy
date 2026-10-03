@@ -250,29 +250,41 @@ testcase c1s1_story_fast_outcome:
     advance
     advance until "Ничего серьёзного:" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_1_hall_mess'))
-    advance until "Наконец-то..." timeout 10.0
+    advance until "Раньше мне хватало сил их не замечать. Терпеть." timeout 10.0
+    advance
+    assert "ВКЛЮЧИТЬ" timeout 8.0
+    click "ВКЛЮЧИТЬ"
+    assert "Наконец-то..." timeout 8.0
     assert eval (c1s1_locks_outcome == 'fast')
 
 testcase c1s1_story_normal_outcome:
     $ c1s1_locks_outcome = "normal"
     $ dismiss_on()
     run Start("chapter_1_scene_1.after_locks")
-    assert "Ну наконец-то, бля." timeout 10.0
+    assert "Ну наконец-то..." timeout 10.0
     advance
     advance until "Ничего серьёзного:" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_1_hall_mess'))
-    advance until "Наконец-то..." timeout 10.0
+    advance until "Раньше мне хватало сил их не замечать. Терпеть." timeout 10.0
+    advance
+    assert "ВКЛЮЧИТЬ" timeout 8.0
+    click "ВКЛЮЧИТЬ"
+    assert "Наконец-то..." timeout 8.0
     assert eval (c1s1_locks_outcome == 'normal')
 
 testcase c1s1_story_legacy_timeout_outcome:
     $ c1s1_locks_outcome = "timeout"
     $ dismiss_on()
     run Start("chapter_1_scene_1.after_locks")
-    assert "Ну наконец-то, бля." timeout 10.0
+    assert "Ну наконец-то..." timeout 10.0
     advance
     advance until "Ничего серьёзного:" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_1_hall_mess'))
-    advance until "Наконец-то..." timeout 10.0
+    advance until "Раньше мне хватало сил их не замечать. Терпеть." timeout 10.0
+    advance
+    assert "ВКЛЮЧИТЬ" timeout 8.0
+    click "ВКЛЮЧИТЬ"
+    assert "Наконец-то..." timeout 8.0
     assert eval (c1s1_locks_outcome == 'normal')
 
 testcase c1s3_apologize_branch:

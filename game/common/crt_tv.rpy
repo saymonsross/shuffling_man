@@ -250,10 +250,27 @@ transform sm_tv_players(top=0.36, amp=1.5, speed=0.35, pan=10.0, pan_t=26.0):
 
 ## Свет телевизора на слое (рука перед экраном, комната): прибавка цвета tint, сильнее всего
 ## у прямоугольника экрана rect (x0, y0, x1, y1 — px слоя) и тающая за radius px. Мерцает,
-## как живой экран: мелкая неровная рябь и смена уровня раз в пару секунд — будто сменился
-## план. При «меньше движения» или выключенных вспышках свет ровный. Правит готовый цвет
-## слоя, поэтому складывается с другими шейдерами того же трансформа.
+## как живой экран (sm_tv_flicker): мелкая неровная рябь и смена уровня раз в пару секунд —
+## будто сменился план. При «меньше движения» или выключенных вспышках свет ровный. Правит
+## готовый цвет слоя, поэтому складывается с другими шейдерами того же трансформа.
 init python:
+    def sm_tv_flicker():
+        """Яркость света экрана сейчас, около 0.7..1.1: уровень «плана» держится 1.9 с и
+        меняется за 0.15 с, поверх — рябь. Один источник для всего, что светится от
+        телевизора в кадре: слой (sm_tv_light) и контур (sm_tv_rim) мерцают синхронно."""
+        import math
+        if sm_reduced_motion() or sm_flashes_disabled():
+            return 0.9
+        t = _fx_frame_time() % 1000.0
+        shot = t / 1.9
+        k = math.floor(shot)
+        level_from = math.sin((k - 1.0) * 12.9898) * 43758.5453 % 1.0
+        level_to = math.sin(k * 12.9898) * 43758.5453 % 1.0
+        blend = min(1.0, (shot - k) / 0.08)
+        blend = blend * blend * (3.0 - 2.0 * blend)
+        level = level_from + (level_to - level_from) * blend
+        return 0.72 + 0.28 * level + 0.08 * math.sin(t * 7.3) + 0.05 * math.sin(t * 13.7 + 1.3)
+
     renpy.register_shader("sm.tv_light",
         variables="""
         uniform vec2 u_model_size;
@@ -261,33 +278,26 @@ init python:
         uniform vec3 u_tvl_tint;
         uniform float u_tvl_radius;
         uniform float u_tvl_strength;
-        uniform float u_tvl_flicker;
-        uniform float u_tv_time;
+        uniform float u_tvl_flick;
         attribute vec2 a_tex_coord;
         varying vec2 v_tvl_coord;
         """,
         vertex_300="""
         v_tvl_coord = a_tex_coord;
         """,
-        fragment_functions="""
-        float sm_tvl_hash(float k) {
-            return fract(sin(k * 12.9898) * 43758.5453);
-        }
-        """,
         fragment_300="""
         vec2 p = v_tvl_coord * u_model_size;
         vec2 outside = max(max(u_tvl_rect.xy - p, p - u_tvl_rect.zw), 0.0);
         float fall = exp(-length(outside) / u_tvl_radius);
-        float shot = u_tv_time / 1.9;
-        float level = mix(sm_tvl_hash(floor(shot) - 1.0), sm_tvl_hash(floor(shot)), smoothstep(0.0, 0.08, fract(shot)));
-        float flick = 0.72 + 0.28 * level + 0.08 * sin(u_tv_time * 7.3) + 0.05 * sin(u_tv_time * 13.7 + 1.3);
-        flick = mix(0.9, flick, u_tvl_flicker);
-        gl_FragColor.rgb += u_tvl_tint * (u_tvl_strength * fall * flick) * gl_FragColor.a;
+        gl_FragColor.rgb += u_tvl_tint * (u_tvl_strength * fall * u_tvl_flick) * gl_FragColor.a;
         """)
 
     def sm_tv_light_f(trans, st, at):
-        trans.u_tv_time = _fx_frame_time() % 1000.0
-        trans.u_tvl_flicker = 0.0 if sm_reduced_motion() or sm_flashes_disabled() else 1.0
+        trans.u_tvl_flick = sm_tv_flicker()
+        return 0
+
+    def sm_tv_rim_f(strength, trans, st, at):
+        trans.alpha = max(0.0, min(1.0, strength * sm_tv_flicker()))
         return 0
 
 transform sm_tv_light(rect, tint=(1.0, 1.0, 1.0), radius=180.0, strength=0.16):
@@ -297,9 +307,15 @@ transform sm_tv_light(rect, tint=(1.0, 1.0, 1.0), radius=180.0, strength=0.16):
     u_tvl_tint (float(tint[0]), float(tint[1]), float(tint[2]))
     u_tvl_radius float(radius)
     u_tvl_strength float(strength)
-    u_tvl_flicker 1.0
-    u_tv_time 0.0
+    u_tvl_flick 0.9
     function sm_tv_light_f
+
+## Контур, подсвеченный телевизором: отдельный слой с нарисованным бликом (на прозрачном,
+## яркость — как в самый светлый момент) мерцает синхронно со светом экрана. strength —
+## множитель, на мерцании альфа ходит около 0.7..1.0 от него.
+transform sm_tv_rim(strength=1.0):
+    alpha 0.9
+    function renpy.curry(sm_tv_rim_f)(strength)
 
 ## Бегущая строка новостей внутри картинки телевизора (до ЭЛТ-шейдера): закрашивает
 ## запечённую размытую строку цветом полосы и прокручивает настоящий текст по кругу.

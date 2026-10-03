@@ -2,9 +2,20 @@
 
 ## Изображения
 
-image chapter_1 scene_2_sandwiches_1 = At("images/1_chapter/owner_review/chapter_1_review_sandwiches stage_1.png", xysize(1920, 1080))
-image chapter_1 scene_2_sandwiches_2 = At("images/1_chapter/owner_review/chapter_1_review_sandwiches stage_2.png", xysize(1920, 1080))
-image chapter_1 scene_2_sandwiches_3 = At("images/1_chapter/owner_review/chapter_1_review_sandwiches stage_3.png", xysize(1920, 1080))
+## Бутерброды — один образ на все четыре стадии (StageDissolve, common/transforms.rpy):
+## сцена поднимает счётчик c1s2_bite, и через c1s2_bite_delay секунд — посреди реплики —
+## очередной бутерброд растворяется. Над обеими чашками пар (steam, common/shaders.rpy) —
+## столбы от поверхности чая, px картинки 2352×1080.
+## Приоритет 10: transform steam объявляется в common позже этого файла.
+default c1s2_bite = 0
+default c1s2_bite_delay = 1.0
+define 10 c1s2_sandwiches_steam = steam(((420, 120, 130, 320), (1735, 50, 150, 320)), amp=4.5, glow=0.55)
+image chapter_1 scene_2_sandwiches = At(StageDissolve((
+    "images/1_chapter/chapter_1 scene_2_sandwiches.png",
+    "images/1_chapter/owner_review/chapter_1_review_sandwiches stage_1.png",
+    "images/1_chapter/owner_review/chapter_1_review_sandwiches stage_2.png",
+    "images/1_chapter/owner_review/chapter_1_review_sandwiches stage_3.png"),
+    "c1s2_bite", "c1s2_bite_delay", fade=0.3), c1s2_sandwiches_steam)
 
 ## Спальня из коридора — планы глубины (depth_scene, common/parallax.rpy): задник комнаты,
 ## перед ним стена слева и створка справа. По наведению на проём (c1s2_door_hover) комната
@@ -183,19 +194,23 @@ label chapter_1_scene_2:
     ## После закрытия экрана unhovered не приходит.
     $ c1s2_door_hover = False
 
+    $ click_skip_block = True
     camera at camera_push((0.72, 0.52), 1.0, 1.15, 25.0)
 
     $ mplay("chapter_1/sora_chapter_start", fadein=0.0, volume=2.0, tag="chapter_1_music_1", loop=True)
 
     pause 1.5
 
+    $ click_skip_block = False
     "Я потеряла способность закрывать на эти мелочи глаза."
     "А Витя не хотел понимать меня. Не воспринимал серьёзно."
 
     ## Шаги Вити по коридору — на паузе перед его репликой.
     $ sm_sfx("c1s2/c1s2_footsteps")
+    $ click_skip_block = True
     window auto hide
     pause 1.5
+    $ click_skip_block = False
 
     vit "Доброе утро... А, ой, сейчас уже три часа дня!"
 
@@ -214,6 +229,11 @@ label chapter_1_scene_2:
     $ click_skip_block = False
     mar "Я не могу подняться. Извини."
     vit "Просто бери пример с меня. Сделай над собой усилие..."
+
+    $ click_skip_block = True
+    pause 1.0
+    $ click_skip_block = False
+
     "Я много раз предлагала мужу сходить к семейному психологу, но он, как типичный мужик, боялся терапии, словно огня. Смешно!"
 
     ## ══════════ КАДР 3 · ССОРА В СПАЛЬНЕ ══════════
@@ -234,7 +254,7 @@ label chapter_1_scene_2:
         zoom 1.05 xoffset 2 yoffset -11
         ## При «меньше движения» наезда нет вовсе: кадр остаётся общим, Витя не уходит за край.
         pause (86400.0 * (1.0 - sm_motion_scale()))
-        ease 44.0 zoom 1.4 xoffset 134 yoffset -216
+        linear 50.0 zoom 1.5 xoffset 134 yoffset -246
     $ fx_vignette = True
     ## Виньетка на ссоре на 25% слабее (fx_frame); позы Вити меняются show без ATL — доля
     ## держится на весь разговор.
@@ -243,14 +263,20 @@ label chapter_1_scene_2:
             breath_brightness(-0.04, -0.09, 6.0)
         parallel:
             fx_frame(vignette=0.75)
-    with Dissolve(1.5)
+    with Dissolve(3.0)
 
     $ click_skip_block = False
     mar "Тамара Витальевна говорит, что ты тоже должен прийти. Семейная терапия..."
     vit "Мне то оно зачем? У меня-то с головой всё в порядке."
-    mar "Это нелепо..."
 
     $ click_skip_block = True
+    pause 0.5
+    $ click_skip_block = False
+
+    mar "Это нелепо..."
+
+    ## Переход позы длиной в паузу: клик оборвал бы его, блок при любой настройке.
+    $ click_skip_block = "hard"
     pause 0.5
 
     ## ▶ Срывается на крик.
@@ -273,6 +299,7 @@ label chapter_1_scene_2:
 
     mar "О чём ты говоришь?!"
 
+    $ click_skip_block = "hard"
     pause 0.1
 
     ## ▶ У кровати, разводит руками. Пауза после show — длиной в переход: Витя доходит до
@@ -281,20 +308,26 @@ label chapter_1_scene_2:
     $ renpy.transition(Dissolve(0.4), layer="master")
     show chapter_1 scene_2_parents_room_vitya_4
     pause 0.4
+    $ click_skip_block = False
 
     vit "Сумасшедший дом..."
     vit "Только решёток на окнах нет. А стоило бы, да?"
 
+    $ click_skip_block = True
     pause 0.5
 
     $ renpy.transition(Dissolve(0.3), layer="master")
     show chapter_1 scene_2_parents_room_vitya_4_1
+    $ click_skip_block = False
     vit "Тамара не помогает! Не знал, что на болтовню с подружкой можно сжечь столько денег..."
 
+    $ click_skip_block = True
     pause 0.5
+    $ click_skip_block = False
 
     mar "Витя, это терапия... У меня есть диагноз."
 
+    $ click_skip_block = True
     pause 0.5
 
     $ renpy.transition(Dissolve(0.3), layer="master")
@@ -302,13 +335,16 @@ label chapter_1_scene_2:
 
     $ mstop(tag="chapter_1_music_1", fadeout=120.2)
 
+    $ click_skip_block = False
     vit "Какой?!"
     vit "Тоска гробовая?"
 
+    $ click_skip_block = True
     pause 0.5
 
     $ renpy.transition(Dissolve(0.2), layer="master")
     show chapter_1 scene_2_parents_room_vitya_3
+    $ click_skip_block = False
     vit "Выйди на улицу. Перестань копаться в себе. Поговори с дочкой в конце концов!"
 
     ## ══════════ КАДР 4 · ЛАДОНИ ══════════
@@ -336,8 +372,8 @@ label chapter_1_scene_2:
     ## Гц) и обрастает эхом (wet — доля эха, dry — доля чистого звука).
     $ sm_audio_set_filter(c1s2_crying_audio, [
         renpy.audio.filter.Lowpass(2200.0),
-        renpy.audio.filter.Reverb(resonance=0.72, dampening=2400.0, wet=0.55, dry=0.85, delay_multiplier=1.8),
-        ], duration=17.0)
+        renpy.audio.filter.Reverb(resonance=0.72, dampening=2400.0, wet=0.60, dry=0.80, delay_multiplier=1.8),
+        ], duration=16.0)
 
     $ click_skip_block = True
     pause 1.0
@@ -364,7 +400,8 @@ label chapter_1_scene_2:
     "И я тебя, Вить... До сих пор."
     "А тогда я не смогла тебе ответить: меня ломало изнутри, я пряталась в собственных ладонях, как хочется спрятаться и сейчас."
 
-    $ click_skip_block = True
+    ## Титры печатаются по буквам и гаснут по флагам — блок при любой настройке.
+    $ click_skip_block = "hard"
     pause 1.0
 
     ## Последняя фраза — не в окне, а титром лесенкой по центру: куски печатаются по буквам
@@ -388,7 +425,8 @@ label chapter_1_scene_2:
     ## Голова из пролога в темноте и шарканье. Тёмный кадр уходит через hide, а не scene:
     ## scene убрала бы и титры фразы, а они догорают поверх головы. Чёрная подложка
     ## закрывает углы под повёрнутой головой.
-    $ click_skip_block = True
+    ## Голова и шарканье идут под звук — блок при любой настройке.
+    $ click_skip_block = "hard"
 
     ## Сам плач гаснет за cut секунд, его эхо — за fadeout; tail — секунды от этой строки
     ## до освобождения канала, запас на хвост эха.
@@ -431,18 +469,18 @@ label chapter_1_scene_2:
     vit "Ладно, пойдём поедим. Я состряпаю чего-нибудь."
     mar "Л-ладно..."
 
-    ## ══════════ КАДР 8 · КУХНЯ ══════════
-    ## Наезд на Марину за столом.
-    $ click_skip_block = True
-    window auto hide
-    camera at camera_push((0.30, 0.50), 1.02, 1.08, 24.0)
-    scene chapter_1 scene_2_kitchen:
-        breath_brightness(-0.03, -0.08, 6.0)
-    with Dissolve(2.0)
+    # ## ══════════ КАДР 8 · КУХНЯ ══════════
+    # ## Наезд на Марину за столом.
+    # $ click_skip_block = True
+    # window auto hide
+    # camera at camera_push((0.30, 0.50), 1.02, 1.08, 24.0)
+    # scene chapter_1 scene_2_kitchen:
+    #     breath_brightness(-0.03, -0.08, 6.0)
+    # with Dissolve(2.0)
 
-    $ click_skip_block = False
-    "Наш брак давно был не идеален, понимала ли я это? Не совсем."
-    "После каждого такого скандала я старалась притворяться, подыгрывать."
+    # $ click_skip_block = False
+    # "Наш брак давно был не идеален, понимала ли я это? Не совсем."
+    # "После каждого такого скандала я старалась притворяться, подыгрывать."
 
 ## Бутерброды; отдельный вход каталога сцен.
 
@@ -451,36 +489,60 @@ label .sandwiches:
     $ fx_vignette = True
 
     ## ══════════ КАДР 9 · БУТЕРБРОДЫ ══════════
-    ## Один наезд на тарелку — через все четыре кадра. Бутерброды исчезают по репликам:
-    ## show без ATL оставляет кадру его дыхание, камера не сбрасывается.
+    ## Одна проводка слева направо с лёгким наездом — на весь кадр. Бутерброды исчезают
+    ## внутри образа по счётчику c1s2_bite: каждый — посреди своей реплики, через случайные
+    ## c1s2_bite_delay секунд после её начала. Без bloom: он плавно гаснет на растворении
+    ## и возвращается на чёрном.
     $ click_skip_block = True
+    $ fx_bloom_strength = 0.0
+    $ c1s2_bite = 0
     window auto hide
-    camera at camera_push((0.35, 0.50), 1.02, 1.12, 40.0)
+    camera:
+        parallel:
+            camera_travel((0.465, 0.50), (0.57, 0.50), 1.08, 1.12, 40.0)
+        parallel:
+            linear 140.0 zoom 1.2
     scene chapter_1 scene_2_sandwiches:
-        breath_brightness(-0.03, -0.08, 6.0)
-    with Dissolve(1.0)
+        breath_brightness(-0.05, -0.09, 7.0)
+    with Dissolve(4.0)
 
     $ click_skip_block = False
-    "Для него, для Настеньки. Для себя."
 
-    show chapter_1 scene_2_sandwiches_1
-    with Dissolve(0.22)
-
-    "Трещины можно спрятать. Сделать вид, что их нет."
-
-    show chapter_1 scene_2_sandwiches_2
-    with Dissolve(0.22)
-
-    "Представить, что процесс разрушения остановлен."
-
-    show chapter_1 scene_2_sandwiches_3
-    with Dissolve(0.22)
-
-    "Все люди притворяются. Почему мы не могли?.."
+    "Наш брак давно был не идеален, понимала ли я это? Не совсем."
+    "После каждого такого скандала я старалась притворяться, подыгрывать."
 
     $ click_skip_block = True
+    pause 0.8
+    $ click_skip_block = False
+
+    $ c1s2_bite_delay = renpy.random.uniform(0.6, 2.4)
+    $ c1s2_bite += 1
+    "Для него, для Настеньки..."
+    "...для себя."
+
+    $ click_skip_block = True
+    pause 0.8
+    $ click_skip_block = False
+
+    $ c1s2_bite_delay = renpy.random.uniform(0.6, 2.4)
+    $ c1s2_bite += 1
+    "Трещины можно спрятать. Сделать вид, что их нет."
+    "Представить, что процесс разрушения остановлен."
+
+    $ click_skip_block = True
+    pause 0.8
+    $ click_skip_block = False
+
+    $ c1s2_bite_delay = renpy.random.uniform(0.6, 2.4)
+    $ c1s2_bite += 1
+    "Все ведь притворяются. Почему мы не могли?.."
+
+    $ click_skip_block = True
+    pause 0.8
+
     window auto hide
     scene black with Dissolve(2.0)
+    $ fx_bloom_strength = FX_BLOOM_DEFAULT
 
     pause 0.6
 

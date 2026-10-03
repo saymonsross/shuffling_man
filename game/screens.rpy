@@ -143,7 +143,11 @@ image ui_slot_border_hover = At(Frame(gui_outline(32, 32, color="#5c5c5cff"), 4,
 ## Линии таблицы настроек — штрих контура окна диалога вполсилы (mix 0.5); горизонтальные
 ## шире блока на 4 px с каждой стороны.
 image ui_pref_hline = At(Solid(gui.quick_menu_line_color, xsize=1008, ysize=2), scratch("ui_border", tint=0.0, mix=0.5))
-image ui_pref_vline = At(Solid(gui.quick_menu_line_color, xsize=2, ysize=56), scratch("ui_border", tint=0.0, mix=0.5))
+## Без высоты: черта колонки растягивается на все строки категории.
+image ui_pref_vline = At(Solid(gui.quick_menu_line_color, xsize=2), scratch("ui_border", tint=0.0, mix=0.5))
+## Граница подгрупп внутри категории («ЯЗЫК» | «ПРОПУСК» | «ТЕМП СЦЕН»):
+## той же длины, что линии категории, но тоньше и темнее.
+image ui_pref_group_line = At(Transform(Solid(gui.quick_menu_line_color, xsize=1008, ysize=1), alpha=0.6), scratch("ui_border", tint=0.0, mix=0.5))
 
 ## Подчёркивание кнопок подтверждения; картинка по имени — стиль вычисляется раньше scratch.
 image ui_hover_underline = Transform(At(Solid("#F2EFE940", ysize=2), scratch("ui_frame", tint=0.0)), yalign=1.0)
@@ -741,7 +745,7 @@ screen game_menu(title, scroll=None, yinitial=0.0, spacing=0):
         yoffset -30
         use main_menu_button(_("НАЗАД"), pause_menu_back())
 
-    label title
+    label title at scratch("menu_title", tint=0.0)
 
     ## Заголовок экрана доступен Font Picker (F8, dev).
     add sm_font_preview_style("game_menu_label_text")
@@ -790,6 +794,10 @@ style game_menu_side:
 style game_menu_label:
     xalign 0.5
     ysize 180
+
+## Заголовок экрана процарапан слегка — 30% силы штриха (common/scratch_text.rpy).
+init python:
+    scratch_params("menu_title", "Заголовки меню", 2.0, 0.3, 1.0, 0.55, mix=0.3)
 
 ## Заголовок экрана: шрифт и цвет заголовков категорий настроек.
 style game_menu_label_text:
@@ -988,7 +996,8 @@ screen preferences():
 
         vbox:
             xalign 0.5
-            spacing 44
+            yoffset -27
+            spacing 32
 
             if renpy.variant("pc") or renpy.variant("web"):
                 use pref_section(_("ИЗОБРАЖЕНИЕ")):
@@ -1008,6 +1017,7 @@ screen preferences():
                         yalign 0.5
                         for lang_code, lang_name in lang_dropdown_items:
                             textbutton lang_name.upper() action Language(lang_code)
+                use pref_group_divider
                 use pref_row(_("ПРОПУСК")):
                     hbox:
                         style_prefix "radio"
@@ -1015,23 +1025,42 @@ screen preferences():
                         yalign 0.5
                         textbutton _("ПРОЧИТАННЫЙ") action Preference("skip", "seen")
                         textbutton _("ВЕСЬ ТЕКСТ") action Preference("skip", "all")
+                ## Блокировщик клика в постановке (common/interactions.rpy); пояснение —
+                ## строкой под вариантами, без наведения.
+                use pref_group_divider
+                use pref_row(_("ТЕМП СЦЕН")):
+                    hbox:
+                        style_prefix "radio"
+                        spacing 40
+                        yalign 0.5
+                        textbutton _("АВТОРСКИЙ") action SetField(persistent, "sm_author_pacing", True)
+                        textbutton _("ПО КЛИКУ") action SetField(persistent, "sm_author_pacing", False)
+                use pref_row(""):
+                    text _("Сцены идут в том темпе, в каком их задумал автор: клик не обрывает паузы и переходы между кадрами. Выберите «По клику», чтобы проматывать их кликом, как обычный текст. Ctrl и «Пропуск» работают в любом случае."):
+                        style "pref_tip"
+                        yalign 0.5
 
             if config.has_music or config.has_sound or config.has_voice:
+                ## Пока весь звук выключен, ползунки ничего не меняют — приглушены.
+                $ muted = Preference("all mute", "enable").get_selected()
                 use pref_section(_("ЗВУК")):
                     if config.has_music:
                         use pref_row(_("МУЗЫКА")):
-                            bar style "slider_slider" value Preference("music volume")
+                            bar style "slider_slider" value Preference("music volume") at pref_dim(muted)
                     if config.has_sound:
                         use pref_row(_("ЗВУКИ")):
-                            bar style "slider_slider" value Preference("sound volume")
+                            bar style "slider_slider" value Preference("sound volume") at pref_dim(muted)
                     if config.has_voice:
                         use pref_row(_("ГОЛОС")):
-                            bar style "slider_slider" value Preference("voice volume")
-                    use pref_row(""):
-                        textbutton _("БЕЗ ЗВУКА"):
-                            action Preference("all mute", "toggle")
-                            style "mute_all_button"
+                            bar style "slider_slider" value Preference("voice volume") at pref_dim(muted)
+                    use pref_group_divider
+                    use pref_row(_("ВЕСЬ ЗВУК")):
+                        hbox:
+                            style_prefix "radio"
+                            spacing 40
                             yalign 0.5
+                            textbutton _("ВКЛЮЧЁН") action Preference("all mute", "disable")
+                            textbutton _("ВЫКЛЮЧЕН") action Preference("all mute", "enable")
 
 
 ## Категория настроек: заголовок, линия цветом разделителя быстрого меню, строки.
@@ -1040,10 +1069,18 @@ screen pref_section(title):
         style "pref_section_vbox"
         text title style "pref_section_title"
         add "ui_pref_hline" xoffset -4
-        ## Строки вплотную: вертикальная черта колонки идёт без разрывов.
-        vbox:
-            transclude
+        ## Черта колонки — одна на все строки: строка с длинным текстом выше 56 px, и
+        ## кусками черта обрывалась бы раньше нижней линии.
+        fixed:
+            fit_first True
+            vbox:
+                spacing 10
+                transclude
+            add "ui_pref_vline" xpos 180
         add "ui_pref_hline" xoffset -4
+
+transform pref_dim(on):
+    linear 0.2 alpha (0.35 if on else 1.0)
 
 ## Строка настройки: название | черта цветом разделителя | варианты.
 ## Колонка названий 180 + черта 2 + отступ 18 = 200 — начало вариантов.
@@ -1051,9 +1088,15 @@ screen pref_row(label):
     hbox:
         style "pref_row"
         text label style "pref_row_label"
-        add "ui_pref_vline"
-        null width 18
+        null width 20
         transclude
+
+## Зазоры до строк — интервал строк 10, как от линий категории до её строк: подгруппа
+## той же высоты, что категория из одной строки.
+screen pref_group_divider():
+    fixed:
+        ysize 1
+        add "ui_pref_group_line" xoffset -4
 
 style pref_section_vbox is vbox:
     xsize 1000
@@ -1063,14 +1106,21 @@ style pref_section_title is gui_text:
     size 30
     color gui.header_color
 
+## Высота строки — по содержимому: подпись и варианты без полей сверху и снизу.
 style pref_row is hbox:
-    ysize 56
+    yminimum 0
 
 style pref_row_label is gui_text:
     min_width 180
     size 24
     color "#8a8784"
     yalign 0.5
+
+## Пояснение под галкой: две строки в колонке вариантов.
+style pref_tip is gui_text:
+    xsize 800
+    size 20
+    color "#8a8784"
 
 
 style pref_label is gui_label
@@ -1096,8 +1146,6 @@ style slider_button is gui_button
 style slider_button_text is gui_button_text
 style slider_pref_vbox is pref_vbox
 
-style mute_all_button is check_button
-style mute_all_button_text is check_button_text
 
 style pref_label:
     top_margin gui.pref_spacing
@@ -1117,6 +1165,8 @@ style radio_vbox:
 ## Выбранный вариант подчёркнут красной линией вместо маркера слева.
 style radio_button:
     properties gui.button_properties("radio_button")
+    top_padding 0
+    bottom_padding 3
     foreground None
     selected_foreground Fixed(Solid(gui.accent_color, ysize=2, yalign=1.0))
 
@@ -1129,6 +1179,8 @@ style check_vbox:
 
 style check_button:
     properties gui.button_properties("check_button")
+    top_padding 0
+    bottom_padding 3
     foreground None
     selected_foreground Fixed(Solid(gui.accent_color, ysize=2, yalign=1.0))
 
@@ -1137,10 +1189,19 @@ style check_button_text:
     size 26
 
 ## Высота — по картинке маркера; ширина — до края категории (1000 − колонка названий 200).
+## Ползунок в тон линиям экрана: тонкая полоса, громкость — красная заливка до маркера,
+## пусто — тёмная; маркер — светлая черта на всю высоту строки.
 style slider_slider:
     xsize 800
-    ysize gui.slider_size
+    ysize 25
     yalign 0.5
+    left_bar Fixed(Solid("#8f1414", ysize=6, yalign=0.5))
+    hover_left_bar Fixed(Solid(gui.accent_color, ysize=6, yalign=0.5))
+    right_bar Fixed(Solid("#3a3a3a", ysize=6, yalign=0.5))
+    thumb Fixed(Solid("#bfbcb8", ysize=21, yalign=0.5), xsize=4)
+    hover_thumb Fixed(Solid("#e6e3dd", ysize=21, yalign=0.5), xsize=4)
+    thumb_offset 2
+    hover_sound "audio/sfx/hover.ogg"
 
 style slider_button:
     properties gui.button_properties("slider_button")

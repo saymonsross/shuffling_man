@@ -361,3 +361,48 @@ init -5 python:
             rv.blit(self._full(self.old, width, height, st, at), (0, 0))
             rv.blit(self._full(self.new, width, height, st, at), (0, 0))
             return rv
+
+    class StageDissolve(renpy.Displayable):
+        """Цепочка кадров по счётчику прямо во время реплики: frames — кадры по порядку,
+        counter — store-счётчик (сцена поднимает его: $ counter += 1), delay — имя
+        store-переменной с задержкой в секундах. Через delay секунд после подъёма счётчика
+        до n кадр n-1 растворяется в кадр n за fade секунд (шейдер перехода Dissolve).
+        Счётчик 0 — первый кадр. Откат счётчика возвращает прежний кадр."""
+
+        def __init__(self, frames, counter, delay, fade=0.3, **properties):
+            super(StageDissolve, self).__init__(**properties)
+            self.frames = [renpy.displayable(f) for f in frames]
+            self.counter = counter
+            self.delay = delay
+            self.fade = fade
+
+        def visit(self):
+            return self.frames
+
+        def _full(self, d, width, height, st, at):
+            rv = renpy.Render(width, height)
+            rv.place(d, 0, 0, width, height, st=st, at=at)
+            return rv
+
+        def render(self, width, height, st, at):
+            n = max(0, min(len(self.frames) - 1, int(getattr(store, self.counter, 0) or 0)))
+            if n == 0:
+                renpy.redraw(self, 1.0 / 30.0)
+                return self._full(self.frames[0], width, height, st, at)
+            since = fx_flag_time("stage", self.counter)
+            delay = float(getattr(store, self.delay, 0.0) or 0.0)
+            k = 0.0 if since is None else (since - delay) / max(self.fade, 0.001)
+            if sm_reduced_motion() and since is not None:
+                k = 0.0 if k < 0.0 else 1.0
+            renpy.redraw(self, 0 if 0.0 < k < 1.0 else 1.0 / 30.0)
+            if k <= 0.0:
+                return self._full(self.frames[n - 1], width, height, st, at)
+            if k >= 1.0:
+                return self._full(self.frames[n], width, height, st, at)
+            rv = renpy.Render(width, height)
+            rv.mesh = True
+            rv.add_shader("renpy.dissolve")
+            rv.add_uniform("u_renpy_dissolve", k)
+            rv.blit(self._full(self.frames[n - 1], width, height, st, at), (0, 0))
+            rv.blit(self._full(self.frames[n], width, height, st, at), (0, 0))
+            return rv

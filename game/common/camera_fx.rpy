@@ -103,6 +103,19 @@ init -10 python:
         _fx_publish_camera(key, trans)
         return 1.0 / 60.0
 
+    def travel_camera_f(focus0, focus1, t, screen_align, key, trans, st, at):
+        """Проводка: точка фокуса за t секунд плавно (ease) идёт от focus0 к focus1,
+        удерживаясь в screen_align при текущем trans.zoom."""
+        if renpy.predicting():
+            return 1.0 / 60.0
+        t = sm_motion_time(t)
+        k = 1.0 if t <= 0.0 else max(0.0, min(1.0, st / t))
+        k = k * k * (3.0 - 2.0 * k)
+        focus = (focus0[0] + (focus1[0] - focus0[0]) * k, focus0[1] + (focus1[1] - focus0[1]) * k)
+        trans.xoffset, trans.yoffset = _focus_offset(focus, screen_align, trans.zoom or 1.0)
+        _fx_publish_camera(key, trans)
+        return 1.0 / 60.0
+
     def _fx_publish_camera(key, trans):
         ## master рендерится перед screens; UI получает итоговый transform этого кадра.
         _fx_state[(key, "camera")] = (
@@ -198,6 +211,19 @@ transform camera_settle(focus_align, z0, z1, t, key="cam", screen_align=None):
         easein sm_motion_time(t) zoom z1
     parallel:
         function renpy.curry(focus_camera_f)(focus_align, screen_align, key)
+
+## Проводка с наездом: за t секунд точка фокуса едет от focus0 к focus1 (доли кадра), стоя
+## в screen_align экрана, зум идёт z0 → z1 за zoom_t секунд (по умолчанию за те же t).
+## Сдвиг кадра ограничен запасом зума: при зуме z в screen_align (0.5, 0.5) фокус может
+## отходить от центра не больше чем на (z - 1) / (2 z).
+transform camera_travel(focus0, focus1, z0, z1, t, key="cam", screen_align=(0.5, 0.5), zoom_t=None):
+    subpixel True
+    align (0.5, 0.5)
+    zoom (z1 if sm_reduced_motion() else z0)
+    parallel:
+        ease sm_motion_time(t if zoom_t is None else zoom_t) zoom z1
+    parallel:
+        function renpy.curry(travel_camera_f)(focus0, focus1, t, screen_align, key)
 
 transform mouse_follow(rx, ry, smooth=0.12, key="follow"):
     subpixel True

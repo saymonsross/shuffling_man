@@ -5,9 +5,9 @@
 
 init -11 python:
 
-    def scratch_params(group, title, amp, fiber_cut, spread, copy_alpha, idle_mix=1.0):
+    def scratch_params(group, title, amp, fiber_cut, spread, copy_alpha, idle_mix=1.0, mix=1.0):
         fx_param(group + ".enabled", True, doc="включить процарапанный штрих")
-        fx_param(group + ".mix", 1.0, 0.0, 1.0, step=0.01, doc="сила штриха: 0 — исходник, 1 — полный")
+        fx_param(group + ".mix", mix, 0.0, 1.0, step=0.01, doc="сила штриха: 0 — исходник, 1 — полный")
         fx_param(group + ".idle_mix", idle_mix, 0.0, 1.0, step=0.01, doc="сила без наведения, доля от силы при наведении")
         fx_param(group + ".amp", amp, 0.0, 10.0, step=0.1, doc="дрожание контура, px; при наведении +50%")
         fx_param(group + ".jitter_x", 0.02, 0.0, 2.0, step=0.005, doc="частота шума дрожания по X, 1/px")
@@ -109,7 +109,11 @@ init -11 python:
     SCRATCH_SEED_LOOP = 64
 
     ## mix_f — функция без аргументов, множитель силы штриха в рантайме (например, курсор гасит штрих).
-    def scratch_f(group, mix_f, trans, st, at):
+    ## hover_f — доля наведения 0..1 для того, что не получает событий hover (курсор);
+    ## тогда перерисовка каждый кадр, иначе наведение шло бы ступеньками шага штриха.
+    def scratch_f(group, mix_f, hover_f, trans, st, at):
+        if hover_f:
+            trans.u_scratch_hover = hover_f()
         trans.u_scratch_on = 1.0 if fx_cfg(group + ".enabled") and not fx_cfg_bypassed() else 0.0
         trans.u_scratch_group_mix = float(fx_cfg(group + ".mix")) * (mix_f() if mix_f else 1.0)
         trans.u_scratch_idle_mix = float(fx_cfg(group + ".idle_mix"))
@@ -126,7 +130,7 @@ init -11 python:
         step = fx_cfg(group + ".step")
         if fx_cfg(group + ".animate") and not sm_reduced_motion():
             trans.u_scratch_seed = float(int(st / step) % SCRATCH_SEED_LOOP)
-            return step - (st % step)
+            return 0 if hover_f else step - (st % step)
         trans.u_scratch_seed = 0.0
         ## Редкая перерисовка подхватывает правки тюнера.
         return 0.1
@@ -178,7 +182,7 @@ init -10 python:
 ## Внутри кнопки трансформ получает hover/idle: дрожание +50%, цвет idle → hover при tint 1.
 ## mix — сила штриха у этого места (1 — полный, 0 — исходник); умножается на mix группы из тюнера.
 ## selected_lit — выбранная кнопка (включённый режим) горит цветом hover и без наведения.
-transform scratch(group, tint=1.0, idle_color="#8A8784", hover_color="#F2EFE9", pad=16, mix=1.0, mix_f=None, selected_lit=False):
+transform scratch(group, tint=1.0, idle_color="#8A8784", hover_color="#F2EFE9", pad=16, mix=1.0, mix_f=None, selected_lit=False, hover_f=None):
     mesh True
     mesh_pad (pad, pad, pad, pad)
     shader "sm.scratch"
@@ -190,7 +194,7 @@ transform scratch(group, tint=1.0, idle_color="#8A8784", hover_color="#F2EFE9", 
     u_scratch_hover_color Color(hover_color).rgba
     u_scratch_hover 0.0
     parallel:
-        function renpy.curry(scratch_f)(group, mix_f)
+        function renpy.curry(scratch_f)(group, mix_f, hover_f)
     parallel:
         on idle, insensitive:
             linear 0.12 u_scratch_hover 0.0

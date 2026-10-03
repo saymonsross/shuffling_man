@@ -150,10 +150,12 @@ label prologue_scene:
 
     "Я нахожусь довольно далеко от места, что называла домом."
 
+    $ click_skip_block = True
     window auto hide
 
     pause 1.0
 
+    $ click_skip_block = False
     "{cps=5}...{/cps}"
 
     "Сейчас у меня нет дома."
@@ -174,6 +176,7 @@ label prologue_scene:
 
     "Кажется, осталось позади всё, что было мне ценно."
 
+    $ click_skip_block = True
     window auto hide
 
     show prologue head:
@@ -185,6 +188,7 @@ label prologue_scene:
             breath_brightness(-0.01, -0.07, 8.0)
     with Dissolve(3.0)
 
+    $ click_skip_block = False
     "Это письмо..."
     "...должно помочь мне пережить произошедшее."
 
@@ -217,6 +221,7 @@ label .letter:
         parallel:
             brightness_to(-0.23, 3.0)
     ## Наезд камерой из camera_fx: кнопка «ВЗЯТЬ» (follow_camera) повторяет её зум.
+    $ click_skip_block = True
     camera at camera_push((0.5, 0.5), 1.0, 1.07, 30.0)
     scene prologue_note_bg at breath_brightness(-0.01, -0.05, 6.0)
     show prologue_note_paper at placed((990, 455), (0.5, 0.5))
@@ -228,6 +233,9 @@ label .letter:
     window auto hide
 
     pause 0.5
+
+    ## Блокировщик выше сценовых кнопок и съел бы клики по ним.
+    $ click_skip_block = False
 
     ## Осмотр стола: развилки нет, но каждый глазик обязателен кликом.
     ## Ранний пропуск обходит осмотр целиком; поздний выбирает пункты по очереди,
@@ -252,14 +260,18 @@ label .letter:
                     "Это добрый знак."
                 with Dissolve(0.2)
 
+    $ click_skip_block = True
     window auto hide
 
     pause 0.4
 
+    $ click_skip_block = False
     "Обо всём случившемся невыносимо думать."
     "Но я должна излить наружу то, что пожирает меня изнутри."
 
+    $ click_skip_block = True
     pause 0.4
+    $ click_skip_block = False
 
     ## Координаты — карандаш в кадре без зума; follow_camera переносит их за камерой.
     if not renpy.is_skipping():
@@ -301,6 +313,7 @@ label .letter:
     with Dissolve(0.1)
     $ dismiss_on()
 
+    $ click_skip_block = True
     camera:
         zoom 1.0
         truecenter
@@ -322,6 +335,7 @@ label .letter:
             linear 40.0 ypos 1030
     with Dissolve(1.3)
 
+    $ click_skip_block = False
     "Я не осмелюсь вернуться к карандашу и бумаге позже."
     "Это будет моя последняя попытка. Так сказать, спринтерский забег."
     "Я расскажу всё на одном дыхании. Здесь и сейчас."
@@ -332,6 +346,7 @@ label .letter:
 
     ## Граница между прологом и первой главой. Камера сбрасывается уже на чёрном:
     ## до растворения сброс рывком отъехал бы от наезда кадра.
+    $ click_skip_block = True
     scene black with Dissolve(2.0)
     camera:
         zoom 1.0

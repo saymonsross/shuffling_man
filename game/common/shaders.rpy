@@ -583,6 +583,88 @@ transform wind_warp(center, radius, anchor, amp=2.5, speed=1.0):
     u_wind_time 0.0
     function renpy.curry(wind_warp_f)(speed, amp)
 
+## Пар над чашкой: в столбе над поверхностью напитка картинка плывёт бегущей вверх рябью
+## на amp px, по ней ползут едва заметные светлые клубы силой glow. plumes — до двух
+## столбов (x, y, полуширина у основания, высота) в px картинки: основание — поверхность
+## напитка, к вершине столб расширяется в полтора раза и тает. speed — темп подъёма.
+## При «меньше движения» рябь стоит.
+init -10 python:
+
+    renpy.register_shader("sm.steam",
+        variables="""
+        uniform sampler2D tex0;
+        uniform vec2 u_model_size;
+        uniform vec4 u_steam_a;
+        uniform vec4 u_steam_b;
+        uniform float u_steam_amp;
+        uniform float u_steam_glow;
+        uniform float u_steam_time;
+        attribute vec2 a_tex_coord;
+        varying vec2 v_tex_coord;
+        """,
+        fragment_functions="""
+        float sm_steam_hash(vec2 p) {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+        float sm_steam_noise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(mix(sm_steam_hash(i), sm_steam_hash(i + vec2(1.0, 0.0)), u.x),
+                mix(sm_steam_hash(i + vec2(0.0, 1.0)), sm_steam_hash(i + vec2(1.0, 1.0)), u.x), u.y);
+        }
+        // plume: x, y - base, z - half width at the base, w - column height.
+        void sm_steam_plume(vec4 plume, vec2 px, float t, inout vec2 disp, inout float wisp) {
+            float up = (plume.y - px.y) / plume.w;
+            if (up < -0.15 || up > 1.0) return;
+            float half_w = plume.z * (1.0 + 0.6 * max(up, 0.0));
+            float lateral = (px.x - plume.x) / half_w;
+            float f = (1.0 - smoothstep(0.5, 1.0, abs(lateral)))
+                * smoothstep(-0.15, 0.1, up) * (1.0 - smoothstep(0.4, 1.0, up));
+            if (f <= 0.0) return;
+            vec2 q = px * 0.012 + vec2(0.0, t * 0.9);
+            float n1 = sm_steam_noise(q);
+            float n2 = sm_steam_noise(q * 1.9 + vec2(7.3, t * 0.4));
+            disp += vec2(n1 - 0.5, (n2 - 0.5) * 0.5) * f;
+            wisp += max(0.0, n1 * 0.6 + n2 * 0.4 - 0.55) * f;
+        }
+        """,
+        vertex_300="""
+        v_tex_coord = a_tex_coord;
+        """,
+        fragment_250="""
+        {
+            vec2 px = v_tex_coord * u_model_size;
+            vec2 disp = vec2(0.0);
+            float wisp = 0.0;
+            sm_steam_plume(u_steam_a, px, u_steam_time, disp, wisp);
+            sm_steam_plume(u_steam_b, px, u_steam_time, disp, wisp);
+            vec4 c = texture2D(tex0, (px + disp * u_steam_amp) / u_model_size);
+            gl_FragColor = c + vec4(vec3(1.0, 0.98, 0.94) * (wisp * u_steam_glow * c.a), 0.0);
+        }
+        """)
+
+    def steam_f(speed, amp, glow, trans, st, at):
+        trans.u_steam_time = (_fx_frame_time() * speed) % 1000.0
+        trans.u_steam_amp = amp * sm_motion_scale()
+        trans.u_steam_glow = glow
+        return 0
+
+    def _steam_plume(plumes, index):
+        if index < len(plumes):
+            return tuple(float(v) for v in plumes[index])
+        return (0.0, -1.0e6, 1.0, 1.0)
+
+transform steam(plumes, amp=3.0, glow=0.35, speed=1.0):
+    mesh True
+    shader "sm.steam"
+    u_steam_a _steam_plume(plumes, 0)
+    u_steam_b _steam_plume(plumes, 1)
+    u_steam_amp 0.0
+    u_steam_glow 0.0
+    u_steam_time 0.0
+    function renpy.curry(steam_f)(speed, amp, glow)
+
 ## «Дыхание» яркости lo → hi → lo, по t секунд в каждую сторону.
 transform breath_brightness(lo=-0.01, hi=-0.04, t=6.0):
     mesh True
