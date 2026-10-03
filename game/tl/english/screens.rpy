@@ -156,6 +156,9 @@ translate english strings:
     old "ВЕСЬ ТЕКСТ"
     new "ALL TEXT"
 
+    old "Прочитанный: пропускать только уже прочитанный текст.\nВесь текст: пропускать весь текст, включая непрочитанный."
+    new "Seen: skip only text you've already read.\nAll text: skip all text, including unread."
+
     # game/screens.rpy:858
     old "ЗВУК"
     new "SOUND"
@@ -173,14 +176,8 @@ translate english strings:
     new "VOICE"
 
     # game/screens.rpy:869
-    old "ВЕСЬ ЗВУК"
-    new "ALL SOUND"
-
-    old "ВКЛЮЧЁН"
-    new "ON"
-
-    old "ВЫКЛЮЧЕН"
-    new "OFF"
+    old "БЕЗ ЗВУКА"
+    new "MUTE ALL"
 
     old "ТЕМП СЦЕН"
     new "SCENE PACING"
@@ -191,8 +188,8 @@ translate english strings:
     old "ПО КЛИКУ"
     new "ON CLICK"
 
-    old "Сцены идут в том темпе, в каком их задумал автор: клик не обрывает паузы и переходы между кадрами. Выберите «По клику», чтобы проматывать их кликом, как обычный текст. Ctrl и «Пропуск» работают в любом случае."
-    new "Scenes play at the pace the author intended: a click won't cut pauses or transitions between shots. Choose On Click to skip them with a click like regular text. Ctrl and Skip always work."
+    old "Авторский: паузы и переходы воспроизводятся в задуманном темпе.\nПо клику: паузы и переходы можно пропускать кликом.\nCtrl и «Пропуск» работают в любом режиме."
+    new "Authored: pauses and transitions play at the intended pace.\nOn click: pauses and transitions can be skipped with a click.\nCtrl and Skip work in either mode."
 
     # game/screens.rpy:1030
     old "ИСТОРИЯ ДИАЛОГОВ ПУСТА."

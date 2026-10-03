@@ -149,6 +149,27 @@ image ui_pref_vline = At(Solid(gui.quick_menu_line_color, xsize=2), scratch("ui_
 ## той же длины, что линии категории, но тоньше и темнее.
 image ui_pref_group_line = At(Transform(Solid(gui.quick_menu_line_color, xsize=1008, ysize=1), alpha=0.6), scratch("ui_border", tint=0.0, mix=0.5))
 
+init python:
+    def sm_check_box(border, fill=None, size=20, line=2):
+        """Квадрат-чекбокс: рамка line px, внутри — квадрат fill или пусто."""
+        parts = [Solid(border, xysize=(size, line)), Solid(border, xysize=(size, line), ypos=size - line),
+            Solid(border, xysize=(line, size)), Solid(border, xysize=(line, size), xpos=size - line)]
+        if fill:
+            parts.append(Solid(fill, xysize=(size - 4 * line, size - 4 * line), align=(0.5, 0.5)))
+        return Fixed(*parts, xysize=(size, size))
+
+transform pref_hover_fade:
+    alpha 0.0
+    on idle:
+        linear 0.12 alpha 0.0
+    on hover:
+        linear 0.12 alpha 1.0
+
+## Пустой — блёклый, при наведении ярче; отмеченный — приглушённый красный, при наведении ярче.
+## Слой наведения проявляется событиями hover/idle кнопки.
+image ui_check_off = Fixed(sm_check_box("#5c5957"), At(sm_check_box("#d4d0cc"), pref_hover_fade), xysize=(20, 20))
+image ui_check_on = Fixed(sm_check_box("#9c0000", "#9c0000"), At(sm_check_box("#cc0000", "#cc0000"), pref_hover_fade), xysize=(20, 20))
+
 ## Подчёркивание кнопок подтверждения; картинка по имени — стиль вычисляется раньше scratch.
 image ui_hover_underline = Transform(At(Solid("#F2EFE940", ysize=2), scratch("ui_frame", tint=0.0)), yalign=1.0)
 
@@ -996,7 +1017,7 @@ screen preferences():
 
         vbox:
             xalign 0.5
-            yoffset -27
+            yoffset -32
             spacing 32
 
             if renpy.variant("pc") or renpy.variant("web"):
@@ -1025,6 +1046,10 @@ screen preferences():
                         yalign 0.5
                         textbutton _("ПРОЧИТАННЫЙ") action Preference("skip", "seen")
                         textbutton _("ВЕСЬ ТЕКСТ") action Preference("skip", "all")
+                use pref_row(""):
+                    text _("Прочитанный: пропускать только уже прочитанный текст.\nВесь текст: пропускать весь текст, включая непрочитанный."):
+                        style "pref_tip"
+                        yalign 0.5
                 ## Блокировщик клика в постановке (common/interactions.rpy); пояснение —
                 ## строкой под вариантами, без наведения.
                 use pref_group_divider
@@ -1036,14 +1061,14 @@ screen preferences():
                         textbutton _("АВТОРСКИЙ") action SetField(persistent, "sm_author_pacing", True)
                         textbutton _("ПО КЛИКУ") action SetField(persistent, "sm_author_pacing", False)
                 use pref_row(""):
-                    text _("Сцены идут в том темпе, в каком их задумал автор: клик не обрывает паузы и переходы между кадрами. Выберите «По клику», чтобы проматывать их кликом, как обычный текст. Ctrl и «Пропуск» работают в любом случае."):
+                    text _("Авторский: паузы и переходы воспроизводятся в задуманном темпе.\nПо клику: паузы и переходы можно пропускать кликом.\nCtrl и «Пропуск» работают в любом режиме."):
                         style "pref_tip"
                         yalign 0.5
 
             if config.has_music or config.has_sound or config.has_voice:
                 ## Пока весь звук выключен, ползунки ничего не меняют — приглушены.
                 $ muted = Preference("all mute", "enable").get_selected()
-                use pref_section(_("ЗВУК")):
+                use pref_section(_("ЗВУК"), tail="pref_mute_row"):
                     if config.has_music:
                         use pref_row(_("МУЗЫКА")):
                             bar style "slider_slider" value Preference("music volume") at pref_dim(muted)
@@ -1053,18 +1078,11 @@ screen preferences():
                     if config.has_voice:
                         use pref_row(_("ГОЛОС")):
                             bar style "slider_slider" value Preference("voice volume") at pref_dim(muted)
-                    use pref_group_divider
-                    use pref_row(_("ВЕСЬ ЗВУК")):
-                        hbox:
-                            style_prefix "radio"
-                            spacing 40
-                            yalign 0.5
-                            textbutton _("ВКЛЮЧЁН") action Preference("all mute", "disable")
-                            textbutton _("ВЫКЛЮЧЕН") action Preference("all mute", "enable")
 
 
 ## Категория настроек: заголовок, линия цветом разделителя быстрого меню, строки.
-screen pref_section(title):
+## tail — экран последней строки без черты колонки (под тонкой границей подгрупп).
+screen pref_section(title, tail=None):
     vbox:
         style "pref_section_vbox"
         text title style "pref_section_title"
@@ -1077,7 +1095,24 @@ screen pref_section(title):
                 spacing 10
                 transclude
             add "ui_pref_vline" xpos 180
+        if tail:
+            use pref_group_divider
+            use expression tail
         add "ui_pref_hline" xoffset -4
+
+## «БЕЗ ЗВУКА [ ]» — подпись и квадрат одной кнопкой, без колонок, у правого края:
+## квадрат под концами ползунков.
+screen pref_mute_row():
+    button:
+        style "pref_mute_button"
+        xpos 1000
+        xanchor 1.0
+        action Preference("all mute", "toggle")
+        hbox:
+            spacing 16
+            yalign 0.5
+            text _("БЕЗ ЗВУКА") style "pref_mute_text" yalign 0.5
+            add ("ui_check_on" if Preference("all mute", "enable").get_selected() else "ui_check_off") yalign 0.5 yoffset -1
 
 transform pref_dim(on):
     linear 0.2 alpha (0.35 if on else 1.0)
@@ -1097,6 +1132,14 @@ screen pref_group_divider():
     fixed:
         ysize 1
         add "ui_pref_group_line" xoffset -4
+
+style pref_mute_button is empty:
+    hover_sound "audio/sfx/hover.ogg"
+    activate_sound "audio/sfx/click.ogg"
+
+style pref_mute_text is pref_row_label:
+    min_width 0
+    hover_color "#F2EFE9"
 
 style pref_section_vbox is vbox:
     xsize 1000

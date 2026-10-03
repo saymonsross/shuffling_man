@@ -3,13 +3,14 @@
 ## Порог волокон 0: волокна рвали бы заливку треугольника, и курсор просвечивал.
 init -10 python:
     scratch_params("cursor", "Курсор", 1.5, 0.0, 1.0, 0.55)
-    ## Над интерактивом курсор «оживает»: штрих нервнее, треугольник чуть сужается в
+    ## Над интерактивом курсор «оживает»: ярче, штрих чуть сильнее, треугольник чуть сужается в
     ## перспективе и клонится к цели — остриё на месте. Дёрг — только на отказе клика,
     ## чтобы тряска значила «нельзя» и не путалась с «можно».
     fx_param("cursor.hover_t", 0.12, 0.0, 0.5, step=0.01, doc="наведение: время перехода, с")
     fx_param("cursor.hover_mix", 1.15, 1.0, 5.0, step=0.1, doc="наведение: множитель силы штриха")
     fx_param("cursor.hover_squeeze", 0.06, 0.0, 0.5, step=0.01, doc="наведение: сужание по ширине, доля")
     fx_param("cursor.hover_tilt", -3.0, -20.0, 20.0, step=0.5, doc="наведение: наклон, °")
+    fx_param("cursor.hover_contrast", 0.6, 0.0, 1.5, step=0.05, doc="наведение: прибавка контраста — края ярче")
     fx_param("cursor.deny_shake", 3.0, 0.0, 10.0, step=0.5, doc="отказ клика: размах дёрга, px")
     fx_param("cursor.deny_shake_t", 0.25, 0.05, 1.0, step=0.01, doc="отказ клика: длина дёрга, с")
 
@@ -75,7 +76,9 @@ init -10 python:
             if since < shake_t:
                 shake = fx_cfg("cursor.deny_shake") * math.sin(since * 113.0) * (1.0 - since / shake_t)
         ## Контраст к серому: чёрная заливка светлеет, белая обводка тускнеет — курсор блёклый.
-        m = SaturationMatrix(1.0 - level) * ContrastMatrix(1.0 - 0.45 * level)
+        ## Над интерактивом контраст выше: штрих и сужание размывают край в серый, а он
+        ## должен становиться ярче.
+        m = SaturationMatrix(1.0 - level) * ContrastMatrix(1.0 - 0.45 * level + fx_cfg("cursor.hover_contrast") * hover)
         if deny > 0.0:
             red = Color(CURSOR_DENY_COLOR).interpolate(Color("#ffffff"), 1.0 - deny)
             m = TintMatrix(red) * m
@@ -100,11 +103,8 @@ init -10 python:
         boost = min(1.0 + (fx_cfg("cursor.hover_mix") - 1.0) * hover, 1.0 / max(fx_cfg("cursor.mix"), 0.01))
         return (1.0 - _fx_state.get("cursor_block", 0.0)) * boost
 
-    def cursor_scratch_hover():
-        return _fx_state.get("cursor_hover", 0.0)
-
 transform cursor_block():
     function cursor_block_f
 
 define 1 config.mouse_displayable = MouseDisplayable(
-    At("gui/tri_bone_hover.png", scratch("cursor", tint=0.0, pad=8, mix_f=cursor_scratch_mix, hover_f=cursor_scratch_hover), cursor_block), 1, 1)
+    At("gui/tri_bone_hover.png", scratch("cursor", tint=0.0, pad=8, mix_f=cursor_scratch_mix), cursor_block), 1, 1)
