@@ -294,6 +294,8 @@ init python:
 ## Всё выше y0 и ниже конца струйки видно всегда. start — имя store-флага: пока он False,
 ## струйки нет; через delay секунд после того, как сцена его взвела, она начинает стекать.
 ## run, hold, fade, fade_to — свои тайминги стекания для этого места вместо общих water.*.
+## head — доля струйки (0..1), уже стёкшая к моменту показа: капля стартует с неё, остаток
+## проходит за те же run секунд, так что держание и тускнение считаются от показа как обычно.
 init -10 python:
 
     fx_param("water.amp", 1.5, 0.0, 8.0, step=0.1, doc="качание слоя по горизонтали, px")
@@ -373,7 +375,7 @@ init -10 python:
             seen = _fx_state[(owner, flag)] = (value, now)
         return now - seen[1]
 
-    def water_f(flow, start, delay, own, trans, st, at):
+    def water_f(flow, start, delay, own, head, trans, st, at):
         import math
         trans.u_water_amp = float(fx_cfg("water.amp")) * sm_motion_scale()
         trans.u_water_wave = float(fx_cfg("water.wave"))
@@ -399,7 +401,7 @@ init -10 python:
             trans.u_water_bead = 0.0
         else:
             ## Капля идёт неровно: замирает и срывается, но всегда вниз.
-            p = max(0.0, t) / run
+            p = 0.0 if t < 0.0 else head + (1.0 - head) * t / run
             p += 0.04 * math.sin(p * 6.2831853 * 3.0)
             trans.u_water_front = y0 + (y1 - y0 + 20.0) * p
             trans.u_water_bead = float(fx_cfg("water.bead")) if t >= 0.0 else 0.0
@@ -407,10 +409,10 @@ init -10 python:
         trans.u_water_fade = 1.0 - k * (1.0 - float(fade_to))
         return 1.0 / 30.0
 
-transform water(flow=None, start=None, delay=0.0, run=None, hold=None, fade=None, fade_to=None):
+transform water(flow=None, start=None, delay=0.0, run=None, hold=None, fade=None, fade_to=None, head=0.0):
     mesh True
     shader "sm.water"
-    function renpy.curry(water_f)(flow, start, delay, (run, hold, fade, fade_to))
+    function renpy.curry(water_f)(flow, start, delay, (run, hold, fade, fade_to), float(head))
 
 ## Говорящий рот «пластикой»: нарисованный открытый рот сжимается по вертикали к своей
 ## середине и разжимается обратно в ритме речи. Сжатие — только внутри эллипса вокруг рта

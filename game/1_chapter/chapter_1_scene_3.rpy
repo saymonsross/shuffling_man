@@ -23,40 +23,62 @@ image c1s3_sofa_jump_bg:
 image chapter_1 scene_3_sofa_jump = sm_tv_scene("c1s3_sofa_jump_bg",
     C1S3_TV_POS, C1S3_TV_SIZE, ((2, 2), (402, 2), (402, 282), (2, 282)))
 
-## Правый магнит остаётся над авторским цветовым мазком; сдвигается сам лист.
-image chapter_1 scene_3_fridge_hanging = Composite((1920, 1080),
-    (0, 0), "images/1_chapter/owner_review/chapter_1_review_fridge base.png",
-    (1060, 76), "images/1_chapter/owner_review/chapter_1_review_fridge portrait_right.png",
-    (726, 239), "images/1_chapter/owner_review/chapter_1_review_fridge family_drawing.png",
-    (1097, 41), "images/1_chapter/owner_review/chapter_1_review_fridge right_magnet.png")
-
-image chapter_1 scene_3_fridge = Composite((1920, 1080),
-    (0, 0), "chapter_1 scene_3_fridge_hanging",
-    (897, 172), "images/1_chapter/owner_review/chapter_1_review_fridge front_magnet.png")
-
-image chapter_1 scene_3_fridge_new_drawing = Composite((1920, 1080),
-    (0, 0), "chapter_1 scene_3_fridge_hanging",
-    (793, 217), "images/1_chapter/owner_review/chapter_1_review_fridge new_drawing.png",
-    (897, 172), "images/1_chapter/owner_review/chapter_1_review_fridge front_magnet.png")
-
 ## Настя в детской — планы глубины: комната сзади, Настя спереди; три настроения на одном
 ## фоне. Имена прежних цельных кадров сохранены — слои путями к файлам.
 image chapter_1 scene_3_children_room_girl_neutral = depth_scene(
     "images/1_chapter/child_room/chapter_1 scene_3_children_room_bg.png",
     "images/1_chapter/child_room/chapter_1 scene_3_children_room nast.png")
+## Мрачнеет: слёзы стоят в глазах — слой поверх лица в той же группе, только блестят
+## (water без flow — не стекают).
 image chapter_1 scene_3_children_room_girl_sad = depth_scene(
     "images/1_chapter/child_room/chapter_1 scene_3_children_room_bg.png",
-    "images/1_chapter/child_room/chapter_1 scene_3_children_room nast_sad.png")
+    ("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_sad.png",
+        At("images/1_chapter/chapter_1 scene_3_children_room_girl_sad tears.png", water())))
 ## Плачет: слёзы — слой поверх лица в той же группе, стекают по щекам (water: flow —
-## участок слоя по вертикали, px), как у Марины в сцене 2.
+## участок слоя по вертикали, px), как у Марины в сцене 2; к показу уже стекли на 15 %,
+## через 15 с начинают тускнеть. Крик «дышит»: рот (эллипс в px слоя) плавно раскрывается
+## примерно на 5 % и смыкается обратно без пауз — сила отрицательная, вниз уходит только
+## нижняя губа. Эффект на самом слое лица: эллипс едет вместе с планом при параллаксе.
 image chapter_1 scene_3_children_room_girl_crying = depth_scene(
     "images/1_chapter/child_room/chapter_1 scene_3_children_room_bg.png",
-    ("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_very_sad.png",
+    (At("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_very_sad.png",
+            mouth_loop((857, 408), (120, 58), strength=-0.65, period=4.0, hold=0.0, ease=2.0)),
         At("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_very_sad tears.png",
-            water(flow=(231, 453), run=15.0, hold=0.0, fade=6.0, fade_to=0.5))))
+            water(flow=(231, 453), run=15.0, hold=0.0, fade=6.0, fade_to=0.5, head=0.15))))
 
-image chapter_1_fridge_drawing = "images/1_chapter/owner_review/chapter_1_review_fridge new_drawing.png"
-image chapter_1_fridge_magnet = "images/1_chapter/owner_review/chapter_1_review_fridge front_magnet.png"
+## Настя сверху, крупно — планы глубины: пол, Настя (со слезами и выбившимися прядями в
+## одной группе), ближе всех — руки Вити. Пол и Настя весь кадр медленно наезжают вокруг
+## лица, руки стоят на месте и только плавно плывут вверх-вниз — камера в сцене не зумит.
+## Слёзы стекают и рот «дышит», как в кадре истерики; пряди колышутся (wind_warp: эллипс
+## и корень в px слоя), лицо стоит. Параллакс между планами приглушён до пятой части (step).
+transform c1s3_top_close_push:
+    subpixel True
+    transform_anchor True
+    anchor (0.5, 0.42) pos (0.5, 0.42)
+    zoom (1.1 if sm_reduced_motion() else 1.0)
+    ease sm_motion_time(40.0) zoom 1.1
+
+transform c1s3_top_close_wag:
+    subpixel True
+    yoffset (5.0 * sm_motion_scale())
+    block:
+        ease 1.0 yoffset (-5.0 * sm_motion_scale())
+        ease 1.0 yoffset (5.0 * sm_motion_scale())
+        repeat
+
+image chapter_1 scene_3_daughter_top_close = depth_scene(
+    At("images/1_chapter/chapter_1 scene_3_daughter_top_close.png", c1s3_top_close_push),
+    (At("images/1_chapter/chapter_1 scene_3_daughter_top_close_child.png",
+            mouth_loop((915, 510), (105, 75), strength=-0.65, period=4.0, hold=0.0, ease=2.0),
+            c1s3_top_close_push),
+        At("images/1_chapter/chapter_1 scene_3_daughter_top_close_tears.png",
+            water(flow=(324, 528), run=15.0, hold=0.0, fade=6.0, fade_to=0.5, head=0.15),
+            c1s3_top_close_push),
+        At("images/1_chapter/chapter_1 scene_3_daughter_top_close_volosy.png",
+            wind_warp((920, 260), (700, 520), (920, 40), amp=2.0, speed=1.0),
+            c1s3_top_close_push)),
+    At("images/1_chapter/chapter_1 scene_3_daughter_top_close_hands.png", c1s3_top_close_wag),
+    step=0.2)
 
 default c1s3_teaparty_choice = None
 default c1s3_neighbor_choice = None
@@ -72,57 +94,53 @@ label chapter_1_scene_3:
     ## пауз: выбор ждёт игрока, крики идут встык.
 
     ## ══════════ КАДР 1 · ДЕТСКАЯ, ПОЛ ══════════
-    ## Из чёрного. Зум 1.10 — запас краёв под поворот взгляда в конце кадра.
+    ## Из чёрного, медленный наезд. Пол детской и холодильник — без bloom (fx_frame): со
+    ## следующего кадра он возвращается сам.
     $ click_skip_block = True
     window auto hide
-    camera:
-        subpixel True
-        align (0.5, 0.5)
-        rotate 0.0
-        xoffset 0.0 yoffset 0.0
-        zoom 1.10
-        linear sm_motion_time(30.0) zoom 1.15
+    camera at camera_push((0.5, 0.5), 1.00, 1.09, 30.0)
     scene chapter_1 scene_3_children_room_floor:
-        breath_brightness(-0.03, -0.08, 6.0)
+        parallel:
+            breath_brightness(-0.03, -0.08, 6.0)
+        parallel:
+            fx_frame(bloom=0.0)
     with Dissolve(3.0)
     $ click_skip_block = False
 
     "Моя дочь как раз проходила через сложный период взросления..."
     "...и невыносимо трепала наши нервы в процессе."
 
-    ## Взгляд уходит влево — и в растворение на холодильник.
     $ click_skip_block = True
     window auto hide
-    camera:
-        subpixel True
-        ease sm_motion_time(0.85) xoffset int(80 * sm_motion_scale())
-    pause sm_motion_time(0.85)
 
     ## ══════════ КАДР 2 · ХОЛОДИЛЬНИК ══════════
     ## Наезд на рисунки. Дыхания нет: яркость ровная, пока новый рисунок не повешен.
     camera at camera_push((0.56, 0.42), 1.02, 1.09, 30.0)
-    scene chapter_1 scene_3_fridge
+    scene chapter_1 scene_3_fridge:
+        fx_frame(bloom=0.0)
     with Dissolve(0.8)
     $ click_skip_block = False
 
     "То есть вела себя как обычно, но всё же чуть-чуть беспокойней, а это о чём-то да говорит."
     "Она могла отказываться от еды \"неправильного\" цвета."
     "Или отказывалась идти на прогулку, пока не дорисует."
-    "Последней её потрясающей выдумкой был панический страх оставаться дома одной."
 
-    ## Передний магнит снят: новый лист выезжает снизу, магнит проявляется поверх.
     $ click_skip_block = True
     window auto hide
-    scene chapter_1 scene_3_fridge_hanging
-    show chapter_1_fridge_drawing zorder 1 at move_between((793, 1080), (793, 217), t=sm_motion_time(0.7))
-    pause sm_motion_time(0.7)
-    show chapter_1_fridge_magnet zorder 2 at placed((897, 172)), show_hide(0.18)
-    pause 0.18
-
-    ## Статическая сборка даёт дальнейшим репликам и сейвам один законченный кадр.
-    ## На реплике он темнеет до нижней границы: выход из холодильника — через затемнение.
     scene chapter_1 scene_3_fridge_new_drawing:
-        fade_brightness(0.0, -0.09, 8.0)
+        parallel:
+            fade_brightness(0.0, -0.09, 8.0)
+        parallel:
+            fx_frame(bloom=0.0)
+    with Dissolve(0.8)
+
+    pause 0.5
+
+    "Последней её потрясающей выдумкой был панический страх оставаться дома одной."
+
+    ## Поверх рисунка с семьёй появляется новый. Кадр темнеет до нижней границы: выход из
+    ## холодильника — через затемнение. Камера не сбрасывается.
+
 
     # "Последней её потрясающей выдумкой был панический страх оставаться дома одной."
 
@@ -135,7 +153,8 @@ label chapter_1_scene_3:
     with Dissolve(2.0)
     $ click_skip_block = False
 
-    nas "Спасибо, что побыла на нашем чаепитии! Полли не пришёл сегодня..."
+    nas "Спасибо, что побыла на нашем чаепитии!"
+    nas "А Полли не пришёл сегодня..."
     nas "Как тебе профессор Косолап?"
 
     ## ══════════ КАДР 4 · ЧАЕПИТИЕ ══════════
@@ -151,7 +170,7 @@ label chapter_1_scene_3:
     ## Выбор влияет на дальнейшее — меню ждёт игрока и при пропуске. Кнопки разбросаны по
     ## кадру; двигать — Choice Placer (F7).
     menu(screen="scene_choice", follow=follow_camera()):
-        "\"Очаровашка!\"" (pos=(620, 180), size=(330, 165)):
+        "Очаровашка!" (pos=(309, 160), size=(330, 165)):
             $ click_skip_block = True
             pause 0.5
             $ click_skip_block = False
@@ -162,7 +181,7 @@ label chapter_1_scene_3:
             $ click_skip_block = False
             nas "А то! Выпускник Лесной академии!"
 
-        "\"Зануда!\"" (pos=(1180, 330), size=(330, 165)):
+        "Зануда!" (pos=(608, 382), size=(330, 165)):
             $ click_skip_block = True
             pause 0.5
             $ click_skip_block = False
@@ -173,7 +192,7 @@ label chapter_1_scene_3:
             $ click_skip_block = False
             nas "Он очень гордится своей научной... Штукой!"
 
-        "\"Странный!\"" (pos=(330, 840), size=(330, 165)):
+        "Странный!" (pos=(328, 580), size=(330, 165)):
             $ click_skip_block = True
             pause 0.5
             $ click_skip_block = False
@@ -184,7 +203,7 @@ label chapter_1_scene_3:
             $ click_skip_block = False
             nas "В лесу нет конфеток! Вот и приходится шишами чай закусывать..."
 
-        "\"А где Полли?\"" (pos=(1250, 880), size=(330, 165)):
+        "А где Полли?" (pos=(1052, 478), size=(330, 165)):
             $ click_skip_block = True
             pause 0.5
             $ click_skip_block = False
@@ -195,61 +214,63 @@ label chapter_1_scene_3:
             $ click_skip_block = False
             nas "Он испугался и сбежал... Трусишка!"
 
+    pause 1.0
+
+    mar "Я пойду встречу папу с работы. Посиди, пока одна..."
+
     ## ══════════ КАДР 5 · НАСТЯ МРАЧНЕЕТ ══════════
     $ click_skip_block = True
     window auto hide
     camera at camera_push((0.42, 0.33), 1.03, 1.10, 16.0)
     scene chapter_1 scene_3_children_room_girl_sad:
         breath_brightness(-0.04, -0.09, 6.0)
-    with Dissolve(1.0)
+    with Dissolve(3.0)
     $ click_skip_block = False
-
-    mar "Я пойду встречу папу с работы. Посиди, пока одна..."
 
     ## ══════════ КАДР 6 · ИСТЕРИКА ══════════
     ## Склейка встык на крик, окно диалога остаётся (show, не scene). Камера продолжает
     ## наезд прошлого кадра.
     show chapter_1 scene_3_children_room_girl_crying:
         breath_brightness(-0.04, -0.09, 6.0)
+    with Dissolve(0.5)
 
     nas "НЕТ!"
     nas "НЕ УХОДИ!"
     mar "Почему?.."
     nas "ПОЖАЛУЙСТА!"
 
-    ## ══════════ КАДР 7 · ПРЫЖКИ НА ДИВАНЕ ══════════
-    ## Вход через чёрный. Кадр прыжков (c1s3_sofa_jump_bg) подставляется в тег первого
-    ## кадра; камера вздрагивает на приземлении — pause до толчка равен взлёту и смазу.
-    ## При «меньше движения» кадр стоит.
-    $ click_skip_block = True
-    window auto hide
-    scene black with Dissolve(1.0)
+    # ## ══════════ КАДР 7 · ПРЫЖКИ НА ДИВАНЕ ══════════
+    # ## Вход через чёрный. Кадр прыжков (c1s3_sofa_jump_bg) подставляется в тег первого
+    # ## кадра; камера вздрагивает на приземлении — pause до толчка равен взлёту и смазу.
+    # ## При «меньше движения» кадр стоит.
+    # $ click_skip_block = True
+    # window auto hide
+    # scene black with Dissolve(1.0)
 
-    pause 0.4
+    # pause 0.4
 
-    if sm_reduced_motion():
-        camera
-        scene chapter_1 scene_3_sofa_tv_1:
-            breath_brightness(-0.03, -0.08, 6.0)
-    else:
-        camera:
-            subpixel True
-            align (0.5, 0.5)
-            rotate 0.0
-            xoffset 0.0 yoffset 0.0
-            zoom 1.04
-            block:
-                pause 0.41
-                linear 0.04 yoffset 5.0
-                easein 0.23 yoffset 0.0
-                repeat
-        scene chapter_1 scene_3_sofa_tv_1:
-            "chapter_1 scene_3_sofa_jump"
-            breath_brightness(-0.03, -0.08, 6.0)
-    with Dissolve(1.5)
-    $ click_skip_block = False
+    # if sm_reduced_motion():
+    #     camera
+    #     scene chapter_1 scene_3_sofa_tv_1:
+    #         breath_brightness(-0.03, -0.08, 6.0)
+    # else:
+    #     camera:
+    #         subpixel True
+    #         align (0.5, 0.5)
+    #         rotate 0.0
+    #         xoffset 0.0 yoffset 0.0
+    #         zoom 1.04
+    #         block:
+    #             pause 0.41
+    #             linear 0.04 yoffset 5.0
+    #             easein 0.23 yoffset 0.0
+    #             repeat
+    #     scene chapter_1 scene_3_sofa_tv_1:
+    #         "chapter_1 scene_3_sofa_jump"
+    #         breath_brightness(-0.03, -0.08, 6.0)
+    # with Dissolve(1.5)
+    # $ click_skip_block = False
 
-    "Стоило нам с Витей обоим ненадолго отлучиться, как наша принцесса начинала вопить, греметь кастрюлями, орать под телевизор на полную громкость, в общем, стоять на голове."
 
     ## ══════════ КАДР 8 · ПОДЪЕЗД ══════════
     ## Наезд вверх по лестнице, к двери.
@@ -261,27 +282,25 @@ label chapter_1_scene_3:
     with Dissolve(2.0)
     $ click_skip_block = False
 
+    "Стоило нам с Витей обоим ненадолго отлучиться, как наша принцесса начинала вопить, греметь кастрюлями, орать под телевизор на полную громкость, в общем, стоять на голове."
     "Мы пыталась с ней по-хорошему поговорить, объяснить, что взрослым девочкам так вести себя должно быть стыдно."
     "Потом просто ругались."
 
     ## ══════════ КАДР 9 · НАСТЯ СВЕРХУ ══════════
-    ## Один наезд на лицо через два кадра: на втором руки растворяются под окном диалога
-    ## (show без ATL — дыхание и камера не сбрасываются; переход — renpy.transition по слою
-    ## master: оператор with спрятал бы окно).
+    ## Камера стоит: наезд на лицо идёт внутри кадра, планами пола и Насти, а руки должны
+    ## оставаться на месте.
     $ click_skip_block = True
     window auto hide
-    camera at camera_push((0.50, 0.42), 1.03, 1.14, 45.0)
-    scene chapter_1 scene_3_daughter_top:
+    camera
+    scene chapter_1 scene_3_daughter_top_close:
         breath_brightness(-0.04, -0.09, 6.0)
-    with Dissolve(1.0)
+    with Dissolve(3.0)
     $ click_skip_block = False
 
     vit "Это ни в какие рамки. Ну что это за поведение, а?"
 
     $ click_skip_block = True
-    $ renpy.transition(Dissolve(0.8), layer="master")
-    show chapter_1 scene_3_daughter_top_close
-    pause 0.8
+    pause 0.5
     $ click_skip_block = False
 
     "Вот она: охрипшая от крика, наша маленькая принцесса истерии, с красным заплаканным лицом."

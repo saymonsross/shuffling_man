@@ -30,10 +30,11 @@ init python:
             return None
         with _cp_io.open(path, encoding="utf-8", newline="") as f:
             lines = f.read().splitlines(True)
-        needle = '"%s"' % caption
+        ## Подпись с кавычками внутри записана в .rpy экранированной: "\"Очаровашка!\"".
+        needles = ('"%s"' % caption, '"%s"' % caption.replace('\\', '\\\\').replace('"', '\\"'))
         start = max(where[1] - 1, 0)
         for i in range(start, min(start + 120, len(lines))):
-            if needle not in lines[i]:
+            if not any(needle in lines[i] for needle in needles):
                 continue
             ## Аргументы пункта могут переноситься на следующие строки до «):».
             for j in range(i, min(i + 6, len(lines))):
