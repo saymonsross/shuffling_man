@@ -39,6 +39,22 @@ image chapter_1 scene_3_fridge_new_drawing = Composite((1920, 1080),
     (793, 217), "images/1_chapter/owner_review/chapter_1_review_fridge new_drawing.png",
     (897, 172), "images/1_chapter/owner_review/chapter_1_review_fridge front_magnet.png")
 
+## Настя в детской — планы глубины: комната сзади, Настя спереди; три настроения на одном
+## фоне. Имена прежних цельных кадров сохранены — слои путями к файлам.
+image chapter_1 scene_3_children_room_girl_neutral = depth_scene(
+    "images/1_chapter/child_room/chapter_1 scene_3_children_room_bg.png",
+    "images/1_chapter/child_room/chapter_1 scene_3_children_room nast.png")
+image chapter_1 scene_3_children_room_girl_sad = depth_scene(
+    "images/1_chapter/child_room/chapter_1 scene_3_children_room_bg.png",
+    "images/1_chapter/child_room/chapter_1 scene_3_children_room nast_sad.png")
+## Плачет: слёзы — слой поверх лица в той же группе, стекают по щекам (water: flow —
+## участок слоя по вертикали, px), как у Марины в сцене 2.
+image chapter_1 scene_3_children_room_girl_crying = depth_scene(
+    "images/1_chapter/child_room/chapter_1 scene_3_children_room_bg.png",
+    ("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_very_sad.png",
+        At("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_very_sad tears.png",
+            water(flow=(231, 453), run=15.0, hold=0.0, fade=6.0, fade_to=0.5))))
+
 image chapter_1_fridge_drawing = "images/1_chapter/owner_review/chapter_1_review_fridge new_drawing.png"
 image chapter_1_fridge_magnet = "images/1_chapter/owner_review/chapter_1_review_fridge front_magnet.png"
 
