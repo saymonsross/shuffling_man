@@ -286,13 +286,13 @@ testcase c1s3_apologize_branch:
     $ c1s3_neighbor_choice = None
     $ dismiss_on()
     run Start("chapter_1_scene_3")
-    advance until screen "scene_choice" timeout 10.0
+    advance until screen "scene_choice" timeout 30.0
     assert "Очаровашка!"
     assert "Зануда!"
     assert "Странный!"
     assert "А где Полли?"
     click "Очаровашка!"
-    advance until screen "scene_choice" timeout 10.0
+    advance until screen "scene_choice" timeout 30.0
     assert "Простите..."
     assert "Заткнитесь!"
     assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbors'))
@@ -302,7 +302,7 @@ testcase c1s3_apologize_branch:
     assert eval (c1s3_neighbor_choice == 'apologize')
     advance until "Конечно, мы ходили с дочкой к психологу." timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_sofa_marina'))
-    advance until "Он приходит, когда дома тихо" timeout 10.0
+    advance until "приходит, когда дома становится слишком тихо" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_sofa_daughter'))
     advance until "Шаркающий человек." timeout 10.0
 
@@ -311,9 +311,9 @@ testcase c1s3_confront_branch:
     $ c1s3_neighbor_choice = None
     $ dismiss_on()
     run Start("chapter_1_scene_3")
-    advance until screen "scene_choice" timeout 10.0
+    advance until screen "scene_choice" timeout 30.0
     click "А где Полли?"
-    advance until screen "scene_choice" timeout 10.0
+    advance until screen "scene_choice" timeout 30.0
     click "Заткнитесь!"
     advance until "Какое право они не имели нравоучать нас?!" timeout 10.0
     advance until "Пусть лучше приглядывают за своими детьми, болтающимися без дела по двору, как оборванцы." timeout 5.0
@@ -324,7 +324,7 @@ testcase c1s3_confront_branch:
 testcase c1s3_strange_branch:
     $ dismiss_on()
     run Start("chapter_1_scene_3")
-    advance until screen "scene_choice" timeout 10.0
+    advance until screen "scene_choice" timeout 30.0
     click "Странный!"
     assert "Кажется, он помешан на еловых шишках..." timeout 10.0
     assert eval (c1s3_teaparty_choice == 'strange')

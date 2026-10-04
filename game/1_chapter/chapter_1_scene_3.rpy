@@ -67,8 +67,13 @@ label chapter_1_scene_3:
 
     $ quick_menu = True
 
+    ## Постановка — смены кадра, паузы между репликами — идёт под click_skip_block: клик
+    ## проматывает только реплики; Ctrl/«Пропуск» работают всегда. Меню и истерика — без
+    ## пауз: выбор ждёт игрока, крики идут встык.
+
     ## ══════════ КАДР 1 · ДЕТСКАЯ, ПОЛ ══════════
     ## Из чёрного. Зум 1.10 — запас краёв под поворот взгляда в конце кадра.
+    $ click_skip_block = True
     window auto hide
     camera:
         subpixel True
@@ -80,11 +85,13 @@ label chapter_1_scene_3:
     scene chapter_1 scene_3_children_room_floor:
         breath_brightness(-0.03, -0.08, 6.0)
     with Dissolve(3.0)
+    $ click_skip_block = False
 
     "Моя дочь как раз проходила через сложный период взросления..."
     "...и невыносимо трепала наши нервы в процессе."
 
     ## Взгляд уходит влево — и в растворение на холодильник.
+    $ click_skip_block = True
     window auto hide
     camera:
         subpixel True
@@ -96,6 +103,7 @@ label chapter_1_scene_3:
     camera at camera_push((0.56, 0.42), 1.02, 1.09, 30.0)
     scene chapter_1 scene_3_fridge
     with Dissolve(0.8)
+    $ click_skip_block = False
 
     "То есть вела себя как обычно, но всё же чуть-чуть беспокойней, а это о чём-то да говорит."
     "Она могла отказываться от еды \"неправильного\" цвета."
@@ -103,6 +111,7 @@ label chapter_1_scene_3:
     "Последней её потрясающей выдумкой был панический страх оставаться дома одной."
 
     ## Передний магнит снят: новый лист выезжает снизу, магнит проявляется поверх.
+    $ click_skip_block = True
     window auto hide
     scene chapter_1 scene_3_fridge_hanging
     show chapter_1_fridge_drawing zorder 1 at move_between((793, 1080), (793, 217), t=sm_motion_time(0.7))
@@ -124,51 +133,76 @@ label chapter_1_scene_3:
     scene chapter_1 scene_3_children_room_girl_neutral:
         breath_brightness(-0.03, -0.08, 6.0)
     with Dissolve(2.0)
+    $ click_skip_block = False
 
     nas "Спасибо, что побыла на нашем чаепитии! Полли не пришёл сегодня..."
     nas "Как тебе профессор Косолап?"
 
     ## ══════════ КАДР 4 · ЧАЕПИТИЕ ══════════
     ## Наезд на профессора Косолапа.
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.25, 0.32), 1.02, 1.08, 30.0)
     scene chapter_1 scene_3_toys:
         breath_brightness(-0.03, -0.08, 6.0)
     with Dissolve(1.0)
+    $ click_skip_block = False
 
     ## Выбор влияет на дальнейшее — меню ждёт игрока и при пропуске. Кнопки разбросаны по
     ## кадру; двигать — Choice Placer (F7).
     menu(screen="scene_choice", follow=follow_camera()):
         "\"Очаровашка!\"" (pos=(620, 180), size=(330, 165)):
+            $ click_skip_block = True
             pause 0.5
+            $ click_skip_block = False
             $ c1s3_teaparty_choice = "charming"
             mar "Очень милый медведь! А какие манеры!"
+            $ click_skip_block = True
+            pause 0.5
+            $ click_skip_block = False
             nas "А то! Выпускник Лесной академии!"
 
         "\"Зануда!\"" (pos=(1180, 330), size=(330, 165)):
+            $ click_skip_block = True
             pause 0.5
+            $ click_skip_block = False
             $ c1s3_teaparty_choice = "boring"
             mar "Его лекция о мёдоведении была совершенно ни к месту!"
+            $ click_skip_block = True
+            pause 0.5
+            $ click_skip_block = False
             nas "Он очень гордится своей научной... Штукой!"
 
         "\"Странный!\"" (pos=(330, 840), size=(330, 165)):
+            $ click_skip_block = True
             pause 0.5
+            $ click_skip_block = False
             $ c1s3_teaparty_choice = "strange"
             mar "Кажется, он помешан на еловых шишках..."
+            $ click_skip_block = True
+            pause 0.5
+            $ click_skip_block = False
             nas "В лесу нет конфеток! Вот и приходится шишами чай закусывать..."
 
         "\"А где Полли?\"" (pos=(1250, 880), size=(330, 165)):
+            $ click_skip_block = True
             pause 0.5
+            $ click_skip_block = False
             $ c1s3_teaparty_choice = "where_is_polly"
             mar "Я стеснялась спросить! А где Полли?"
+            $ click_skip_block = True
+            pause 0.5
+            $ click_skip_block = False
             nas "Он испугался и сбежал... Трусишка!"
 
     ## ══════════ КАДР 5 · НАСТЯ МРАЧНЕЕТ ══════════
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.42, 0.33), 1.03, 1.10, 16.0)
     scene chapter_1 scene_3_children_room_girl_sad:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(1.0)
+    $ click_skip_block = False
 
     mar "Я пойду встречу папу с работы. Посиди, пока одна..."
 
@@ -187,6 +221,7 @@ label chapter_1_scene_3:
     ## Вход через чёрный. Кадр прыжков (c1s3_sofa_jump_bg) подставляется в тег первого
     ## кадра; камера вздрагивает на приземлении — pause до толчка равен взлёту и смазу.
     ## При «меньше движения» кадр стоит.
+    $ click_skip_block = True
     window auto hide
     scene black with Dissolve(1.0)
 
@@ -212,45 +247,60 @@ label chapter_1_scene_3:
             "chapter_1 scene_3_sofa_jump"
             breath_brightness(-0.03, -0.08, 6.0)
     with Dissolve(1.5)
+    $ click_skip_block = False
 
     "Стоило нам с Витей обоим ненадолго отлучиться, как наша принцесса начинала вопить, греметь кастрюлями, орать под телевизор на полную громкость, в общем, стоять на голове."
 
     ## ══════════ КАДР 8 · ПОДЪЕЗД ══════════
     ## Наезд вверх по лестнице, к двери.
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.54, 0.40), 1.02, 1.10, 26.0)
     scene chapter_1 scene_3_entrance:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(2.0)
+    $ click_skip_block = False
 
     "Мы пыталась с ней по-хорошему поговорить, объяснить, что взрослым девочкам так вести себя должно быть стыдно."
     "Потом просто ругались."
 
     ## ══════════ КАДР 9 · НАСТЯ СВЕРХУ ══════════
-    ## Один наезд на лицо через два кадра: на втором руки растворяются (show без ATL —
-    ## дыхание и камера не сбрасываются).
+    ## Один наезд на лицо через два кадра: на втором руки растворяются под окном диалога
+    ## (show без ATL — дыхание и камера не сбрасываются; переход — renpy.transition по слою
+    ## master: оператор with спрятал бы окно).
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.50, 0.42), 1.03, 1.14, 45.0)
     scene chapter_1 scene_3_daughter_top:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(1.0)
+    $ click_skip_block = False
 
     vit "Это ни в какие рамки. Ну что это за поведение, а?"
 
+    $ click_skip_block = True
+    $ renpy.transition(Dissolve(0.8), layer="master")
     show chapter_1 scene_3_daughter_top_close
-    with Dissolve(0.8)
+    pause 0.8
+    $ click_skip_block = False
 
     "Вот она: охрипшая от крика, наша маленькая принцесса истерии, с красным заплаканным лицом."
 
+    $ click_skip_block = True
     pause 0.5
+    $ click_skip_block = False
 
     vit "Мама и так почти целыми днями дома торчит. Тебя нельзя оставить на час?"
 
+    $ click_skip_block = True
     pause 0.5
+    $ click_skip_block = False
 
     nas "Нельзя..."
 
+    $ click_skip_block = True
     pause 0.5
+    $ click_skip_block = False
 
     "Один раз мне пришлось выйти из дома, потому что закончились лекарства."
     "Я оставила её одну всего на жалкие десять минут."
@@ -258,11 +308,13 @@ label chapter_1_scene_3:
 
     ## ══════════ КАДР 10 · СОСЕДКА ══════════
     ## Наезд на фигуру наверху лестницы.
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.50, 0.35), 1.03, 1.10, 14.0)
     scene chapter_1 scene_3_entrance_neighbor:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(1.0)
+    $ click_skip_block = False
 
     sos "Ну наконец-то явились! И что это за дела?"
     sos "Вам самим нормально жить с таким воем?"
@@ -277,58 +329,101 @@ label chapter_1_scene_3:
     ## Выбор влияет на дальнейшее — меню ждёт игрока и при пропуске; двигать — F7.
     menu(screen="scene_choice", follow=follow_camera()):
         "Простите..." (pos=(608, 746), size=(330, 165)):
+            $ click_skip_block = True
             pause 0.5
+            $ click_skip_block = False
             $ c1s3_neighbor_choice = "apologize"
             ## Извинилась: камера медленно уходит мимо соседки к двери наверху.
             camera at camera_push((0.50, 0.30), 1.04, 1.16, 20.0)
             mar "У неё просто тяжёлый возраст. Извините, пожалуйста."
+
+            $ click_skip_block = True
+            pause 0.5
+            $ click_skip_block = False
+
             sos "Ну Мариш, это несерьёзно. Ребёнка надо воспитывать!"
 
+            $ click_skip_block = True
             pause 1.0
+            $ click_skip_block = False
 
             "Я знала. Просто не понимала, как. Мы пытались разобраться..."
 
         "Заткнитесь!" (pos=(963, 542), size=(330, 165)):
+            $ click_skip_block = True
             pause 0.5
+            $ click_skip_block = False
             $ c1s3_neighbor_choice = "confront"
             ## Сорвалась: удар камерой в лицо соседке.
             camera at camera_settle((0.26, 0.55), 1.14, 1.07, 0.4)
             mar "И вы тоже разораться решили?! Закройте рты и идите домой!"
 
+            $ click_skip_block = True
             pause 0.5
+            $ click_skip_block = False
 
             sos "О, психованная семейка! Ничего-ничего, потом вызовем милицию..."
 
+            $ click_skip_block = True
             pause 0.5
+            $ click_skip_block = False
 
             "Какое право они не имели нравоучать нас?!"
             "Пусть лучше приглядывают за своими детьми, болтающимися без дела по двору, как оборванцы."
 
     ## ══════════ КАДР 12 · МАРИНА НА ДИВАНЕ ══════════
     ## После «Простите» — долгое растворение, после «Заткнитесь» — склейка встык.
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.75, 0.35), 1.02, 1.10, 30.0)
     scene chapter_1 scene_3_sofa_marina:
         breath_brightness(-0.04, -0.09, 6.0)
     if c1s3_neighbor_choice == "apologize":
         with Dissolve(2.5)
+    $ click_skip_block = False
 
     "Конечно, мы ходили с дочкой к психологу."
     "Именно там, далеко не на первом сеансе, Настя шёпотом рассказала, что на самом деле не боится оставаться одна."
 
     ## ══════════ КАДР 13 · НАСТЯ ШЁПОТОМ ══════════
     ## Очень долгий непрерывный наезд на лицо Насти — на весь разговор.
+    $ click_skip_block = True
     window auto hide
     camera at camera_push((0.37, 0.42), 1.02, 1.22, 90.0)
     scene chapter_1 scene_3_sofa_daughter:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(2.0)
+    $ click_skip_block = False
 
     nas "{sc}Он{/sc} приходит, когда дома становится слишком тихо..."
+
+    $ click_skip_block = True
+    pause 0.5
+    $ click_skip_block = False
+
     mar "Кто приходит, дорогая?"
+
+    $ click_skip_block = True
+    pause 0.5
+    $ click_skip_block = False
+
     vit "Кто-кто?.. Это Полли? Или как там его..."
+
+    $ click_skip_block = True
+    pause 0.5
+    $ click_skip_block = False
+
     nas "Нет. Полли сбежал... {sc}Он{/sc}, как я, испугался..."
+
+    $ click_skip_block = True
+    pause 0.5
+    $ click_skip_block = False
+
     vit "Твоего нового воображаемого друга?"
+
+    $ click_skip_block = True
+    pause 0.5
+    $ click_skip_block = False
 
     # nas "Мы с ним не друзья..."
     nas "{sc}Он{/sc} мне не друг..."
@@ -337,18 +432,26 @@ label chapter_1_scene_3:
     show chapter_1 scene_3_sofa_daughter:
         brightness_to(-0.09, 4.0)
 
+    $ click_skip_block = True
+    pause 0.5
+    $ click_skip_block = False
+
     vit "А кто же \"он\" тогда?"
-    
+
+    $ click_skip_block = True
     pause 1.0
+    $ click_skip_block = False
 
     nas "Шаркающий человек."
 
     ## Тишина после имени.
+    $ click_skip_block = True
     window auto hide
 
     pause 2.0
 
     camera
+    $ click_skip_block = False
 
     ## Глава 2 ещё не подключена: вместо jump chapter_2_scene_1 — заглушка.
     jump end_dev_yet
