@@ -286,13 +286,13 @@ testcase c1s3_apologize_branch:
     $ c1s3_neighbor_choice = None
     $ dismiss_on()
     run Start("chapter_1_scene_3")
-    advance until screen "textbox" timeout 10.0
+    advance until screen "scene_choice" timeout 10.0
     assert "Очаровашка!"
     assert "Зануда!"
     assert "Странный!"
     assert "А где Полли?"
     click "Очаровашка!"
-    advance until screen "textbox" timeout 10.0
+    advance until screen "scene_choice" timeout 10.0
     assert "Простите..."
     assert "Заткнитесь!"
     assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbors'))
@@ -311,11 +311,11 @@ testcase c1s3_confront_branch:
     $ c1s3_neighbor_choice = None
     $ dismiss_on()
     run Start("chapter_1_scene_3")
-    advance until screen "textbox" timeout 10.0
+    advance until screen "scene_choice" timeout 10.0
     click "А где Полли?"
-    advance until screen "textbox" timeout 10.0
+    advance until screen "scene_choice" timeout 10.0
     click "Заткнитесь!"
-    advance until "Они не имели права нравоучать нас." timeout 10.0
+    advance until "Какое право они не имели нравоучать нас?!" timeout 10.0
     advance until "Пусть лучше приглядывают за своими детьми, болтающимися без дела по двору, как оборванцы." timeout 5.0
     assert eval (c1s3_teaparty_choice == 'where_is_polly')
     assert eval (c1s3_neighbor_choice == 'confront')
@@ -324,7 +324,7 @@ testcase c1s3_confront_branch:
 testcase c1s3_strange_branch:
     $ dismiss_on()
     run Start("chapter_1_scene_3")
-    advance until screen "textbox" timeout 10.0
+    advance until screen "scene_choice" timeout 10.0
     click "Странный!"
     assert "Кажется, он помешан на еловых шишках..." timeout 10.0
     assert eval (c1s3_teaparty_choice == 'strange')
@@ -386,7 +386,7 @@ testcase story_full_route:
     assert eval (sprite_showed('chapter_1 scene_3_fridge_new_drawing'))
     advance until "Спасибо, что побыла на нашем чаепитии!" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_children_room_girl_neutral'))
-    advance until screen "textbox" timeout 10.0
+    advance until screen "scene_choice" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_toys'))
     click "Зануда!"
     assert "Его лекция о мёдоведении была совершенно ни к месту!" timeout 10.0
@@ -406,7 +406,7 @@ testcase story_full_route:
     assert eval (sprite_showed('chapter_1 scene_3_daughter_top_close'))
     advance until "Ну наконец-то явились! И что за дела?" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbor'))
-    advance until screen "textbox" timeout 10.0
+    advance until screen "scene_choice" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbors'))
     click "Простите..."
     advance until "Шаркающий человек." timeout 10.0

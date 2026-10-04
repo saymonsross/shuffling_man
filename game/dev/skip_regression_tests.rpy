@@ -92,10 +92,10 @@ testcase locks_do_not_skip:
 
 testcase story_choice_does_not_skip:
     run Function(dev_scene_nav_start, "chapter_1_scene_3")
-    advance until screen "textbox" timeout 10.0
+    advance until screen "scene_choice" timeout 10.0
     skip fast
     pause 0.2
-    assert screen "textbox"
+    assert screen "scene_choice"
     assert eval (c1s3_teaparty_choice is None and c1s3_neighbor_choice is None)
     $ skip_stop()
     run MainMenu(confirm=False)

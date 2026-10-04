@@ -127,12 +127,13 @@ image chapter_1 scene_1_vitya_sofa = TalkFrames(
     "images/1_chapter/chapter_1 scene_1_vitya_sofa.png", "vit", rate=0.5, share=0.95, fade=0.08, gap=0.25, trim=0.1)
 
 ## Витя в дверях — планы глубины: прихожая сзади, Витя спереди. Рот двигается сам на его
-## репликах (ключ "vit" в characters.rpy): кадры «молчит» и «говорит» меняются по слогам.
+## репликах (ключ "vit" в characters.rpy): кадры «молчит» и «говорит» меняются по слогам
+## и растворяются друг в друга за 0.1 с.
 ## Слои — путями к файлам: под этим именем лежит и старый цельный кадр.
 image chapter_1 scene_1_vitya_door = depth_scene(
     "images/1_chapter/chapter_1 scene_1_vitya_door_bg.png",
     TalkFrames("images/1_chapter/chapter_1 scene_1_vitya_door_vitya_silence.png",
-        "images/1_chapter/chapter_1 scene_1_vitya_door_vitya_say.png", "vit"))
+        "images/1_chapter/chapter_1 scene_1_vitya_door_vitya_say.png", "vit", fade=0.1))
 
 ## Витя в холле — слои: холл сзади, Витя спереди. step=0 — слои едут за мышью вместе:
 ## Витя стоит в глубине, в дверях, и отдельный сдвиг отрывал бы его от проёма.
@@ -188,16 +189,18 @@ image c1s1_gg_frame_2 = Fixed("chapter_1_piano", "chapter_1_piano_gg 2", xysize=
 ## Рамка — общая рамка проекта (стиль frame: заливка и контур со штрихом); текст — штрих
 ## группы show_text. line — строка или displayable (в замках — меняющийся текст).
 ## side "top" — бабл сверху по центру, хвостик вниз к двери; "left" — бабл у левого края,
-## хвостик влево, за кадр. pos — свой якорь вместо стандартного.
+## хвостик влево, за кадр; "right" — хвостик вправо, к источнику звука (телевизор).
+## pos — свой якорь вместо стандартного; name — подпись вместо «ВИТЯ»; width — ширина рамки,
+## px: длинная фраза переносится в несколько строк.
 ## line — строка или кортеж строк: показывается строка с номером index() (в замках — номер
 ## текущего замка), последняя держится. pos: side "left" — левый край и центр по вертикали;
-## "top"/"up" — центр по горизонтали и верх. При включённом Choice Placer (F7) бабл
+## "right" — правый край (кончик хвостика) и центр; "top"/"up" — центр по горизонтали и верх. При включённом Choice Placer (F7) бабл
 ## перетаскивается, pos пишется в вызов.
-screen c1s1_vitya_bark(line, side="top", pos=None, index=None):
+screen c1s1_vitya_bark(line, side="top", pos=None, index=None, name=_("ВИТЯ"), width=1500):
     zorder 60
     $ _b_key = line if isinstance(line, str) else line[0]
-    $ _b_pos = _cp_bark_moved.get((side, _b_key)) or pos or ((48, 300) if side == "left" else (960, 44))
-    $ _b_anchor = (0.0, 0.5) if side == "left" else (0.5, 0.0)
+    $ _b_pos = _cp_bark_moved.get((side, _b_key)) or pos or {"left": (48, 300), "right": (1200, 300)}.get(side, (960, 44))
+    $ _b_anchor = {"left": (0.0, 0.5), "right": (1.0, 0.5)}.get(side, (0.5, 0.0))
     if config.developer and renpy.get_screen("dev_choice_placer") is not None:
         drag:
             draggable True
@@ -206,18 +209,18 @@ screen c1s1_vitya_bark(line, side="top", pos=None, index=None):
             pos _b_pos
             anchor _b_anchor
             dragged renpy.partial(dev_cp_bark_dragged, side, _b_key, _b_anchor)
-            use c1s1_vitya_bark_body(line, side, index)
+            use c1s1_vitya_bark_body(line, side, index, name, width)
     else:
         fixed:
             fit_first True
             pos _b_pos
             anchor _b_anchor
-            at (c1s1_bark_in_left if side == "left" else c1s1_bark_in)
+            at {"left": c1s1_bark_in_left, "right": c1s1_bark_in_right}.get(side, c1s1_bark_in)
             ## Дрожь — на вложенном контейнере: выезд пишет те же offset снаружи.
             fixed:
                 fit_first True
                 at shake(1.0)
-                use c1s1_vitya_bark_body(line, side, index)
+                use c1s1_vitya_bark_body(line, side, index, name, width)
 
 ## Перетащенные Choice Placer позиции баблов этой сессии: (side, текст) → pos. В релизе пуст.
 init python:
@@ -231,34 +234,40 @@ init python:
     def c1s1_vitya_indexed_dd(st, at, lines, index):
         return Text(c1s1_vitya_indexed_line(lines, index()), style="c1s1_vitya_bark_text"), 0.1
 
-screen c1s1_vitya_bark_body(line, side, index=None):
+screen c1s1_vitya_bark_body(line, side, index=None, name=_("ВИТЯ"), width=1500):
     if side == "up":
         vbox:
             spacing 0
             add "c1s1_bark_tail_up" xalign 0.5 yoffset 4
-            use c1s1_vitya_bark_frame(line, index)
+            use c1s1_vitya_bark_frame(line, index, name, width)
     elif side == "left":
         hbox:
             ## Хвостик перекрывает контур рамки: тёмный треугольник продолжает заливку.
             spacing -4
             add "c1s1_bark_tail_left" yalign 0.5
-            use c1s1_vitya_bark_frame(line, index)
+            use c1s1_vitya_bark_frame(line, index, name, width)
+    elif side == "right":
+        hbox:
+            spacing -4
+            use c1s1_vitya_bark_frame(line, index, name, width)
+            add "c1s1_bark_tail_right" yalign 0.5
     else:
         vbox:
             spacing 0
-            use c1s1_vitya_bark_frame(line, index)
+            use c1s1_vitya_bark_frame(line, index, name, width)
             add "c1s1_bark_tail" xalign 0.5 yoffset -4
 
-screen c1s1_vitya_bark_frame(line, index=None):
+screen c1s1_vitya_bark_frame(line, index=None, name=_("ВИТЯ"), width=1500):
     frame:
         background "c1s1_bark_bg"
-        xmaximum 1500
+        xmaximum width
         padding (40, 18, 40, 22)
         vbox:
             spacing 2
-            text _("ВИТЯ") style "c1s1_vitya_bark_name" at scratch("show_text", tint=0.0, mix=0.5)
+            text name style "c1s1_vitya_bark_name" at scratch("show_text", tint=0.0, mix=0.5)
+            ## Ширина строки — по рамке за вычетом полей: стиль сам ограничивает только 1420 px.
             if isinstance(line, str):
-                text line style "c1s1_vitya_bark_text" at scratch("show_text", tint=0.0, mix=0.5)
+                text line style "c1s1_vitya_bark_text" xmaximum (width - 80) at scratch("show_text", tint=0.0, mix=0.5)
             else:
                 add DynamicDisplayable(c1s1_vitya_indexed_dd, line, index) at scratch("show_text", tint=0.0, mix=0.5)
 
@@ -274,7 +283,8 @@ image c1s1_bark_border = At(Frame(Fixed(
 image c1s1_bark_bg = Fixed(Solid("#000000c7"), "c1s1_bark_border")
 
 ## Половины ромба: треугольник с контуром по скошенным сторонам. tail — нижняя половина,
-## остриё вниз; tail_up — верхняя, остриё вверх (мини-игры); tail_left — левая, остриё влево.
+## остриё вниз; tail_up — верхняя, остриё вверх (мини-игры); tail_left — левая, остриё влево;
+## tail_right — правая, остриё вправо.
 image c1s1_bark_tail = At(Transform(Fixed(
         Transform(Solid(gui.frame_line_color, xysize=(32, 32)), rotate=45, align=(0.5, 0.5)),
         Transform(Solid("#000000c7", xysize=(24, 24)), rotate=45, align=(0.5, 0.5)),
@@ -293,6 +303,12 @@ image c1s1_bark_tail_left = At(Transform(Fixed(
         xysize=(46, 46)), crop=(0, 0, 23, 46)),
     scratch("ui_frame", tint=0.0))
 
+image c1s1_bark_tail_right = At(Transform(Fixed(
+        Transform(Solid(gui.frame_line_color, xysize=(32, 32)), rotate=45, align=(0.5, 0.5)),
+        Transform(Solid("#000000c7", xysize=(24, 24)), rotate=45, align=(0.5, 0.5)),
+        xysize=(46, 46)), crop=(23, 0, 23, 46)),
+    scratch("ui_frame", tint=0.0))
+
 transform c1s1_bark_in():
     on show:
         alpha 0.0 yoffset -14
@@ -309,6 +325,16 @@ transform c1s1_bark_in_left():
             easeout 0.5 xoffset 0
     on hide:
         easein 0.3 alpha 0.0 xoffset -10
+
+transform c1s1_bark_in_right():
+    on show:
+        alpha 0.0 xoffset 160
+        parallel:
+            linear 0.2 alpha 1.0
+        parallel:
+            easeout 0.5 xoffset 0
+    on hide:
+        easein 0.3 alpha 0.0 xoffset 10
 
 style c1s1_vitya_bark_name is default:
     font gui.dialogue_text_font
@@ -977,7 +1003,9 @@ label .after_locks:
         pause 0.5
         $ click_skip_block = False
 
-        vit "Что, опять уснула?"
+        ## Цедит сквозь зубы: рот открывается всего дважды — кадр проявляется за 0.2 с и
+        ## сразу гаснет за 0.2.
+        vit "Что, опять уснула?" (callback=talk_callback("vit", moves=2, hold=0.2, fade=0.2, step=0.5))
     else:
         vit "Не прошло и полгода!.."
 
@@ -1011,6 +1039,8 @@ label .after_locks:
     ## ══════════ КАДР 8 · ХОЛЛ БЕЗ ВИТИ ══════════
     ## Витя растворяется посреди мысли, в холле остаются его вещи; камера не сбрасывается.
     ## Переход — renpy.transition по слою master: scene и with спрятали бы окно диалога.
+    ## Шорох вещей, брошенных на комод, — вместе с появлением кадра.
+    $ sm_sfx("c1s1/c1s1_hall_clothes_drop", volume=0.35)
     $ renpy.transition(Dissolve(0.6), layer="master")
     show chapter_1 scene_1_hall_mess:
         breath_brightness(-0.04, -0.09, 6.0)
@@ -1069,14 +1099,13 @@ label .tv:
 
     vit "Сейчас — новости."
 
-    ## Витя жмёт кнопку, рука уходит вниз, а под ней тёмный кадр сменяется рабочим.
+    ## Витя жмёт кнопку — телевизор включается на нажатии пальца; потом рука уходит вниз.
     $ click_skip_block = True
     window auto hide
     pause 1.0
     $ sm_sfx("c1s1/c1s1_tv_remote_click", volume=0.6)
     show c1s1_tv_hand click
-    pause 1.0
-    hide c1s1_tv_hand
+    pause 0.1
 
     ## Рабочий кадр встаёт вместо тёмного без перехода: его экран разгорается сам. show без
     ## ATL оставляет кадру дыхание, камера не сбрасывается. Звук включения — в тот же кадр.
@@ -1086,6 +1115,8 @@ label .tv:
     ## Сводка о пропавшем мальчике — один раз, с экрана: чуть справа, как телевизор в кадре.
     $ sm_audio_set_pan(sm_sfx("c1s1/tv_news_malchik_lost", volume=0.65, tag="c1s1_news"), 0.1)
     show chapter_1 scene_1_tv_close
+    pause 0.9
+    hide c1s1_tv_hand
 
 
 label .tv_dialogue:
@@ -1094,8 +1125,8 @@ label .tv_dialogue:
     $ click_skip_block = False
 
     "И каждый наш день состоял из этих \"мелочей\"."
-    "Пропустили запись? Мелочь. Потом сходим."
-    "Разбросаны носки по всей квартире? Мелочь. Пусть лежат."
+    "Снова пропустили запись? Мелочь. Потом сходим."
+    "Опять разбросаны носки по всей квартире? Мелочь. Пусть лежат."
 
     # "Наверное, наш брак давно был не идеален, а понимала ли я это?"
     # "Выходит, что нет."
@@ -1120,7 +1151,7 @@ label .cleanup:
     ## Наезд на гору посуды.
     $ click_skip_block = True
     window auto hide
-    camera at camera_push((0.45, 0.62), 1.0, 1.10, 40.0)
+    camera at camera_push((0.45, 0.62), 1.0, 1.14, 40.0)
     scene chapter_1 scene_1_kitchen_sink:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(2.0)
@@ -1129,7 +1160,7 @@ label .cleanup:
 
     "Утешать себя чужими плохими вестями — это важно."
     "А вот гора немытой посуды — это мелочь. Встань и помой. Ты же тут хозяйка."
-    "Потом — ещё одна мелочь."
+    "Потом будет ещё одна мелочь."
     "И ещё одна. И ещё одна. Снова и снова."
 
     # "Утешаем себя чужими плохими вестями, пока на кухне уже неделю стоит засор."
@@ -1190,50 +1221,62 @@ label .cleanup:
     pause 3.0
     $ click_skip_block = False
 
-    mar "Ты в магазин зашёл?"
+    vit "Ну же! Давай!"
+
+    ## Марина заговаривает с Витей — три подхода, ответ один: ему не до неё. Развилки нет:
+    ## ветки сходятся на штанге, пропуск проходит меню насквозь. Кнопки разбросаны по
+    ## тёмным местам кадра; двигать — Choice Placer (F7).
+    $ click_skip_block = True
+    pause 1.0
+    $ click_skip_block = False
+    if not renpy.is_skipping():
+        menu(screen="scene_choice", follow=follow_camera(), skippable=True):
+            "Нужно поговорить" (pos=(540, 332), size=(330, 165)):
+                pause 0.5
+                mar "Я хотела обсудить кое-что..."
+                $ click_skip_block = True
+                pause 1.0
+                $ click_skip_block = False
+                vit "Да погоди, Марин! Если наши сейчас не забьют, то..."
+            "Как игра?" (pos=(1045, 378), size=(330, 165)):
+                pause 0.5
+                mar "Наши выигрывают?"
+                $ click_skip_block = True
+                pause 1.0
+                $ click_skip_block = False
+                vit "Да какой там! Если сейчас не забьют, то всё!.."
+            "Скоро закончишь?" (pos=(781, 624), size=(330, 165)):
+                pause 0.5
+                mar "Долго до конца матча?"
+                $ click_skip_block = True
+                pause 1.0
+                $ click_skip_block = False
+                vit "Сейчас уже всё решится. Пан или пропал. Гол или..."
 
     $ click_skip_block = True
-    pause 1.5
+    pause 1.0
     $ click_skip_block = False
 
-    "Нарушенные обещания..."
+    ## Голос из телевизора — баблом у экрана, хвостиком к нему; держится до клика.
+    window auto hide
+    show screen c1s1_vitya_bark(_("И!.. Это штанга! Всё! Похоже, сегодня уже не отыграться! Конец надеждам!"), side="right", pos=(1152, 180), name=_("КОММЕНТАТОР"), width=760)
+    pause
+    hide screen c1s1_vitya_bark
 
     $ click_skip_block = True
-    pause 1.5
+    pause 1.0
     $ click_skip_block = False
 
-    vit "Не-а."
+    vit "Вершинин, ну какой же ты кривоногий! Нет слов! Марин, ты это видела?"
+    vit "Кто так играет?!"
+    
 
-    $ click_skip_block = True
-    pause 1.5
-    $ click_skip_block = False
-
-    "Ну, мелочь. Потом ещё одна..."
-    "И ещё одна. И ещё одна. День за днём."
-
-    $ click_skip_block = True
-    pause 1.5
-    $ click_skip_block = False
-
-    mar "Витя, ты помнишь у нас на завтра..."
-
-    $ click_skip_block = True
-    pause 1.5
-    $ click_skip_block = False
-
-    "Раз за разом просишь... напоминаешь, умоляешь…"
-
-    $ click_skip_block = True
-    pause 1.5
-    $ click_skip_block = False
-
-    vit "Нет, завтра не могу никак."
-
-    $ click_skip_block = True
-    pause 1.5
-    $ click_skip_block = False
-
-    mar "Но мы договаривались!"
+    ## Прежний разговор — до схемы с выборами.
+    # "Нарушенные обещания..."
+    # vit "Не-а."
+    # mar "Витя, ты помнишь у нас на завтра..."
+    # vit "Нет, завтра не могу никак."
+    # mar "Но мы договаривались!"
 
     $ click_skip_block = True
     pause 1.0
@@ -1247,7 +1290,13 @@ label .cleanup:
         breath_brightness(-0.05, -0.09, 6.0)
     with Dissolve(1.5)
     show c1s1_tv_hand_night at c1s1_tv_hand_motion, float_drift((5.0, 4.0), speed=1.0, side=(-1, 1)), parallax_plane(1.0), breath_brightness(-0.05, -0.09, 6.0)
-    pause 1.5
+    
+    pause 1.0
+
+    vit "Не могу дальше на это смотреть..."
+
+    pause 0.3
+
     $ sm_sfx("c1s1/c1s1_tv_remote_click", volume=0.6)
     show c1s1_tv_hand_night click
     ## Канал щёлкает на нажатии пальца: кадр под рукой меняется без перехода, show без ATL
@@ -1261,6 +1310,83 @@ label .cleanup:
     pause 1.0
     hide c1s1_tv_hand_night
     pause 1.0
+    $ click_skip_block = False
+
+    ## Второй заход Марины — три темы, и все сводятся к его «завтра». Затем — запись к
+    ## Тамаре: три реакции, сходятся на его срыве. Развилок нет, пропуск проходит меню
+    ## насквозь; кнопки двигать — Choice Placer (F7).
+    if not renpy.is_skipping():
+        menu(screen="scene_choice", follow=follow_camera(), skippable=True):
+            "Почему ты мне не помогаешь?" (pos=(521, 254), size=(330, 165)):
+                pause 0.5
+                mar "Почему так сложно не разбрасывать грязные вонючие носки по всей квартире?"
+                $ click_skip_block = True
+                pause 1.0
+                $ click_skip_block = False
+                vit "Опять ты про эти мелочи. Ну, не мешают же эти носки. Дорогу не перегораживают."
+                vit "Мне после работы иногда ложку до рта нормально не донести."
+                vit "Вот ты сидишь весь день дома. Я зарабатываю — ты убираешься."
+            "Как дела на работе?" (pos=(417, 460), size=(330, 165)):
+                pause 0.5
+                mar "Как у тебя на работе дела? Ничего не рассказываешь..."
+                $ click_skip_block = True
+                pause 1.0
+                $ click_skip_block = False
+                vit "Да завал полный. В отпуск не отпускают, угрожают сокращениями."
+                vit "Но ты не переживай, у нас всё нормально будет."
+            "По поводу завтра..." (pos=(515, 728), size=(330, 165)):
+                pause 0.5
+                mar "Ты помнишь? Тамара Виталиевна ждёт нас троих завтра..."
+                $ click_skip_block = True
+                pause 1.0
+                $ click_skip_block = False
+                vit "Завтра не получится. Прости."
+
+    $ click_skip_block = True
+    pause 1.0
+    $ click_skip_block = False
+
+    vit "Завтра мне надо с коллегами встретиться."
+    vit "Так что с Тамарой как-нибудь в следующий раз..."
+
+    $ click_skip_block = True
+    pause 1.0
+    $ click_skip_block = False
+
+    if not renpy.is_skipping():
+        menu(screen="scene_choice", follow=follow_camera(), skippable=True):
+            "Опять отменяем запись?!" (pos=(464, 294), size=(330, 165)):
+                pause 0.5
+                mar "Это уже четвёртая отмена! Тамара Виталиевна..."
+                $ click_skip_block = True
+                pause 1.0
+                $ click_skip_block = False
+                vit "Тамара Виталиевна потерпит! Она очень хорошо получает за каждый приём."
+            "Понятно" (pos=(442, 478), size=(330, 165)):
+                pause 0.5
+                mar "Понятно..."
+                $ click_skip_block = True
+                pause 1.0
+                $ click_skip_block = False
+                vit "Что тебе понятно?! Ну не могу я шляться с тобой по твоим подружкам."
+            "Достал!" (pos=(541, 662), size=(330, 165)):
+                pause 0.5
+                mar "Тебе ещё самому не надоело?! Каждый раз одно и то же!"
+                mar "Что ты скажешь теперь? \"Это мелочь, Марин, просто запишемся ещё раз\"?!"
+
+    $ click_skip_block = True
+    pause 1.0
+    $ click_skip_block = False
+
+    vit "У меня есть и другие дела, понятно?! Помимо собственной работы и этих твоих \"терапий\"!"
+    vit "Я не могу весь день валяться дома, а потом ныть какой-то старой мымре о том, как в жизни всё хреново!"
+    
+    vit "Кто-то должен оплачивать такие развлечения!"
+    vit "Вставать по утрам, а не к обеду. А потом пахать весь день."
+    vit "Возьми себя уже в руки!"
+
+    $ click_skip_block = True
+    pause 1.0
 
     ## ══════════ КАДР 14 · ССОРА ══════════
     ## Кадр растворяется под окном диалога (show, не scene; переход — renpy.transition по
@@ -1273,45 +1399,45 @@ label .cleanup:
     #     breath_brightness(-0.05, -0.09, 6.0)
     # ## Пауза не короче перехода: иначе он оборвётся.
 
-    $ click_skip_block = False
-
-    vit "Не ори!"
-
-    $ click_skip_block = True
-    pause 0.7
-    $ click_skip_block = False
-
-    mar "Сам не ори!"
-
-    # $ click_skip_block = True
-    # pause 0.5
     # $ click_skip_block = False
 
-    # "Скандалишь, наконец. Но тебя не слышат."
-    # "Как жэ это выводило меня из себя."
+    # vit "Не ори!"
 
-    $ click_skip_block = True
-    pause 1.0
-    $ click_skip_block = False
+    # $ click_skip_block = True
+    # pause 0.7
+    # $ click_skip_block = False
 
-    vit "Марин, ну ты опять начинаешь?!"
+    # mar "Сам не ори!"
 
-    $ click_skip_block = True
-    pause 1.0
-    $ click_skip_block = False
+    # # $ click_skip_block = True
+    # # pause 0.5
+    # # $ click_skip_block = False
 
-    ## Кадр темнеет до нижней границы и замирает.
-    show chapter_1 scene_1_tv_close_night:
-        brightness_to(-0.09, 4.0)
+    # # "Скандалишь, наконец. Но тебя не слышат."
+    # # "Как жэ это выводило меня из себя."
 
-    "И так по кругу. Снова и снова..."
+    # $ click_skip_block = True
+    # pause 1.0
+    # $ click_skip_block = False
 
-    $ click_skip_block = True
-    pause 1.0
-    $ click_skip_block = False
+    # vit "Марин, ну ты опять начинаешь?!"
 
+    # $ click_skip_block = True
+    # pause 1.0
+    # $ click_skip_block = False
+
+    # ## Кадр темнеет до нижней границы и замирает.
+    # show chapter_1 scene_1_tv_close_night:
+    #     brightness_to(-0.09, 4.0)
+
+    # "И так по кругу. Снова и снова..."
+
+    # $ click_skip_block = True
+    # pause 1.0
+    # $ click_skip_block = False
+    
     "Кто-то из мудрых сказал, что залог счастливого супружества — взаимные компромиссы."
-    "Но, боюсь... за все восемь лет брака, я поняла, что одних компромисов мало."
+    "Но, боюсь... за все восемь лет брака, я поняла, что одних компромиссов мало."
 
     # "Наверное, наш брак давно был не идеален, а понимала ли я это?"
     # "Выходит, что нет."

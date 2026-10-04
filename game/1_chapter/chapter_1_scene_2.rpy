@@ -57,8 +57,9 @@ screen c1s2_door_hover_zone():
             hovered [SetVariable("c1s2_door_hover", True), SPlay("c1s2/door_hover", volume=0.4)]
             unhovered SetVariable("c1s2_door_hover", False)
 
-## Марина крупно — планы глубины: задник и героиня. Вариант со слезой на щеке (water,
-## старт по c1s2_tear) пока выключен.
+## Марина крупно — планы глубины: задник и героиня. На её репликах губы приоткрываются
+## по слогам: кадры gg (сомкнуты) и gg_say (приоткрыты). Вариант со слезой на щеке
+## (water, старт по c1s2_tear) пока выключен.
 default c1s2_tear = False
 
 # пока рано плакать
@@ -67,7 +68,8 @@ default c1s2_tear = False
 #     ("ch1_2_mc_close_3_gg",
 #         At("ch1_2_mc_close_3_gg_tears", water(flow=(455, 602), start="c1s2_tear", delay=2.0))))
 
-image chapter_1 scene_2_marina_close = depth_scene("ch1_2_mc_close_3_bg", "ch1_2_mc_close_3_gg")
+image chapter_1 scene_2_marina_close = depth_scene("ch1_2_mc_close_3_bg",
+    TalkFrames("ch1_2_mc_close_3_gg", "ch1_2_mc_close_3_gg_say", "mar"))
 
 ## Лицо и руки дрожат всё сильнее (shake_grow: размах, px, и секунды до максимума).
 ## Слеза лежит между лицом и руками и склеена с лицом в одну группу — дрожит вместе с ним.
@@ -121,29 +123,28 @@ image chapter_1 scene_2_parents_room_vitya_1 = depth_scene(
     TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit"),
     "c1s2_parents_bed", step=0)
 
-## Крик — только на начало реплики («Знаешь что?! Хватит!»): 1.3 с от момента, когда сцена
-## взвела c1s2_vitya_shout, рот орущей позы двигается. Потом, ещё на этой же реплике, поза
-## сама растворяется в спокойную позу 1, и та договаривает остаток (FlagDissolve →
-## TalkFrames). В исходнике орущая поза нарисована рядом с позой 1 — offset ставит её на
-## то же место. 1.3 стоит в двух местах — менять вместе.
+## Крик — только на начало реплики («Знаешь что?! Хватит!»): орущая поза говорит кадрами
+## (TalkFrames), и через 1.3 с от момента, когда сцена взвела c1s2_vitya_shout, ещё на этой
+## же реплике сама растворяется в спокойную позу 1, а та договаривает остаток
+## (FlagDissolve). В исходнике орущая поза нарисована рядом с позой 1 — offset ставит её на
+## то же место.
 default c1s2_vitya_shout = False
 
 image chapter_1 scene_2_parents_room_vitya_2 = depth_scene(
     "ch1_2_parents_bg",
     FlagDissolve(
-        At("ch1_2_parents_vitya_2", mouth_talk((426, 213), (26, 19), time=1.3, start="c1s2_vitya_shout"),
-            offset(-139, 0)),
+        At(TalkFrames("ch1_2_parents_vitya_2", "ch1_2_parents_vitya_2_say", "vit"), offset(-139, 0)),
         TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit", rate=0.7),
-        "c1s2_vitya_shout", 1.3, fade=0.2),
+        "c1s2_vitya_shout", 1.3, fade=0.6),
     "c1s2_parents_bed", step=0)
 
-## Позы у кровати: орущая — рот двигается деформацией (mouth_talk), с разведёнными руками —
-## сменой кадров: слои vitya_3 (рот закрыт) и vitya_4 (говорит) — одна поза, в исходнике в
-## 223 px друг от друга, отличаются только ртом.
+## Позы у кровати говорят сменой кадров. Орущая — слои vitya_2 (рот приоткрыт) и vitya_2_say
+## (раскрыт). С разведёнными руками — vitya_3 (рот закрыт) и vitya_4 (говорит): одна поза, в
+## исходнике в 223 px друг от друга, отличаются только ртом.
 ## Ноги у слоёв 3 и 4 не дорисованы и должны оставаться за кроватью.
 image chapter_1 scene_2_parents_room_vitya_3 = depth_scene(
     "ch1_2_parents_bg",
-    At("ch1_2_parents_vitya_2", mouth_talk((426, 213), (26, 19), who="vit"), offset(653 - 400, 0)),
+    At(TalkFrames("ch1_2_parents_vitya_2", "ch1_2_parents_vitya_2_say", "vit"), offset(653 - 400, 0)),
     "c1s2_parents_bed", step=0)
 image chapter_1 scene_2_parents_room_vitya_4 = depth_scene(
     "ch1_2_parents_bg",
@@ -239,7 +240,8 @@ label chapter_1_scene_2:
 
     $ c1s2_tear = True
     $ click_skip_block = False
-    mar "Я не могу подняться. Извини."
+    ## «Извини» — почти беззвучно: последнее движение рта убрано.
+    mar "Я не могу подняться. Извини." (callback=talk_callback("mar", drop=1))
     vit "Просто бери пример с меня. Сделай над собой усилие..."
 
     $ click_skip_block = True

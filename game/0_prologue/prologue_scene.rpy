@@ -71,7 +71,7 @@ label prologue_titles:
 
     pause 1.0
 
-    show expression prologue_title(_("ПО РАССКАЗУ РОМАНА ЧЕРНОГО"), 50) as prologue_titles_text_2:
+    show expression prologue_title(_("ПО РАССКАЗУ РОМАНА ЧЁРНОГО"), 50) as prologue_titles_text_2:
         truecenter
         align (0.5, 0.5)
         subpixel True

@@ -148,6 +148,12 @@ transform fade_out_on(flag, t=1.0, faster=None, k=2.0, pulse=0.0, pulse_in=0.2, 
 ## в тексте; рот открывается в начале слога (или группы из mouth.per_move слогов) и
 ## закрывается к концу. «При-вет» — два движения. Реплику пролистнули — начатое движение
 ## доигрывает до закрытия, новых нет.
+## Своя подача одной реплики — аргументом say: vit "…" (callback=talk_callback("vit",
+## moves=2, hold=0.3)) — рот открывается moves раз, равномерно по длине фразы, каждый раз
+## на hold секунд, без слогов и пауз на знаках; step — секунды между началами открытий
+## вместо равномерного шага. drop — сколько последних движений обычной слоговой реплики
+## убрать: рот на них остаётся закрытым. fade — растворение кадров TalkFrames на
+## эту реплику вместо их собственного: при hold = fade кадр проявляется и сразу гаснет.
 init -10 python:
 
     _TALK_VOWELS = u"аеёиоуыэюяaeiouy"
@@ -185,24 +191,38 @@ init -10 python:
                 rv.append((i / cps, i / cps + 0.15))
         return tuple(rv)
 
-    def _talk_event(who, event, what=None, **kwargs):
+    def _talk_moves(length, moves, hold, step=None):
+        """moves отдельных движений равномерно по length секундам; открытая часть движения —
+        доля mouth.open_share, поэтому движение длиннее hold на обратную долю."""
+        span = hold / max(float(fx_cfg("mouth.open_share")), 0.05)
+        step = length / moves if step is None else step
+        return tuple((k * step, k * step + span, True) for k in range(moves))
+
+    def _talk_event(who, event, what=None, moves=None, hold=0.3, fade=None, step=None, drop=0, **kwargs):
         if event == "show" and what:
             now = _fx_frame_time()
+            _fx_state[("talk_line_fade", who)] = fade
+            _fx_state[("talk_line_drop", who)] = int(drop)
             ## Тире перед репликой (what_prefix) не произносится.
             text = renpy.filter_text_tags(what, allow=()).lstrip("—– ")
             cps = float(fx_cfg("mouth.chars"))
-            syllables = _talk_syllables(text, cps)
+            if moves:
+                syllables = _talk_moves(max(0.8, len(text) / cps), int(moves), float(hold), step)
+                pauses = ()
+            else:
+                syllables = _talk_syllables(text, cps)
+                pauses = _talk_pauses(text, cps)
             ## Последний слог дотягивает до конца: иначе рот обрывался бы на нём.
             length = max(0.8, len(text) / cps, syllables[-1][1])
-            _fx_state[("talk", who)] = (now, now + length, _talk_pauses(text, cps), syllables, None)
+            _fx_state[("talk", who)] = (now, now + length, pauses, syllables, None)
         elif event == "end":
             ## Пролистнули — отметка обрыва: начатое движение доигрывает (talk_open).
             state = _fx_state.get(("talk", who))
             if state is not None and state[4] is None:
                 _fx_state[("talk", who)] = state[:4] + (_fx_frame_time() - state[0],)
 
-    def talk_callback(who):
-        return renpy.partial(_talk_event, who)
+    def talk_callback(who, moves=None, hold=0.3, fade=None, step=None, drop=0):
+        return renpy.partial(_talk_event, who, moves=moves, hold=hold, fade=fade, step=step, drop=drop)
 
     def talk_time(who):
         """Секунды с начала текущей реплики персонажа who; None — молчит (реплики нет,
@@ -236,27 +256,33 @@ init -10 python:
         cut = state[4]
         per = max(1.0, float(fx_cfg("mouth.per_move"))) / max(rate, 0.05)
         share = float(fx_cfg("mouth.open_share")) if share is None else float(share)
+        ## Движения: (начало, конец, начало следующего слога или None).
+        moves = []
         group = None
         acc = 0.0
         for start, end, after_break in state[3] + ((None, None, True),):
             if group is not None and (after_break or acc >= per - 1e-6):
-                g0, g1 = group
-                if cut is not None and g0 >= cut:
-                    return None
-                if t < g0:
-                    return 0.0
-                g_open = g0 + share * (g1 - g0)
-                if start is not None and gap > 0.0:
-                    g_open = min(g_open, start - gap)
-                g_open = max(g0 + 0.05, g_open - trim)
-                if t < g_open:
-                    return math.sin(math.pi * (t - g0) / max(g_open - g0, 1e-3))
+                moves.append((group[0], group[1], start))
                 acc = 0.0 if after_break else acc - per
                 group = None
             if start is None:
                 break
             group = (start, end) if group is None else (group[0], end)
             acc += 1.0
+        drop = _fx_state.get(("talk_line_drop", who)) or 0
+        if drop:
+            moves = moves[:max(0, len(moves) - drop)]
+        for g0, g1, after in moves:
+            if cut is not None and g0 >= cut:
+                return None
+            if t < g0:
+                return 0.0
+            g_open = g0 + share * (g1 - g0)
+            if after is not None and gap > 0.0:
+                g_open = min(g_open, after - gap)
+            g_open = max(g0 + 0.05, g_open - trim)
+            if t < g_open:
+                return math.sin(math.pi * (t - g0) / max(g_open - g0, 1e-3))
         return 0.0 if cut is None else None
 
     class TalkFrames(renpy.Displayable):
@@ -294,7 +320,9 @@ init -10 python:
         def render(self, width, height, st, at):
             opened = None if sm_reduced_motion() else talk_open(self.who, self.rate, self.share, self.gap, self.trim)
             target = 1.0 if opened is not None and opened > self.threshold else 0.0
-            if self.fade <= 0.0 or renpy.predicting():
+            fade = _fx_state.get(("talk_line_fade", self.who))
+            fade = self.fade if fade is None else fade
+            if fade <= 0.0 or renpy.predicting():
                 k = target
             else:
                 ## Доля открытого кадра идёт к цели по часам кадра, ключ — сам объект.
@@ -302,7 +330,7 @@ init -10 python:
                 level, seen = _fx_state.get(key, (target, None))
                 now = _fx_frame_time()
                 dt = 0.0 if seen is None else max(0.0, min(now - seen, 0.1))
-                step = dt / self.fade
+                step = dt / fade
                 k = min(target, level + step) if level < target else max(target, level - step)
                 _fx_state[key] = (k, now)
             renpy.redraw(self, 0 if opened is not None or k != target else 1.0 / 30.0)
@@ -313,7 +341,8 @@ init -10 python:
             rv = renpy.Render(width, height)
             rv.mesh = True
             rv.add_shader("renpy.dissolve")
-            rv.add_uniform("u_renpy_dissolve", k)
+            ## Растворение — по плавной кривой: кадр трогается и садится мягко.
+            rv.add_uniform("u_renpy_dissolve", k * k * (3.0 - 2.0 * k))
             rv.blit(self._full(self.closed, width, height, st, at), (0, 0))
             rv.blit(self._full(self.opened, width, height, st, at), (0, 0))
             return rv
@@ -357,7 +386,8 @@ init -5 python:
             rv = renpy.Render(width, height)
             rv.mesh = True
             rv.add_shader("renpy.dissolve")
-            rv.add_uniform("u_renpy_dissolve", k)
+            ## Плавная кривая: поза трогается и садится мягко.
+            rv.add_uniform("u_renpy_dissolve", k * k * (3.0 - 2.0 * k))
             rv.blit(self._full(self.old, width, height, st, at), (0, 0))
             rv.blit(self._full(self.new, width, height, st, at), (0, 0))
             return rv
