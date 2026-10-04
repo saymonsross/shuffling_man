@@ -105,6 +105,7 @@ label prologue_scene:
     $ click_skip_block = False
     $ quick_menu = True
 
+    voice "prologue/work/prologue_01"
     "Чтобы заговорить о чём-то тяжёлом, лучше всего для начала представиться."
 
     ## Голова — ближний план. Картинка упирается в края кадра: стартовый зум 1.05
@@ -129,9 +130,13 @@ label prologue_scene:
         parallel:
             brightness_to(-0.07, 7.0)
 
+    voice "prologue/work/prologue_02"
     "Так сказать..."
     show prologue head_blink
+    voice "prologue/work/prologue_03"
     "...вспомнить, кто ты есть."
+
+    pause 1.0
 
     show prologue_head_bg behind prologue:
         zoom 1.0 alpha 0.0
@@ -142,16 +147,20 @@ label prologue_scene:
         parallel:
             breath_brightness(-0.01, -0.04, 6.0)
 
+    voice "prologue/work/prologue_04"
     "Меня зовут Марина Александровна Шрайбер."
 
     show prologue head_blink
 
+    voice "prologue/work/prologue_05"
     "Я пишу эти строки не в первый раз."
 
     pause 1.0
 
+    voice "prologue/work/prologue_06"
     "Сейчас я довольно далеко от места, что называла домом."
-    "Кажется, осталось позади всё, что когда-то было мне ценно."
+    voice "prologue/work/prologue_07"
+    "Кажется, позади осталось всё, что когда-то было мне ценно."
 
     $ click_skip_block = True
     window auto hide
@@ -175,13 +184,16 @@ label prologue_scene:
         parallel:
             linear 22.0 alpha 0.0
 
+    voice "prologue/work/prologue_08"
     "Я нахожусь здесь после нервного срыва, что разрушил мои и без того распадавшуюся на части жизнь и подорванное здоровье."
     # 
 
-    "То был не первый мой срыв, и не второй, если говорить начистоту."
+    voice "prologue/work/prologue_09"
+    "Это был не первый мой срыв, и не второй, если говорить начистоту."
 
     pause 1.0
 
+    voice "prologue/work/prologue_10"
     "Но прошлые разы не шли с этим ни в какое сравнение."
 
     $ click_skip_block = True
@@ -219,17 +231,24 @@ label .letter:
     # "Долго я не находила в себе сил, чтобы записать случившееся."
     # "Ушло много попыток."
 
+    voice "prologue/work/prologue_11"
     "Долго я не находила в себе сил, чтобы записать случившееся."
+    voice "prologue/work/prologue_12"
     "Ушло много попыток."
     
     # "Даже чтобы просто вспоминать призошедшее:"
 
     pause 1.0
 
+    voice "prologue/work/prologue_13"
     "Меня трясло."
+    voice "prologue/work/prologue_14"
     "Рвало."
+    voice "prologue/work/prologue_15"
     "Руки непроизвольно тянулись закрыть лицо."
+    voice "prologue/work/prologue_16"
     "Хотелось спрятаться в ладонях от страшного мира, прямо как в детстве..."
+    voice "prologue/work/prologue_17"
     "Лишь бы не вспоминать."
 
     # "{sc=0.3:2}Не было сил вспоминать: меня трясло, рвало, руки непроизвольно тянулись закрыть лицо.{/sc}"

@@ -54,9 +54,7 @@ init python:
 
 testcase dev_tv_crt_geometry:
     run Function(dev_scene_nav_start, "chapter_1_scene_1.tv")
-    assert "ВКЛЮЧИТЬ" timeout 8.0
-    click "ВКЛЮЧИТЬ"
-    assert "Наконец-то..." timeout 8.0
+    advance until "Наконец-то..." timeout 15.0
     assert eval (sprite_showed("chapter_1 scene_1_tv_close"))
 
     python hide:
@@ -106,9 +104,7 @@ testcase dev_tv_noise_mask_and_phases:
     $ persistent.sm_reduce_motion = False
     $ persistent.sm_disable_flashes = False
     run Function(dev_scene_nav_start, "chapter_1_scene_1.tv")
-    assert "ВКЛЮЧИТЬ" timeout 8.0
-    click "ВКЛЮЧИТЬ"
-    assert "Наконец-то..." timeout 8.0
+    advance until "Наконец-то..." timeout 15.0
     assert eval (sprite_showed("chapter_1 scene_1_tv_close"))
 
     python hide:
@@ -150,9 +146,7 @@ testcase dev_tv_noise_accessibility:
     $ persistent.sm_reduce_motion = bool(flags & 1)
     $ persistent.sm_disable_flashes = bool(flags & 2)
     run Function(dev_scene_nav_start, "chapter_1_scene_1.tv")
-    assert "ВКЛЮЧИТЬ" timeout 8.0
-    click "ВКЛЮЧИТЬ"
-    assert "Наконец-то..." timeout 8.0
+    advance until "Наконец-то..." timeout 15.0
     assert eval (sprite_showed("chapter_1 scene_1_tv_close"))
 
     python hide:

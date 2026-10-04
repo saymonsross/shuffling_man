@@ -28,7 +28,10 @@ define config.default_fullscreen = True
 
 define config.has_sound = True
 define config.has_music = True
-define config.has_voice = True
+## Озвучка выключена на демо: строки voice в сценах и файлы остаются, True — включить.
+define config.has_voice = False
+## voice "prologue/work/prologue_01" → game/audio/voice/prologue/work/prologue_01.ogg, как у vplay.
+define config.voice_filename_format = "audio/voice/{filename}.ogg"
 
 define config.default_music_volume = 0.85
 define config.default_sfx_volume = 0.85

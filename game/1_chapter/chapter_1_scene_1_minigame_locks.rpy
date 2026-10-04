@@ -221,6 +221,8 @@ define C1S1_BIG_LOCK_SOUND = "c1s1/big_lock_open"
 ## Нижняя щеколда большого замка дошла до упора: вертушка свободна.
 define C1S1_BIG_LATCH_OPEN_SOUND = "c1s1/big_lock_latch_open"
 define C1S1_HANDLE_SOUND = "c1s1/handle_open"
+## Все замки открыты — мини-игра пройдена.
+define C1S1_MG_DOOR_OPEN_SOUND = "c1s1/c1s1_door_lock_oppen"
 define C1S1_MG_LOCK_VOL = 1.0
 define C1S1_MG_HOVER_GAP_T = 0.15
 define C1S1_MG_BLOCKED_GAP_T = 0.35
@@ -1336,6 +1338,7 @@ label chapter_1_scene_1_minigame_locks:
     while c1s1_mg_lock() is not None:
         call .play_lock from _call_c1s1_mg_play_lock
 
+    $ sm_sfx(C1S1_MG_DOOR_OPEN_SOUND, volume=C1S1_MG_LOCK_VOL)
     $ c1s1_locks_time = c1s1_mg_elapsed()
     $ c1s1_locks_outcome = c1s1_mg_outcome_for_time(c1s1_locks_time)
 

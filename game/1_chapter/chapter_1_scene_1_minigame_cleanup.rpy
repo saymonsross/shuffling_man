@@ -145,8 +145,6 @@ screen c1s1_cleanup_minigame(waiting=False, finished=False):
     if finished:
         timer C1S1_CLEANUP_DONE_PAUSE action Return()
 
-    default cleanup_hover = None
-
     ## Комната с предметами повторяет камеру и параллакс слоя сцены: отъезд кадра перед
     ## уборкой доезжает уже во время неё, и на стыке картинка не прыгает. Дышит яркостью,
     ## как кадры сцены. Фаза — от часов кадра: экран пересоздаётся на каждом взятом предмете.
@@ -160,41 +158,49 @@ screen c1s1_cleanup_minigame(waiting=False, finished=False):
                 ## Таймер подсказки идёт от показа экрана — от последнего взятого предмета.
                 if key == c1s1_cleanup_hint:
                     add item_image pos item_pos at c1s1_cleanup_hint_pulse
-                ## Обводка — отдельный слой под кнопкой: запас текстуры под штрих сбил бы
-                ## размер и зону клика самой кнопки.
-                showif cleanup_hover == key:
-                    add item_image pos item_pos at c1s1_cleanup_outline
-                imagebutton:
+                ## Обводка и затемнение — от состояния самой кнопки (события hover/idle её
+                ## детям), а не от hovered/unhovered: мышь, переведённая на предмет во время
+                ## растворения взятого, даёт фокус без hovered, и обводка не появлялась. Размер
+                ## кнопки — по картинке: запас текстуры под штрих не сбивает зону клика.
+                button:
                     id "cleanup_" + key
-                    idle item_image
-                    hover At(item_image, brightness(C1S1_CLEANUP_HOVER_BRIGHTNESS))
-                    focus_mask item_image
+                    style "empty"
                     pos item_pos
+                    xysize renpy.image_size(item_image)
+                    focus_mask item_image
                     alt item_caption
-                    hovered [SetScreenVariable("cleanup_hover", key), Function(c1s1_cleanup_play, C1S1_CLEANUP_HOVER_SOUND, C1S1_CLEANUP_HOVER_VOLUME)]
-                    unhovered SetScreenVariable("cleanup_hover", None)
+                    hovered Function(c1s1_cleanup_play, C1S1_CLEANUP_HOVER_SOUND, C1S1_CLEANUP_HOVER_VOLUME)
                     action Return(key)
+                    add item_image at c1s1_cleanup_outline
+                    add item_image at c1s1_cleanup_item_hover
 
 ## Держится до конца уборки и уходит вместе с растворением последнего предмета: пропав
 ## раньше, читалась бы как «готово».
 screen c1s1_cleanup_prompt():
     if not c1s1_cleanup_complete():
-        text _("ПРИБЕРИТЕСЬ В КОМНАТЕ"):
+        text _("ПРИБЕРИСЬ В КОМНАТЕ"):
             id "cleanup_prompt"
             style "c1s1_cleanup_prompt"
             at scratch("scene_choice_text", tint=0.0)
 
 
-## Белый силуэт предмета: штрих (tint 1 — белый) рвёт его край наружу, как у деталей замков.
+## Белый силуэт предмета под ним: штрих (tint 1 — белый) рвёт его край наружу, как у деталей
+## замков. Проявляется, пока кнопка предмета наведена.
 transform c1s1_cleanup_outline():
     alpha 0.0
     parallel:
         scratch("cleanup_items", tint=1.0, idle_color="#ffffff", hover_color="#ffffff", pad=24)
     parallel:
-        on show:
+        on hover, selected_hover:
             linear C1S1_CLEANUP_OUTLINE_FADE alpha C1S1_CLEANUP_OUTLINE_ALPHA
-        on hide:
+        on idle, selected_idle, insensitive:
             linear C1S1_CLEANUP_OUTLINE_FADE alpha 0.0
+
+transform c1s1_cleanup_item_hover():
+    on hover, selected_hover:
+        matrixcolor BrightnessMatrix(C1S1_CLEANUP_HOVER_BRIGHTNESS)
+    on idle, selected_idle, insensitive:
+        matrixcolor BrightnessMatrix(0.0)
 
 ## Не c1s1_cleanup_hint: так называется переменная с ключом предмета, она затёрла бы трансформ.
 transform c1s1_cleanup_hint_pulse():
@@ -223,7 +229,14 @@ label chapter_1_scene_1_minigame_cleanup hide:
     $ quick_menu = False
     window hide
     ## Камера кадра перед уборкой не сбрасывается: её повторяет комната мини-игры.
-    scene chapter_1_cleanup_room
+    ## Комната слоя сцены дышит и держит доли эффектов как экран: после мини-игры она
+    ## остаётся одна, и без них bloom вернулся бы к сюжетному — кадр вспыхнул бы перед
+    ## переходом.
+    scene chapter_1_cleanup_room:
+        parallel:
+            breath_brightness_clock(C1S1_CLEANUP_BREATH_LO, C1S1_CLEANUP_BREATH_HI, C1S1_CLEANUP_BREATH_T)
+        parallel:
+            fx_frame(bloom=C1S1_CLEANUP_FX_BLOOM, vignette=C1S1_CLEANUP_FX_VIGNETTE)
 
     if not renpy.is_skipping():
         show screen c1s1_cleanup_minigame

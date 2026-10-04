@@ -123,8 +123,9 @@ init -200 python:
         else:
             # A full pool must release its victim immediately, otherwise play queues behind its fade.
             renpy.music.stop(channel=target, fadeout=0)
-            # A channel's effect belongs to its handle, not to the next sound using that slot.
+            # A channel's effect and pan belong to its handle, not to the next sound using that slot.
             renpy.music.set_audio_filter(target, None, replace=True, duration=0)
+            renpy.music.set_pan(0.0, 0, channel=target)
             serial += 1
             handle = (target, serial)
         _sm_audio_apply_volume(target, volume)
@@ -171,6 +172,19 @@ init -200 python:
         slots = dict(saved_slots)
         slots[slot["channel"]] = dict(slot, volume=volume)
         _sm_audio_store(serial, slots)
+        return True
+
+    def sm_audio_set_pan(handle, pan, delay=0):
+        pan = float(pan)
+        if not sm_audio_math.isfinite(pan) or not -1.0 <= pan <= 1.0:
+            raise ValueError("pan must be finite and in -1..1")
+        delay = _sm_audio_number(delay, "delay")
+        serial, slots = _sm_audio_state()
+        slot = next((slot for slot in slots.values()
+            if slot["handle"] == handle and slot["active"]), None)
+        if slot is None or not _sm_audio_busy(slot["channel"]):
+            return False
+        renpy.music.set_pan(pan, delay, channel=slot["channel"])
         return True
 
     def sm_audio_get_pos(handle):

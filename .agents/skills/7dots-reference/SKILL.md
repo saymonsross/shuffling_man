@@ -33,7 +33,7 @@ description: Справочник по библиотеке 7dots.rpy для п�
 | `vstop()` | Стоп ручную голосовую линию | `$ vstop(fadeout=0.2)` |
 | `sstop()` / `sndstop()` | Стоп звук | `$ sstop()` |
 
-Action-версии для экранов: `MPlay`, `MStop`, `SPlay`, `SStop`, `SFXPlay`, `SFXStop`, `VPlay`, `VStop`, `FNPlay`. Ручная линия `vplay` не реализует автоозвучку реплик, voice replay и ожидание голоса при автопереходе.
+Action-версии для экранов: `MPlay`, `MStop`, `SPlay`, `SStop`, `SFXPlay`, `SFXStop`, `VPlay`, `VStop`, `FNPlay`. `vplay` — звуковой дизайн вне реплик; озвучка реплик — оператор `voice "file"` / `config.auto_voice` (тот же пул с кроссфейдом, `game/common/voice.rpy`).
 
 Воспроизведение звука из transform/функции: `function renpy.curry(s_play)("click")` (однократно), `function renpy.curry(sfx_play)("wind")` (зациклено).
 

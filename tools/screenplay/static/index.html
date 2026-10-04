@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Режим сценариста</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Roboto+Condensed:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-title">Шаркающий человек</span>
+    <span class="brand-sub">режим сценариста</span>
+  </div>
+  <div class="search">
+    <input id="search" type="search" placeholder="Поиск по тексту…  (Enter — следующее)" autocomplete="off">
+    <span id="search-count"></span>
+  </div>
+  <div class="toggles">
+    <label><input type="checkbox" data-flag="slides"> Слайды</label>
+    <label><input type="checkbox" data-flag="tech"> Техничка</label>
+    <label><input type="checkbox" data-flag="en"> EN</label>
+  </div>
+  <button id="undo" class="btn" disabled>↶ Отменить</button>
+  <span id="stats" class="stats"></span>
+</header>
+
+<aside id="toc">
+  <div class="toc-head">Сцены <span class="hint">перетаскивай, чтобы менять порядок</span></div>
+  <ol id="toc-chain" class="toc-list"></ol>
+  <div class="toc-head toc-orphans-head">Вне цепочки</div>
+  <ol id="toc-orphans" class="toc-list orphans"></ol>
+  <div id="order-bar" class="order-bar" hidden>
+    <div>Порядок изменён</div>
+    <button id="order-preview" class="btn accent">Предпросмотр</button>
+    <button id="order-reset" class="btn">Сбросить</button>
+  </div>
+  <div class="keys">
+    <div><b>клик</b> по тексту — правка</div>
+    <div><b>Enter</b> сохранить · <b>Shift+Enter</b> перенос</div>
+    <div><b>Ctrl+Enter</b> сохранить и новая строка</div>
+    <div><b>Esc</b> отмена · <b>Ctrl+Z</b> отменить запись</div>
+  </div>
+</aside>
+
+<main id="manuscript"><div class="loading">Читаю сценарий…</div></main>
+
+<div id="modal" class="modal" hidden></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

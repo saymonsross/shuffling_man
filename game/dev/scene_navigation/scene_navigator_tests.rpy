@@ -142,9 +142,7 @@ testcase dev_scene_navigator_continues_household:
     click id entry_label
 
     if eval (entry_label == "chapter_1_scene_1.tv"):
-        assert "ВКЛЮЧИТЬ" timeout 5.0
-        click "ВКЛЮЧИТЬ"
-        assert "Наконец-то..." timeout 5.0
+        advance until "Наконец-то..." timeout 15.0
         assert eval (sm_test_tv_assert_shown('chapter_1 scene_1_tv_close'))
     else:
         assert "Разбросанные носки, не опускающийся стульчак, как типично!" timeout 3.0
