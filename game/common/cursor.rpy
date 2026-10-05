@@ -94,7 +94,7 @@ init -10 python:
         trans.xoffset = shake * motion
         ## Под блоком, в переходах и дёрге — каждый кадр: иначе короткий клик можно пропустить.
         busy = level != target or hover != hover_target or blocked or deny > 0.0 or shake != 0.0
-        return 1.0 / 60.0 if busy else 1.0 / 30.0
+        return fx_tick() if busy else fx_tick(2)
 
     ## Заблокированный курсор без штриха: сила штриха гаснет вместе с серым. Над
     ## интерактивом сильнее, но не выше полной: шейдер за 1.0 экстраполирует.

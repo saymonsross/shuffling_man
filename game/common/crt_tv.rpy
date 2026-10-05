@@ -105,10 +105,14 @@ init python:
         gl_FragColor = vec4(c.rgb * line * (1.0 + band + flick), c.a);
         """)
 
+    def _tv_glow_breath_f(lo, hi, t, trans, st, at):
+        trans.alpha = fx_track(st, lo, (("ease", t, hi), ("ease", t, lo)))
+        return fx_tick()
+
     def sm_tv_signal_f(trans, st, at):
         trans.u_tv_time = _fx_frame_time() % 1000.0
         trans.u_tv_motion = sm_motion_scale()
-        return 0
+        return fx_tick()
 
 transform sm_tv_signal():
     mesh True
@@ -131,10 +135,7 @@ transform sm_tv_glow(center, zoom=1.3, blur=36.0, lo=0.18, hi=0.34, t=2.8):
     blur blur
     blend "add"
     alpha lo
-    block:
-        ease t alpha hi
-        ease t alpha lo
-        repeat
+    function renpy.curry(_tv_glow_breath_f)(lo, hi, t)
 
 ## Включение кинескопа: от показа картинки в центре вспыхивает узкая искра-звезда,
 ## растягивается в ромб с вогнутыми сторонами, тот округляется и раскрывается на весь
@@ -294,11 +295,11 @@ init python:
 
     def sm_tv_light_f(trans, st, at):
         trans.u_tvl_flick = sm_tv_flicker()
-        return 0
+        return fx_tick()
 
     def sm_tv_rim_f(strength, trans, st, at):
         trans.alpha = max(0.0, min(1.0, strength * sm_tv_flicker()))
-        return 0
+        return fx_tick()
 
 transform sm_tv_light(rect, tint=(1.0, 1.0, 1.0), radius=180.0, strength=0.16):
     mesh True

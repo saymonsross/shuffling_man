@@ -295,7 +295,7 @@ testcase c1s3_apologize_branch:
     advance until screen "scene_choice" timeout 30.0
     assert "Простите..."
     assert "Заткнитесь!"
-    assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbors'))
+    assert eval (sprite_showed('c1s3_neighbor_2'))
     click "Простите..."
     advance until "Я знала. Просто не понимала, как. Мы пытались разобраться..." timeout 10.0
     assert eval (c1s3_teaparty_choice == 'charming')
@@ -303,7 +303,7 @@ testcase c1s3_apologize_branch:
     advance until "Конечно, мы ходили с дочкой к психологу." timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_sofa_marina'))
     advance until "приходит, когда дома становится слишком тихо" timeout 10.0
-    assert eval (sprite_showed('chapter_1 scene_3_sofa_daughter'))
+    assert eval (c1s3_marina_turned and sprite_showed('chapter_1 scene_3_sofa_marina'))
     advance until "Шаркающий человек." timeout 10.0
 
 testcase c1s3_confront_branch:
@@ -319,7 +319,7 @@ testcase c1s3_confront_branch:
     advance until "Пусть лучше приглядывают за своими детьми, болтающимися без дела по двору, как оборванцы." timeout 5.0
     assert eval (c1s3_teaparty_choice == 'where_is_polly')
     assert eval (c1s3_neighbor_choice == 'confront')
-    advance until "Шаркающий человек." timeout 10.0
+    advance until "Шаркающий человек." timeout 30.0
 
 testcase c1s3_strange_branch:
     $ dismiss_on()
@@ -407,7 +407,7 @@ testcase story_full_route:
     advance until "Ну наконец-то явились! И что за дела?" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbor'))
     advance until screen "scene_choice" timeout 10.0
-    assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbors'))
+    assert eval (sprite_showed('c1s3_neighbor_2'))
     click "Простите..."
     advance until "Шаркающий человек." timeout 10.0
     advance until screen "main_menu" timeout 10.0

@@ -114,7 +114,7 @@ init -10 python:
         spot["rect"] = rect
         spot["follow"] = follow
         spot["seen"] = _fx_frame_time()
-        return 0.0
+        return fx_tick()
 
     def sm_rift_rect(pos, anchor, size):
         """Прямоугольник кнопки; float в pos — доля экрана, как у Ren'Py."""
@@ -147,6 +147,11 @@ init -10 python:
         spot = _fx_state.setdefault("rift_spots", {}).get(key)
         if spot is not None:
             spot["hover"] = value
+        ## Наведённая кнопка для отталкивания соседей (scene_choice drift).
+        if value:
+            _fx_state["choice_hover"] = key
+        elif _fx_state.get("choice_hover") == key:
+            _fx_state["choice_hover"] = None
 
     def _sm_rift_to_screen(x, y, follow):
         ## Та же раскладка, что у follow_camera: зум и поворот вокруг центра экрана, затем сдвиг.
@@ -178,7 +183,8 @@ init -10 python:
                 continue
             x, y, w, h = spot["rect"]
             zoom = 1.0
-            cx, cy = x + w / 2.0, y + h / 2.0
+            sx, sy = _fx_state.get(("choice_shift", key), (0.0, 0.0))
+            cx, cy = x + w / 2.0 + sx, y + h / 2.0 + sy
             if spot["follow"]:
                 zoom = follow[0] or 1.0
                 cx, cy = _sm_rift_to_screen(cx, cy, follow)

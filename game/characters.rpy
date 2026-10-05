@@ -26,3 +26,8 @@ define pol = Character(_("Полли"), kind=speech)
 define sos = Character(_("Соседка"), kind=speech, callback=talk_callback("sos"))
 
 define psi = Character(_("Психолог"), kind=speech)
+
+## Голос из телевизора — реплика баблом у экрана (экран c1s1_bark_say, глава 1, сцена 1).
+## what_style: стиль say_dialogue сдвинул бы текст из рамки бабла.
+define tvv = Character(_("ТЕЛЕВИЗОР"), screen="c1s1_bark_say", what_style="c1s1_vitya_bark_text",
+    show_side="right", show_pos=(1152, 180), show_width=760)

@@ -478,7 +478,7 @@ init -5 python:
         trans.xoffset = int(round(C1S1_LOCKS_BTN_RATTLE[0] * shake))
         trans.yoffset = int(round(-C1S1_LOCKS_BTN_RATTLE[1] * shake))
         trans.rotate = C1S1_LOCKS_BTN_TILT * shake
-        return 1.0 / 60.0
+        return fx_tick()
 
     ## Драйвер
 
@@ -552,7 +552,7 @@ init -5 python:
     def c1s1_mg_camera_f(key, trans, st, at):
         """Держит фокус на замках и сводит shake в общие _fx_state-ключи камеры двери."""
         if renpy.predicting():
-            return 1.0 / 60.0
+            return fx_tick()
         bx, by = _focus_offset(C1S1_LOCKS_FOCUS, None, trans.zoom or 1.0)
         if sm_reduced_motion():
             for suffix in ("_jx", "_jy"):
@@ -560,7 +560,7 @@ init -5 python:
             trans.xoffset = bx
             trans.yoffset = by
             _fx_publish_camera(key, trans)
-            return 1.0 / 60.0
+            return fx_tick()
 
         sy = c1s1_mg_shake_offset()
         _fx_state[key + "_jx"] = 0.0
@@ -569,7 +569,7 @@ init -5 python:
         trans.xoffset = bx
         trans.yoffset = by + sy
         _fx_publish_camera(key, trans)
-        return 1.0 / 60.0
+        return fx_tick()
 
     ## Модель замка
 
@@ -683,13 +683,13 @@ init -5 python:
         ox, oy = c1s1_latch_offset(_mg_get("latch_p"))
         trans.xoffset = ox
         trans.yoffset = 0.0 if C1S1_LATCH_ROD_AXIS_ONLY else oy
-        return 1.0 / 60.0
+        return fx_tick()
 
     def c1s1_latch_knob_f(trans, st, at):
         ox, oy = c1s1_latch_offset(_mg_get("latch_p"))
         trans.xoffset = ox
         trans.yoffset = oy
-        return 1.0 / 60.0
+        return fx_tick()
 
     ## Большой замок
 
@@ -787,7 +787,7 @@ init -5 python:
 
     def c1s1_big_latch_f(trans, st, at):
         trans.xoffset = c1s1_big_latch_x()
-        return 1.0 / 60.0
+        return fx_tick()
 
     def c1s1_big_latch_arrow_f(trans, st, at):
         trans.xoffset = c1s1_big_latch_x()
@@ -800,11 +800,11 @@ init -5 python:
             phase = _fx_frame_time() / max(0.05, C1S1_BIG_LATCH_ARROW_BLINK_T)
             level = lo + (hi - lo) * (0.5 + 0.5 * math.sin(2.0 * math.pi * phase))
         trans.alpha = _fx_step("c1s1_big_latch_arrow", level, 0.35, 0.0)
-        return 1.0 / 60.0
+        return fx_tick()
 
     def c1s1_big_stroke_f(trans, st, at):
         trans.xoffset = C1S1_BIG_STROKE_TRAVEL * C1S1_BIG_LOCK_ZOOM * c1s1_big_turn()
-        return 1.0 / 60.0
+        return fx_tick()
 
     def c1s1_big_spin_f(trans, st, at):
         trans.rotate = -C1S1_BIG_SPIN_TURN * c1s1_big_turn()
@@ -812,7 +812,7 @@ init -5 python:
         if c1s1_mg_blocked_visible() and not sm_reduced_motion() and age < C1S1_MG_BLOCKED_SHAKE_T:
             fade = 1.0 - age / C1S1_MG_BLOCKED_SHAKE_T
             trans.rotate += 3.0 * math.sin(age * math.pi * 20.0) * fade
-        return 1.0 / 60.0
+        return fx_tick()
 
     ## Дверная ручка
 
@@ -880,7 +880,7 @@ init -5 python:
 
     def c1s1_handle_f(trans, st, at):
         trans.rotate = C1S1_HANDLE_TURN * _mg_get("handle_p")
-        return 1.0 / 60.0
+        return fx_tick()
 
     ## Ввод
 
@@ -996,7 +996,7 @@ init -5 python:
         alpha = _fx_step("c1s1_mg_outline_" + part, target, C1S1_MG_GRAB_OUTLINE_RELAX, 0.0)
         trans.alpha = max(alpha, blink)
         trans.u_scratch_hover = blink
-        return 1.0 / 60.0
+        return fx_tick()
 
     def c1s1_mg_release():
         ## Щелчок только когда деталь действительно отпускают, не на клик по пустому месту;
@@ -1099,19 +1099,19 @@ init -5 python:
 
     def c1s1_mg_bag_f(trans, st, at):
         if renpy.predicting():
-            return 1.0 / 60.0
+            return fx_tick()
         if sm_reduced_motion():
             _fx_state["c1s1_mg_bag_jx"] = 0.0
             _fx_state["c1s1_mg_bag_jy"] = 0.0
             trans.xoffset = 0.0
             trans.yoffset = 0.0
-            return 1.0 / 60.0
+            return fx_tick()
 
         amp = _mg_lerp(C1S1_MG_BAG_TREMBLE[0], C1S1_MG_BAG_TREMBLE[1],
                        c1s1_mg_shake_env())
         trans.xoffset = _fx_step("c1s1_mg_bag_jx", lambda: _fx_visual_jitter(amp), 0.5, start=0.0)
         trans.yoffset = _fx_step("c1s1_mg_bag_jy", lambda: _fx_visual_jitter(amp), 0.5, start=0.0)
-        return 1.0 / 60.0
+        return fx_tick()
 
 ## Трансформы
 

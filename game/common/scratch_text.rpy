@@ -126,10 +126,10 @@ init -11 python:
         step = fx_cfg(group + ".step")
         if fx_cfg(group + ".animate") and not sm_reduced_motion():
             trans.u_scratch_seed = float(int(st / step) % SCRATCH_SEED_LOOP)
-            return step - (st % step)
+            return fx_tick_after(step - (st % step))
         trans.u_scratch_seed = 0.0
         ## Редкая перерисовка подхватывает правки тюнера.
-        return 0.1
+        return fx_tick(6)
 
     def scratch_out_f(t, delay, amp, trans, st, at):
         p = 1.0 if t <= 0.0 else max(0.0, min(1.0, (st - delay) / t))
@@ -141,7 +141,7 @@ init -11 python:
         ## Порог волокон выше единицы не оставляет от картинки ничего.
         trans.u_scratch_fiber_cut = -0.05 + 1.15 * p * p
         trans.u_scratch_seed = 0.0 if sm_reduced_motion() else float(int(st / 0.1) % SCRATCH_SEED_LOOP)
-        return 0 if p < 1.0 else 0.25
+        return fx_tick() if p < 1.0 else fx_tick(15)
 
 ## Распад в штрихе: за t секунд (после delay) дрожание контура растёт до amp px — это
 ## максимум шкалы штриха, — копии разъезжаются, волокна рвут картинку, и она исчезает

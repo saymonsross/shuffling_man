@@ -11,7 +11,7 @@ define config.name = _("Шаркающий человек")
 define gui.show_name = True
 
 
-define config.version = "0.1.4-demo"
+define config.version = "0.1.5-demo"
 
 
 define gui.about = _p("""
@@ -21,6 +21,14 @@ define gui.about = _p("""
 define build.name = "shuffling_man"
 
 define config.default_fullscreen = True
+
+## Интервал vsync под 60 кадров: на 165 Гц — 82, на 120/240 — 60. Внутренняя сетка эффектов —
+## fx_tick (common/camera_fx.rpy), это предел только для кадров от мыши и ввода.
+default preferences.gl_framerate = 60
+
+## Движок после каждой перерисовки рисует ещё столько кадров без ожидания событий; при 12
+## они перекрывают такт сетки fx_tick, и цикл отрисовки не отпускает CPU между тактами.
+define config.fast_redraw_frames = 0
 
 
 ## Звуки и музыка

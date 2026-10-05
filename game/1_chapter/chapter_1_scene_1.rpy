@@ -67,15 +67,31 @@ image chapter_1 scene_1_tv_close = depth_scene(
     sm_tv_set("images/1_chapter/chapter_1 scene_1_tv_close.png", At("c1s1_tv_news", sm_tv_power(0.58)),
         (831, 111), (579, 420), ((1, 1), (577, 17), (576, 418), (1, 417)), turn=(0.2, 0.04)))
 image c1s1_tv_hand = "images/1_chapter/chapter_1 scene_1_tv_close_hand.png"
-## Большой палец жмёт кнопку пульта и отпускает её.
-image c1s1_tv_hand click:
-    "images/1_chapter/chapter_1 scene_1_tv_close_hand.png"
-    "images/1_chapter/chapter_1 scene_1_tv_close_hand_click.png" with Dissolve(0.1)
-    pause 0.2
-    "images/1_chapter/chapter_1 scene_1_tv_close_hand.png" with Dissolve(0.1)
+## Нажатие кнопки пульта без отдельного кадра: кисть коротко подаётся вперёд, к экрану,
+## пульт клюёт носом (поворот вокруг запястья) — и возвращается. Сдвиг, px; поворот, °.
+transform c1s1_tv_hand_press:
+    subpixel True
+    transform_anchor True
+    anchor (0.0, 1.0)
+    pos (0, 1080)
+    xoffset 0.0 yoffset 0.0 rotate 0.0
+    easein 0.07 xoffset (4.0 * sm_motion_scale()) yoffset (5.0 * sm_motion_scale()) rotate (0.8 * sm_motion_scale())
+    easeout 0.22 xoffset 0.0 yoffset 0.0 rotate 0.0
+image c1s1_tv_hand click = At("images/1_chapter/chapter_1 scene_1_tv_close_hand.png", c1s1_tv_hand_press)
 ## Футбол живой: камера трансляции чуть плывёт, игроки едва заметно двигаются; трибуны
 ## выше доли top высоты картинки стоят.
-image c1s1_tv_football = At("images/1_chapter/tv/tv_football.png", sm_tv_players(top=0.36, amp=1.5, pan=10.0, pan_t=26.0))
+## Три кадра трансляции идут по кругу с растворением: 1 → 2 → 3 → 1, каждый держится 0.5 с и
+## перетекает в следующий за 0.7 с.
+image c1s1_tv_football_frames:
+    "images/1_chapter/tv/tv_football 1.png"
+    pause 0.5
+    "images/1_chapter/tv/tv_football 2.png" with Dissolve(0.7)
+    pause 0.5
+    "images/1_chapter/tv/tv_football 3.png" with Dissolve(0.7)
+    pause 0.5
+    "images/1_chapter/tv/tv_football 1.png" with Dissolve(0.7)
+    repeat
+image c1s1_tv_football = At("c1s1_tv_football_frames", sm_tv_players(top=0.36, amp=1.5, pan=10.0, pan_t=26.0))
 ## Ночью крупно сначала идёт тот же футбол, что на общем плане. Витя переключает канал той
 ## же рукой с пультом, что днём (тег c1s1_tv_hand_night, свет экрана мерцает и на ней):
 ## кадр _switch встаёт на нажатии: экран на миг гаснет в чёрное, «Конан» проступает из него
@@ -84,7 +100,7 @@ image c1s1_tv_football = At("images/1_chapter/tv/tv_football.png", sm_tv_players
 image chapter_1 scene_1_tv_close_night_football = depth_scene(
     sm_tv_set("images/1_chapter/chapter_1 scene_1_tv_close_night.png", "c1s1_tv_football",
         (831, 111), (579, 420), ((1, 1), (577, 17), (576, 418), (1, 417)), turn=(0.2, 0.04),
-        glow="images/1_chapter/tv/tv_football.png"))
+        glow="images/1_chapter/tv/tv_football 1.png"))
 transform c1s1_tv_switch_blank:
     alpha 1.0
     pause 0.08
@@ -100,19 +116,14 @@ image chapter_1 scene_1_tv_close_night = depth_scene(
 transform c1s1_tv_night_light:
     sm_tv_light((835, 115, 1406, 527), (1.0, 0.82, 0.62), radius=260.0, strength=0.3)
 image c1s1_tv_hand_night = At("images/1_chapter/chapter_1 scene_1_tv_close_night_hand.png", c1s1_tv_night_light)
-image c1s1_tv_hand_night_pressed = At("images/1_chapter/chapter_1 scene_1_tv_close_night_hand_click.png", c1s1_tv_night_light)
-image c1s1_tv_hand_night click:
-    "c1s1_tv_hand_night"
-    "c1s1_tv_hand_night_pressed" with Dissolve(0.1)
-    pause 0.2
-    "c1s1_tv_hand_night" with Dissolve(0.1)
+image c1s1_tv_hand_night click = At("images/1_chapter/chapter_1 scene_1_tv_close_night_hand.png", c1s1_tv_hand_press, c1s1_tv_night_light)
 ## Контур Вити, подсвеченный экраном, — отдельный слой с нарисованным бликом на прозрачном
 ## (sm_tv_rim), мерцает синхронно со светом экрана на кадре. Пока файла нет, слой пустой.
 image chapter_1 scene_1_sofa_tv_night = Fixed(
     At(sm_tv_set(
         "images/1_chapter/chapter_1 scene_1_sofa_tv_night.png", "c1s1_tv_football",
         (1237, 121), (396, 277), ((1, 1), (394, 1), (394, 275), (1, 275)),
-        glow="images/1_chapter/tv/tv_football.png"),
+        glow="images/1_chapter/tv/tv_football 1.png"),
         sm_tv_light((1241, 125, 1629, 394), (0.85, 1.0, 0.72))),
     At("images/1_chapter/chapter_1 scene_1_sofa_tv_night_rim.png", sm_tv_rim())
         if renpy.loadable("images/1_chapter/chapter_1 scene_1_sofa_tv_night_rim.png") else Null(),
@@ -221,6 +232,37 @@ screen c1s1_vitya_bark(line, side="top", pos=None, index=None, name=_("ВИТЯ"
                 fit_first True
                 at shake(1.0)
                 use c1s1_vitya_bark_body(line, side, index, name, width)
+
+## Реплика баблом вместо окна диалога — экран say для Character(screen="c1s1_bark_say"):
+## клик, откат, пропуск и история работают как у обычной реплики. side, pos и width — как у
+## c1s1_vitya_bark, задаются в Character через show_side / show_pos / show_width. Перед
+## такими репликами окно диалога прячут (window hide): иначе window auto показал бы пустое.
+screen c1s1_bark_say(who, what, side="right", pos=None, width=760):
+    zorder 60
+    $ _b_pos = pos or {"left": (48, 300), "right": (1200, 300)}.get(side, (960, 44))
+    $ _b_anchor = {"left": (0.0, 0.5), "right": (1.0, 0.5)}.get(side, (0.5, 0.0))
+    fixed:
+        fit_first True
+        pos _b_pos
+        anchor _b_anchor
+        at {"left": c1s1_bark_in_left, "right": c1s1_bark_in_right}.get(side, c1s1_bark_in)
+        fixed:
+            fit_first True
+            at shake(1.0)
+            hbox:
+                spacing -4
+                if side == "left":
+                    add "c1s1_bark_tail_left" yalign 0.5
+                frame:
+                    background "c1s1_bark_bg"
+                    xmaximum width
+                    padding (40, 18, 40, 22)
+                    vbox:
+                        spacing 2
+                        text (who or "") style "c1s1_vitya_bark_name" at scratch("show_text", tint=0.0, mix=0.5)
+                        text what id "what" xmaximum (width - 80) at scratch("show_text", tint=0.0, mix=0.5)
+                if side == "right":
+                    add "c1s1_bark_tail_right" yalign 0.5
 
 ## Перетащенные Choice Placer позиции баблов этой сессии: (side, текст) → pos. В релизе пуст.
 init python:
@@ -513,14 +555,14 @@ init python:
             return None
         ## 0.25 — доля пути за кадр 60 Гц: ≈0.2 с на смену позы.
         trans.alpha = _fx_step("c1s1_gg_pose_2", 1.0 if store.c1s1_gg_pose == 2 else 0.0, 0.25, 0.0)
-        return 0
+        return fx_tick()
 
     def c1s1_pendulum_f(amp, trans, st, at):
         """Маятник на пианино качается от такта метронома: щелчок — в крайней точке."""
         m = piano_metro
         t = 0.0 if m.t0 is None else piano_now() - m.t0
         trans.rotate = amp * sm_motion_scale() * math.sin(math.pi * t / m.beat)
-        return 0
+        return fx_tick()
 
     ## Стук слышен с разных мест. "outside" — со стороны Вити, чистый; с нашей стороны он глуше:
     ## "door" — у двери, "hall" — из холла, "room" — из комнаты. Число — доля звука, которую
@@ -1102,7 +1144,7 @@ label .tv:
     ## Витя жмёт кнопку — телевизор включается на нажатии пальца; потом рука уходит вниз.
     $ click_skip_block = True
     window auto hide
-    pause 1.0
+    pause 0.3
     $ sm_sfx("c1s1/c1s1_tv_remote_click", volume=0.6)
     show c1s1_tv_hand click
     pause 0.1
@@ -1230,7 +1272,7 @@ label .cleanup:
     pause 1.0
     $ click_skip_block = False
     if not renpy.is_skipping():
-        menu(screen="scene_choice", follow=follow_camera(), skippable=True):
+        menu(screen="scene_choice", follow=follow_camera(), drift=True, skippable=True):
             "Нужно поговорить" (pos=(540, 332), size=(330, 165)):
                 pause 0.5
                 mar "Я хотела обсудить кое-что..."
@@ -1257,11 +1299,12 @@ label .cleanup:
     pause 1.0
     $ click_skip_block = False
 
-    ## Голос из телевизора — баблом у экрана, хвостиком к нему; держится до клика.
-    window auto hide
-    show screen c1s1_vitya_bark(_("И!.. Это штанга! Всё! Похоже, сегодня уже не отыграться! Конец надеждам!"), side="right", pos=(1152, 180), name=_("КОММЕНТАТОР"), width=760)
-    pause
-    hide screen c1s1_vitya_bark
+    ## Голос из телевизора — баблом у экрана, хвостиком к нему; ждёт клика.
+    window hide
+    ## Звук комментатора — с бабла, из той же точки, что трансляция (панорама).
+    $ sm_audio_set_pan(sm_sfx("c1s1/tv_sports_football", volume=0.4), 0.1)
+    tvv "И!.. Это штанга! Всё! Похоже, сегодня уже не отыграться! Конец надеждам!"
+    window auto
 
     $ click_skip_block = True
     pause 1.0
@@ -1316,7 +1359,7 @@ label .cleanup:
     ## Тамаре: три реакции, сходятся на его срыве. Развилок нет, пропуск проходит меню
     ## насквозь; кнопки двигать — Choice Placer (F7).
     if not renpy.is_skipping():
-        menu(screen="scene_choice", follow=follow_camera(), skippable=True):
+        menu(screen="scene_choice", follow=follow_camera(), drift=True, skippable=True):
             "Почему ты мне не помогаешь?" (pos=(521, 254), size=(330, 165)):
                 pause 0.5
                 mar "Почему так сложно не разбрасывать грязные вонючие носки по всей квартире?"
@@ -1354,7 +1397,7 @@ label .cleanup:
     $ click_skip_block = False
 
     if not renpy.is_skipping():
-        menu(screen="scene_choice", follow=follow_camera(), skippable=True):
+        menu(screen="scene_choice", follow=follow_camera(), drift=True, skippable=True):
             "Опять отменяем запись?!" (pos=(464, 294), size=(330, 165)):
                 pause 0.5
                 mar "Это уже четвёртая отмена! Тамара Виталиевна..."
@@ -1447,7 +1490,7 @@ label .cleanup:
     ## Дальше блокировщик держит и начало второй сцены: она сама ставит его заново.
     $ click_skip_block = True
     window auto hide
-    $ sfxstop(tag="c1s1_konan", fadeout=2.0)
+    $ sfxstop(tag="c1s1_konan", fadeout=7.0)
     scene black with Dissolve(2.0)
     camera
 

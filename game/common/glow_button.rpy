@@ -26,15 +26,32 @@ define GLOW_GROW = 1.06
 define GLOW_BREATH_LOW = 0.65
 define GLOW_FADE_T = 0.18
 
-## Не переносить repeat в on idle: новая интеракция перезапустит цикл.
+init -10 python:
+
+    def _glow_breath_f(t, grow, low, trans, st, at):
+        trans.alpha = fx_track(st, 1.0, (("easeout", t, 1.0), ("easein", t, low)))
+        trans.zoom = fx_track(st, 1.0, (("easeout", t, grow), ("easein", t, 1.0)))
+        return fx_tick()
+
+    def _glow_alarm_f(trans, st, at):
+        trans.alpha = fx_track(st, 1.0, (("easeout", 0.10, 1.0), ("easein", 0.16, GLOW_ALARM_LOW),
+            ("pause", 0.09, None), ("easeout", 0.08, 0.95), ("easein", 0.20, GLOW_ALARM_LOW),
+            ("pause", GLOW_ALARM_PAUSE, None)))
+        trans.zoom = fx_track(st, 1.0, (("easeout", 0.10, GLOW_ALARM_GROW), ("easein", 0.16, 1.0),
+            ("pause", 0.09, None), ("easeout", 0.08, GLOW_ALARM_GROW), ("easein", 0.20, 1.0),
+            ("pause", GLOW_ALARM_PAUSE, None)))
+        return fx_tick()
+
+    def _glow_blink_f(alpha_max, t, trans, st, at):
+        trans.alpha = fx_track(st, 0.0, (("ease", t, alpha_max), ("ease", t, 0.0)))
+        return fx_tick()
+
+## Циклы — функциями по сетке fx_tick, не ATL-repeat: тот просит кадр каждый тик монитора.
 transform glow_breath(t=GLOW_BREATH_T, grow=GLOW_GROW, low=GLOW_BREATH_LOW):
     subpixel True
     alpha 1.0
     zoom 1.0
-    block:
-        easeout t alpha 1.0 zoom grow
-        easein t alpha low zoom 1.0
-        repeat
+    function renpy.curry(_glow_breath_f)(t, grow, low)
 
 define GLOW_ALARM_GROW = 1.10
 define GLOW_ALARM_LOW = 0.28
@@ -44,14 +61,7 @@ transform glow_alarm():
     subpixel True
     alpha 1.0
     zoom 1.0
-    block:
-        easeout 0.10 alpha 1.0 zoom GLOW_ALARM_GROW
-        easein 0.16 alpha GLOW_ALARM_LOW zoom 1.0
-        pause 0.09
-        easeout 0.08 alpha 0.95 zoom GLOW_ALARM_GROW
-        easein 0.20 alpha GLOW_ALARM_LOW zoom 1.0
-        pause GLOW_ALARM_PAUSE
-        repeat
+    function _glow_alarm_f
 
 ## Еле заметное белое мерцание за сценовой кнопкой: плавно разгорается до alpha и гаснет
 ## до нуля, t секунд в каждую сторону.
@@ -61,10 +71,7 @@ transform glow_blink(xz, yz, alpha_max, t):
     xzoom xz
     yzoom yz
     alpha 0.0
-    block:
-        ease t alpha alpha_max
-        ease t alpha 0.0
-        repeat
+    function renpy.curry(_glow_blink_f)(alpha_max, t)
 
 ## Состояние hover меняет плотность, не перезапуская внутренний цикл.
 transform glow_state(xz, yz, idle_a, hover_a):

@@ -54,7 +54,7 @@ screen c1s2_door_hover_zone():
             background None
             alt _("Заглянуть в спальню")
             action Return()
-            hovered [SetVariable("c1s2_door_hover", True), SPlay("c1s2/door_hover", volume=0.4)]
+            hovered [SetVariable("c1s2_door_hover", True), SPlay("c1s2/door_hover", volume=0.3)]
             unhovered SetVariable("c1s2_door_hover", False)
 
 ## Марина крупно — планы глубины: задник и героиня. На её репликах губы приоткрываются
@@ -142,7 +142,8 @@ image chapter_1 scene_2_parents_room_vitya_2 = depth_scene(
     FlagDissolve(
         FlagDissolve(
             TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit"),
-            At(TalkFrames("ch1_2_parents_vitya_2", "ch1_2_parents_vitya_2_say", "vit"), offset(-139, 0)),
+            At(TalkFrames("ch1_2_parents_vitya_2", "ch1_2_parents_vitya_2_say", "vit", fade=0.1, hold=0.18, gap=0.135),
+                offset(-139, 0)),
             "c1s2_vitya_shout", 0.0, fade=0.2),
         TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit"),
         "c1s2_vitya_shout", 1.5, fade=0.4),
@@ -164,7 +165,7 @@ image chapter_1 scene_2_parents_room_vitya_4 = depth_scene(
 image chapter_1 scene_2_parents_room_vitya_4_1 = depth_scene(
     "ch1_2_parents_bg",
     At(TalkFrames(At("ch1_2_parents_vitya_3", offset(223, 0)), "ch1_2_parents_vitya_4", "vit"),
-        hflip, offset(15, 30), rotate(-2), zoom(1.02)),
+        hflip, offset(15, 00), rotate(-2), zoom(1.02)),
     "c1s2_parents_bed", step=0)
 image chapter_1 scene_2_parents_room_vitya_5 = depth_scene(
     "ch1_2_parents_bg",
@@ -210,7 +211,7 @@ label chapter_1_scene_2:
     $ click_skip_block = True
     camera at camera_push((0.72, 0.52), 1.0, 1.15, 25.0)
 
-    $ mplay("chapter_1/sora_chapter_start", fadein=0.0, volume=2.0, tag="chapter_1_music_1", loop=True)
+    $ mplay("chapter_1/sora_chapter_start", fadein=0.0, volume=1.3, tag="chapter_1_music_1", loop=True)
 
     pause 1.5
 
@@ -308,9 +309,15 @@ label chapter_1_scene_2:
     $ mplay("chapter_1/sora_suspense_chapter_1", fadein=18.0, volume=0.9, tag="chapter_1_music_2")
     $ c1s2_vitya_shout = True
     $ click_skip_block = False
-    vit "Знаешь что?! Хватит!"
+    ## Крик — три одинаковых раскрытия рта подряд, как у соседки в сцене 3, на 10% быстрее;
+    ## кончаются к 0.8 с — поза уходит в 1.5 с уже с закрытым ртом.
+    vit "Знаешь что?! Хватит!" (callback=talk_callback("vit", moves=3, hold=0.18, step=0.315))
 
-    ## ▶ Поза 1 закрепляется. Если реплику пролистнули раньше 1.5 с — доходит растворением.
+    ## ▶ Поза 1 закрепляется. Если реплику пролистнули раньше 1.5 с — начатое раскрытие рта
+    ## доигрывает и закрывается (до 0.28 с), и только потом поза доходит растворением.
+    $ click_skip_block = "hard"
+    pause 0.3
+    $ click_skip_block = False
     $ renpy.transition(Dissolve(0.3), layer="master")
     show chapter_1 scene_2_parents_room_vitya_1
 
@@ -379,9 +386,9 @@ label chapter_1_scene_2:
     with Dissolve(2.0)
 
     $ click_skip_block = False
+    $ c1s2_crying_audio = sm_sfx("c1s2/c1s2_female_crying", volume=0.5, fadein=10.5, loop=True, tag="c1s2_crying")
     "Мы ещё не заходили так далеко. Впервые за восемь лет брака."
     $ c1s2_tear_2 = True
-    $ c1s2_crying_audio = sm_sfx("c1s2/c1s2_female_crying", volume=0.5, fadein=10.5, loop=True, tag="c1s2_crying")
     "Трещина между нами росла, дна не видно..."
     vit "Какой пример ты подаёшь Насте?"
     vit "Я тяну наше семейство, как могу. За всё плачу, всё покупаю, всё дома есть."
@@ -426,8 +433,8 @@ label chapter_1_scene_2:
     $ c1s2_dark_shake = True
 
     "И я тебя, Вить... До сих пор."
-    "А тогда я не смогла тебе ответить: меня ломало изнутри, я пряталась в собственных ладонях, как хочется спрятаться и сейчас."
-
+    "А тогда я не смогла тебе ответить: меня ломало изнутри, я пряталась в темноте своих ладоней, как хочется спрятаться и сейчас."
+    
     ## Титры печатаются по буквам и гаснут по флагам — блок при любой настройке.
     $ click_skip_block = "hard"
     pause 1.0

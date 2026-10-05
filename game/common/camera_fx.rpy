@@ -1,5 +1,6 @@
 init -10 python:
 
+    import math
     import random as sm_python_random
 
     ## Визуальный RNG изолирован: renpy.random засоряет rollback-log на 60 fps.
@@ -22,6 +23,45 @@ init -10 python:
     def _fx_frame_time():
         ## SDK 8.5.3 фиксирует это время на весь render; st сбрасывается при смене ATL.
         return renpy.game.interface.frame_time
+
+    FX_TICK_HZ = 60.0
+
+    def fx_tick(ticks=1):
+        """Пауза function-трансформа до ближайшего такта общей сетки 60 Гц (ticks — через
+        сколько тактов). Все живые эффекты просят кадр на один и тот же момент и
+        перерисовываются одним кадром; пауза 0 или рассинхронные 1/60 держали бы цикл
+        отрисовки на пределе CPU и частоты монитора."""
+        now = _fx_frame_time()
+        return max((math.floor(now * FX_TICK_HZ + 1e-6) + ticks) / FX_TICK_HZ - now, 0.001)
+
+    def fx_tick_after(delay):
+        """Пауза до первого такта сетки не раньше чем через delay секунд."""
+        return fx_tick(max(1, int(math.ceil(delay * FX_TICK_HZ - 1e-6))))
+
+    def fx_track(st, start, segments):
+        """Значение дорожки ATL `start … block: warper t value … repeat` в момент st.
+        segments — (warper, длительность, значение); значение None — pause. Первый отрезок
+        первого цикла идёт от start, дальше цикл начинается с конца предыдущего, как repeat."""
+        period = 0.0
+        end = start
+        for _, duration, value in segments:
+            period += duration
+            if value is not None:
+                end = value
+        if period <= 0.0:
+            return end
+        cycle = math.floor(st / period)
+        u = st - cycle * period
+        prev = start if cycle == 0 else end
+        for warper, duration, value in segments:
+            if u < duration:
+                if value is None:
+                    return prev
+                return prev + (value - prev) * renpy.atl.warpers[warper](u / duration)
+            u -= duration
+            if value is not None:
+                prev = value
+        return prev
 
     def _fx_step(key, target, relax, start):
         """relax задан для 60 Hz; callable-цель вычисляется только на новом кадре."""
@@ -65,14 +105,14 @@ init -10 python:
         """Дрожь камеры от tension_var; key уникален для каждого
         одновременного эффекта."""
         if renpy.predicting():
-            return 1.0 / 60.0
+            return fx_tick()
         if sm_reduced_motion():
             _fx_state[key + "_jx"] = 0.0
             _fx_state[key + "_jy"] = 0.0
             trans.xoffset = 0.0
             trans.yoffset = 0.0
             _fx_publish_camera(key, trans)
-            return 1.0 / 60.0
+            return fx_tick()
         shake_amp = _fx_num(shake_amp, 0.0, 0.0)
         relax = _fx_num(relax, 0.04, 0.001, 1.0)
 
@@ -84,7 +124,7 @@ init -10 python:
         trans.xoffset = jx
         trans.yoffset = jy
         _fx_publish_camera(key, trans)
-        return 1.0 / 60.0
+        return fx_tick()
 
     def _focus_offset(focus_align, screen_align, z):
         """Совмещает focus_align изображения со screen_align экрана пиксельным
@@ -98,40 +138,69 @@ init -10 python:
     def focus_camera_f(focus_align, screen_align, key, trans, st, at):
         """Держит focus_align в screen_align при текущем trans.zoom."""
         if renpy.predicting():
-            return 1.0 / 60.0
+            return fx_tick()
         trans.xoffset, trans.yoffset = _focus_offset(focus_align, screen_align, trans.zoom or 1.0)
         _fx_publish_camera(key, trans)
-        return 1.0 / 60.0
+        return fx_tick()
+
+    def camera_zoom_f(z0, z1, t, warper, trans, st, at):
+        """Зум камеры z0 → z1 за t секунд кривой warper по сетке fx_tick; идёт в parallel
+        перед function фокуса, который читает trans.zoom этого кадра."""
+        if sm_reduced_motion() or t <= 0.0:
+            trans.zoom = z1
+            return None
+        k = min(1.0, st / t)
+        trans.zoom = z0 + (z1 - z0) * renpy.atl.warpers[warper](k)
+        return fx_tick() if k < 1.0 else None
 
     def travel_camera_f(focus0, focus1, t, screen_align, key, trans, st, at):
         """Проводка: точка фокуса за t секунд плавно (ease) идёт от focus0 к focus1,
         удерживаясь в screen_align при текущем trans.zoom."""
         if renpy.predicting():
-            return 1.0 / 60.0
+            return fx_tick()
         t = sm_motion_time(t)
         k = 1.0 if t <= 0.0 else max(0.0, min(1.0, st / t))
         k = k * k * (3.0 - 2.0 * k)
         focus = (focus0[0] + (focus1[0] - focus0[0]) * k, focus0[1] + (focus1[1] - focus0[1]) * k)
         trans.xoffset, trans.yoffset = _focus_offset(focus, screen_align, trans.zoom or 1.0)
         _fx_publish_camera(key, trans)
-        return 1.0 / 60.0
+        return fx_tick()
 
     def _fx_publish_camera(key, trans):
         ## master рендерится перед screens; UI получает итоговый transform этого кадра.
         _fx_state[(key, "camera")] = (
             trans.zoom, trans.rotate, trans.xoffset, trans.yoffset)
 
+    def sm_camera_snapshot(key="cam", default=(1.0, 0.0, 0.0, 0.0)):
+        """Текущие (zoom, rotate, xoffset, yoffset) камеры по её публикации — старт для
+        camera_retarget без прыжка; default — пока камера ничего не публиковала."""
+        return tuple(_fx_state.get((key, "camera")) or default)
+
+    def retarget_camera_f(focus_align, start, blend, key, trans, st, at):
+        """Как focus_camera_f, но сдвиг за blend секунд плавно идёт от start (снимок камеры
+        в момент смены) к удержанию focus_align на месте: смена фокуса без прыжка."""
+        if renpy.predicting():
+            return fx_tick()
+        ox, oy = _focus_offset(focus_align, None, trans.zoom or 1.0)
+        blend = sm_motion_time(blend)
+        k = 1.0 if blend <= 0.0 else max(0.0, min(1.0, st / blend))
+        k = k * k * (3.0 - 2.0 * k)
+        trans.xoffset = start[2] + (ox - start[2]) * k
+        trans.yoffset = start[3] + (oy - start[3]) * k
+        _fx_publish_camera(key, trans)
+        return fx_tick()
+
     def follow_camera_f(key, zoom_pad, trans, st, at):
         """Копирует камеру целиком и добавляет параллакс слоя master."""
         snapshot = _fx_state.get((key, "camera")) or (zoom_pad, 0.0, 0.0, 0.0)
         trans.zoom, trans.rotate, trans.xoffset, trans.yoffset = sm_parallax_compose(*snapshot)
         _fx_state["ui_follow"] = (trans.zoom, trans.rotate, trans.xoffset, trans.yoffset)
-        ## ATL-зум камеры меняется каждый кадр даже при статичном содержимом кнопки.
-        return 0.0
+        ## Камера перерисовывается по той же сетке: контейнер снимает её в том же кадре.
+        return fx_tick()
 
     def mouse_follow_f(rx, ry, smooth, key, trans, st, at):
         if renpy.predicting():
-            return 1.0 / 60.0
+            return fx_tick()
         rx = _fx_num(rx, 0.0)
         ry = _fx_num(ry, 0.0)
         smooth = _fx_num(smooth, 0.12, 0.001, 1.0)
@@ -141,7 +210,7 @@ init -10 python:
             _fx_state[key + "_fy"] = 0.0
             trans.xoffset = 0.0
             trans.yoffset = 0.0
-            return 1.0 / 60.0
+            return fx_tick()
 
         mx, my = renpy.get_mouse_pos()
         fx = _fx_step(key + "_fx", mx - rx, smooth, start=0.0)
@@ -149,12 +218,12 @@ init -10 python:
 
         trans.xoffset = fx
         trans.yoffset = fy
-        return 1.0 / 60.0
+        return fx_tick()
 
     def object_jitter_f(amp, relax, key, trans, st, at):
         """Аддитивный jitter поверх ATL; key должен быть уникален для объекта."""
         if renpy.predicting():
-            return 1.0 / 60.0
+            return fx_tick()
         amp = _fx_num(amp, 3.0, 0.0)
         relax = _fx_num(relax, 0.5, 0.001, 1.0)
 
@@ -163,13 +232,13 @@ init -10 python:
             _fx_state[key + "_jy"] = 0.0
             trans.xoffset = 0.0
             trans.yoffset = 0.0
-            return 1.0 / 60.0
+            return fx_tick()
 
         jx = _fx_step(key + "_jx", lambda: _fx_visual_jitter(amp), relax, start=0.0)
         jy = _fx_step(key + "_jy", lambda: _fx_visual_jitter(amp), relax, start=0.0)
         trans.xoffset = jx
         trans.yoffset = jy
-        return 1.0 / 60.0
+        return fx_tick()
 
 ## Зум покоя камеры: кадры сцен скомпонованы с этим запасом по краям.
 define FX_CAMERA_ZOOM_PAD = 1.02
@@ -199,16 +268,28 @@ transform camera_push(focus_align, z0, z1, t, key="cam", screen_align=None):
     align (0.5, 0.5)
     zoom (z1 if sm_reduced_motion() else z0)
     parallel:
-        ease sm_motion_time(t) zoom z1
+        function renpy.curry(camera_zoom_f)(z0, z1, t, "ease")
     parallel:
         function renpy.curry(focus_camera_f)(focus_align, screen_align, key)
+
+## Наезд с переводом фокуса без прыжка посреди кадра: стартует с зума и сдвига, которые
+## камера публиковала в момент смены (start — sm_camera_snapshot()), за blend секунд сдвиг
+## переходит к удержанию focus_align на месте, зум идёт к z1 за t секунд.
+transform camera_retarget(focus_align, z1, t, start, blend=3.0, key="cam"):
+    subpixel True
+    align (0.5, 0.5)
+    zoom (z1 if sm_reduced_motion() else start[0])
+    parallel:
+        function renpy.curry(camera_zoom_f)(start[0], z1, t, "ease")
+    parallel:
+        function renpy.curry(retarget_camera_f)(focus_align, start, blend, key)
 
 transform camera_settle(focus_align, z0, z1, t, key="cam", screen_align=None):
     subpixel True
     align (0.5, 0.5)
     zoom (z1 if sm_reduced_motion() else z0)
     parallel:
-        easein sm_motion_time(t) zoom z1
+        function renpy.curry(camera_zoom_f)(z0, z1, t, "easein")
     parallel:
         function renpy.curry(focus_camera_f)(focus_align, screen_align, key)
 
@@ -221,7 +302,7 @@ transform camera_travel(focus0, focus1, z0, z1, t, key="cam", screen_align=(0.5,
     align (0.5, 0.5)
     zoom (z1 if sm_reduced_motion() else z0)
     parallel:
-        ease sm_motion_time(t if zoom_t is None else zoom_t) zoom z1
+        function renpy.curry(camera_zoom_f)(z0, z1, t if zoom_t is None else zoom_t, "ease")
     parallel:
         function renpy.curry(travel_camera_f)(focus0, focus1, t, screen_align, key)
 
@@ -247,7 +328,7 @@ init -10 python:
         steps = fx_cfg("noise.steps")
         trans.u_noise_steps = float(steps) if steps >= 2 else 0.0
         ## Кадр нужен каждый раз: u_random шейдера меняется только при перерисовке.
-        return 1.0 / 60.0
+        return fx_tick()
 
 image fx_noise = Solid("#FFF")
 
@@ -385,7 +466,7 @@ init -10 python:
                 _fx_state[("fx_frame", "bloom")] = (float(bloom), now)
             if vignette is not None:
                 _fx_state[("fx_frame", "vignette")] = (float(vignette), now)
-        return 0
+        return fx_tick()
 
     def fx_frame_value(name):
         mark = _fx_state.get(("fx_frame", name))
@@ -404,7 +485,7 @@ init -10 python:
     def fx_layer_f(scope, trans, st, at):
         """Все эффекты слоя — один проход в текстуру: пикселизация, аберрация, bloom, ретушь, постеризация."""
         if renpy.predicting():
-            return 1.0 / 60.0
+            return fx_tick()
         p_level, p_target = _fx_posterize_level()
         x_level, x_target = _fx_pixelate_level()
         c_level, c_target = _fx_chroma_level()
@@ -454,13 +535,13 @@ init -10 python:
             trans.shader = shaders
             ## Mipmap-копию слоя читает только bloom; без него её не строим.
             trans.gl_mipmap = bloom
-            return 1.0 / 60.0
+            return fx_tick()
         trans.mesh = False
         trans.shader = None
         ## Правки тюнера и сцены перезапускают интеракцию сами; кадры нужны только затуханию.
         settling = any(abs(l - t) > 0.001 for l, t in
             ((p_level, p_target), (x_level, x_target), (c_level, c_target), (b_level, b_target)))
-        return 1.0 / 60.0 if settling else 0.1
+        return fx_tick() if settling else fx_tick(6)
 
     def _fx_story_status(var, key, value):
         strength = getattr(store, var, None)

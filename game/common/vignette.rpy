@@ -68,8 +68,8 @@ init -10 python:
         trans.u_vig_aspect = config.screen_width / float(config.screen_height)
         ## Погашенная виньетка не перерисовывается каждый кадр.
         if level > 0.0 or target > 0.0:
-            return 1.0 / 60.0
-        return 0.2
+            return fx_tick()
+        return fx_tick(12)
 
 image fx_vignette = Solid("#000")
 

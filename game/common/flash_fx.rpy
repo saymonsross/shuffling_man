@@ -63,7 +63,7 @@ init -10 python:
         s = _flash_cur
         if s is None:
             trans.alpha = 0.0
-            return 1.0 / 60.0
+            return fx_tick()
 
         e = max(time.time() - s["t0"], 0.0)
         rise, hold, fall = s["rise"], s["hold"], s["fall"]
@@ -79,7 +79,7 @@ init -10 python:
         trans.alpha = s["low"] + (s["high"] - s["low"]) * k
         trans.additive = s["additive"]
         trans.matrixcolor = TintMatrix(s["color"])
-        return 1.0 / 60.0
+        return fx_tick()
 
 image fx_flash = Solid("#ffffff")
 

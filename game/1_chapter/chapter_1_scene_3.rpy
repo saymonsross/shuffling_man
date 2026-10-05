@@ -131,6 +131,23 @@ transform c1s3_neighbor_2_enter:
 ## Пустая метка: её ATL запускает звук с задержкой от появления реплики, не дожидаясь клика.
 image c1s3_sfx_cue = Null()
 
+## Диван — один образ на оба кадра, слои меняются по флагам внутри него, без scene: камера
+## и дыхание не сбрасываются. Настя сидит рядом с самого начала; Марина сперва с лицом в
+## ладони (bg), по c1s3_marina_turned — обернулась к ней (bg_2). Настя весь разговор смотрит в
+## сторону (кадр nast); на нас она поднимает взгляд (кадр nast_see) один раз — перед именем,
+## по флагу c1s3_nast_sees. Планы глубины: комната с Мариной сзади, Настя спереди; слои —
+## путями к файлам: под именами тегов лежат сами файлы. Планы не расходятся (step 0): кадр
+## едет за мышью только целиком, общим параллаксом слоя.
+default c1s3_marina_turned = False
+default c1s3_nast_sees = False
+image c1s3_sofa_bg = ConditionSwitch(
+    "c1s3_marina_turned", "images/1_chapter/chapter_1 scene_3_sofa_marina bg_2.png",
+    "True", "images/1_chapter/chapter_1 scene_3_sofa_marina bg.png")
+image c1s3_sofa_nast = ConditionSwitch(
+    "c1s3_nast_sees", "images/1_chapter/chapter_1 scene_3_sofa_close nast_see.png",
+    "True", "images/1_chapter/chapter_1 scene_3_sofa_close nast.png")
+image chapter_1 scene_3_sofa_marina = depth_scene("c1s3_sofa_bg", "c1s3_sofa_nast", step=0.0)
+
 default c1s3_teaparty_choice = None
 default c1s3_sad_shake = False
 ## Плач Насти (c1s1_nast_cry_step_2); handle нужен, чтобы глушить его за дверью подъезда.
@@ -171,7 +188,17 @@ label chapter_1_scene_3:
     with Dissolve(3.0)
     $ click_skip_block = False
 
-    "Моя дочь как раз проходила через сложный период взросления..."
+    # "То есть это был не первый случай, как вы понимаете. К примеру, полгода назад мы проходили фазу невидимого друга. "
+    # "Каждый вечер за стол с нами садился Полли, её невидимый друг. Она вовсю болтала с ним, смеялась над его шутками, подливала чай, игнорируя наши просьбы прекратить и сосредоточиться на ужине. "
+    # "А кто разбил сервиз, что подарила нам как-то на новый год покойница бабушка? Негодник Полли, кто же ещё."
+
+    "Если у вас есть дети, вы отлично знаете, какие они безудержные фантазёры."
+    "У Настеньки же воображение было даже более живое, чем обычно свойственно её возрасту, она рассказывала сама себе удивительные истории и запросто верила в них, жила в воздушных замках, так сказать, головой в облаках. "
+    "И проявляла, между прочим, недюжинное упрямство в своей убежденности. "
+
+    pause 1.0
+
+    "Тогда моя дочь как раз проходила через сложный период взросления..."
     "...и невыносимо трепала наши нервы в процессе."
 
     $ click_skip_block = True
@@ -201,8 +228,11 @@ label chapter_1_scene_3:
     with Dissolve(0.8)
 
     pause 0.5
+    $ click_skip_block = False
 
     "Последней её потрясающей выдумкой был панический страх оставаться дома одной."
+
+    $ click_skip_block = True
 
     ## Поверх рисунка с семьёй появляется новый. Кадр темнеет до нижней границы: выход из
     ## холодильника — через затемнение. Камера не сбрасывается.
@@ -235,7 +265,7 @@ label chapter_1_scene_3:
 
     ## Выбор влияет на дальнейшее — меню ждёт игрока и при пропуске. Кнопки разбросаны по
     ## кадру; двигать — Choice Placer (F7).
-    menu(screen="scene_choice", follow=follow_camera()):
+    menu(screen="scene_choice", follow=follow_camera(), drift=True):
         "Очаровашка!" (pos=(309, 160), size=(330, 165)):
             $ click_skip_block = True
             pause 0.5
@@ -432,7 +462,7 @@ label chapter_1_scene_3:
     ## Обе соседки в кадре; камера продолжает наезд.
 
     ## Выбор влияет на дальнейшее — меню ждёт игрока и при пропуске; двигать — F7.
-    menu(screen="scene_choice", follow=follow_camera()):
+    menu(screen="scene_choice", follow=follow_camera(), drift=True):
         "Простите..." (pos=(962, 538), size=(330, 165)):
             $ click_skip_block = True
             pause 0.5
@@ -483,21 +513,20 @@ label chapter_1_scene_3:
     camera at camera_push((0.75, 0.35), 1.02, 1.10, 30.0)
     scene chapter_1 scene_3_sofa_marina:
         breath_brightness(-0.04, -0.09, 6.0)
-    if c1s3_neighbor_choice == "apologize":
-        with Dissolve(2.5)
+    with Dissolve(2.5)
     $ click_skip_block = False
 
     "Конечно, мы ходили с дочкой к психологу."
     "Именно там, далеко не на первом сеансе, Настя шёпотом рассказала, что на самом деле не боится оставаться одна."
 
     ## ══════════ КАДР 13 · НАСТЯ ШЁПОТОМ ══════════
-    ## Очень долгий непрерывный наезд на лицо Насти — на весь разговор.
+    ## Марина обернулась — подменяется только слой фона в том же образе. Камера с текущих
+    ## зума и сдвига за 3 с переводит фокус с Марины на лицо Насти и донаезжает до 1.1 — на
+    ## весь разговор.
     $ click_skip_block = True
     window auto hide
-    camera at camera_push((0.37, 0.42), 1.02, 1.22, 90.0)
-    scene chapter_1 scene_3_sofa_daughter:
-        breath_brightness(-0.04, -0.09, 6.0)
-    with Dissolve(2.0)
+    $ c1s3_marina_turned = True
+    camera at camera_retarget((0.33, 0.36), 1.1, 40.0, sm_camera_snapshot(), blend=3.0)
     $ click_skip_block = False
 
     nas "{sc}Он{/sc} приходит, когда дома становится слишком тихо..."
@@ -512,7 +541,11 @@ label chapter_1_scene_3:
     pause 0.5
     $ click_skip_block = False
 
-    vit "Кто-кто?.. Это Полли? Или как там его..."
+    ## Витя за кадром — баблом слева; двигать — Choice Placer (F7).
+    window auto hide
+    show screen c1s1_vitya_bark(_("Кто-кто?.. Это Полли? Или как там его..."), side="left", pos=(48, 120), width=820)
+    pause
+    hide screen c1s1_vitya_bark
 
     $ click_skip_block = True
     pause 0.5
@@ -524,7 +557,10 @@ label chapter_1_scene_3:
     pause 0.5
     $ click_skip_block = False
 
-    vit "Твоего нового воображаемого друга?"
+    window auto hide
+    show screen c1s1_vitya_bark(_("Твоего нового воображаемого друга?"), side="left", pos=(48, 120), width=820)
+    pause
+    hide screen c1s1_vitya_bark
 
     $ click_skip_block = True
     pause 0.5
@@ -534,25 +570,32 @@ label chapter_1_scene_3:
     nas "{sc}Он{/sc} мне не друг..."
 
     ## Кадр темнеет до нижней границы и замирает перед именем.
-    show chapter_1 scene_3_sofa_daughter:
+    show chapter_1 scene_3_sofa_marina:
         brightness_to(-0.09, 4.0)
 
     $ click_skip_block = True
     pause 0.5
     $ click_skip_block = False
 
-    vit "А кто же \"он\" тогда?"
+    window auto hide
+    show screen c1s1_vitya_bark(_("А кто же \"он\" тогда?"), side="left", pos=(48, 120), width=820)
+    pause
+    hide screen c1s1_vitya_bark
 
     $ click_skip_block = True
+    pause 1.0
+    ## Настя поднимает взгляд на нас — только здесь.
+    $ c1s3_nast_sees = True
     pause 1.0
     $ click_skip_block = False
 
     nas "Шаркающий человек."
 
-    ## Тишина после имени.
+    ## Тишина после имени, уход в чёрный.
     $ click_skip_block = True
     window auto hide
-
+    pause 1.0
+    scene black with Dissolve(0.3)
     pause 2.0
 
     camera

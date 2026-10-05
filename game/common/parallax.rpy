@@ -74,14 +74,14 @@ init -10 python:
         trans.zoom, trans.xoffset, trans.yoffset = sm_parallax_frame()
         ## Выключенный параллакс не перерисовывает слой каждый кадр; включение перезапускает интеракцию.
         if sm_parallax_active() or _fx_state.get("parallax_level", 0.0) > 0.0001:
-            return 1.0 / 60.0
-        return 0.1
+            return fx_tick()
+        return fx_tick(6)
 
     def parallax_near_f(trans, st, at):
         """Добавка ближнего плана: спрайт уже едет вместе со слоем."""
         level, mx, my = _sm_parallax_state()
         trans.xoffset, trans.yoffset = _sm_parallax_shift(fx_cfg("parallax.near"), level, mx, my)
-        return 1.0 / 60.0
+        return fx_tick()
 
     def parallax_plane_f(depth, trans, st, at):
         """План глубины depth: сдвиг depth·parallax.plane px и запас зума под него,
@@ -90,7 +90,7 @@ init -10 python:
         amp = fx_cfg("parallax.plane") * depth
         trans.xoffset, trans.yoffset = _sm_parallax_shift(amp, level, mx, my)
         trans.zoom = 1.0 + 2.0 * (amp + 1.0) / config.screen_width * level if amp > 0 else 1.0
-        return 1.0 / 60.0
+        return fx_tick()
 
     def depth_scene(*planes, **kwargs):
         """Кадр из планов глубины, от дальнего к ближнему: план — образ или кортеж
@@ -107,7 +107,7 @@ init -10 python:
     def parallax_follow_f(trans, st, at):
         trans.zoom, trans.rotate, trans.xoffset, trans.yoffset = sm_parallax_compose(1.0, 0.0, 0.0, 0.0)
         _fx_state["ui_follow"] = (trans.zoom, trans.rotate, trans.xoffset, trans.yoffset)
-        return 0.0
+        return fx_tick()
 
 transform parallax_bg():
     subpixel True

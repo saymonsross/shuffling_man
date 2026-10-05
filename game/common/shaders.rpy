@@ -483,7 +483,7 @@ init -10 python:
             opened = None if sm_reduced_motion() else talk_open(who)
             amount = 0.0 if opened is None else (opened if strength < 0 else 1.0 - opened)
             trans.u_mouth_close = float(fx_cfg("mouth.close")) * strength * amount
-            return 1.0 / 60.0 if opened is not None else 1.0 / 20.0
+            return fx_tick() if opened is not None else 1.0 / 20.0
         t = st if start is None else fx_flag_time("mouth", start)
         if sm_reduced_motion() or t is None or (time is not None and t >= time):
             trans.u_mouth_close = 0.0
@@ -492,7 +492,7 @@ init -10 python:
         ## Слоги неровные: вторая синусоида меняет силу соседних смыканий.
         wave = (0.5 - 0.5 * math.cos(beat)) * (0.65 + 0.35 * math.sin(beat * 0.37 + 1.3))
         trans.u_mouth_close = float(fx_cfg("mouth.close")) * strength * max(0.0, wave)
-        return 1.0 / 60.0
+        return fx_tick()
 
 transform mouth_talk(center, radius, time=None, start=None, strength=1.0, who=None, rate=1.0):
     mesh True
@@ -522,7 +522,7 @@ init -10 python:
         opened = k * k * (3.0 - 2.0 * k)
         trans.u_mouth_close = float(fx_cfg("mouth.close")) * strength * opened
         trans.u_mouth_shade = dark * opened
-        return 0
+        return fx_tick()
 
 ## Рот по кругу тем же шейдером: плавно приоткрывается за ease секунд, держится hold
 ## секунд, плавно смыкается и стоит до конца period; раскрытый рот темнеет на долю dark.
@@ -573,7 +573,7 @@ init -10 python:
     def wind_warp_f(speed, amp, trans, st, at):
         trans.u_wind_time = (_fx_frame_time() * speed) % 1000.0
         trans.u_wind_amp = amp * sm_motion_scale()
-        return 0
+        return fx_tick()
 
 transform wind_warp(center, radius, anchor, amp=2.5, speed=1.0):
     mesh True
@@ -650,7 +650,7 @@ init -10 python:
         trans.u_steam_time = (_fx_frame_time() * speed) % 1000.0
         trans.u_steam_amp = amp * sm_motion_scale()
         trans.u_steam_glow = glow
-        return 0
+        return fx_tick()
 
     def _steam_plume(plumes, index):
         if index < len(plumes):
@@ -667,24 +667,25 @@ transform steam(plumes, amp=3.0, glow=0.35, speed=1.0):
     u_steam_time 0.0
     function renpy.curry(steam_f)(speed, amp, glow)
 
-## «Дыхание» яркости lo → hi → lo, по t секунд в каждую сторону.
-transform breath_brightness(lo=-0.01, hi=-0.04, t=6.0):
-    mesh True
-    shader "sm.breath"
-    u_breath_brightness float(lo)
-    block:
-        ease t u_breath_brightness float(hi)
-        ease t u_breath_brightness float(lo)
-        repeat
-
 init -10 python:
+
+    def _breath_f(lo, hi, t, trans, st, at):
+        trans.u_breath_brightness = fx_track(st, float(lo), (("ease", t, float(hi)), ("ease", t, float(lo))))
+        return fx_tick()
 
     def _breath_clock_f(lo, hi, t, trans, st, at):
         import math
         x = (_fx_frame_time() / t) % 2.0
         x = x if x < 1.0 else 2.0 - x
         trans.u_breath_brightness = lo + (hi - lo) * (0.5 - 0.5 * math.cos(math.pi * x))
-        return 0
+        return fx_tick()
+
+## «Дыхание» яркости lo → hi → lo, по t секунд в каждую сторону.
+transform breath_brightness(lo=-0.01, hi=-0.04, t=6.0):
+    mesh True
+    shader "sm.breath"
+    u_breath_brightness float(lo)
+    function renpy.curry(_breath_f)(lo, hi, t)
 
 ## То же дыхание, но фаза идёт от часов кадра, а не от показа: экран, который пересоздаётся
 ## на каждом действии (повторный show screen), дышит без скачков.

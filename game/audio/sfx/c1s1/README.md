@@ -36,6 +36,7 @@
 | `tv_turn_on.ogg` | 2.9 с | включение кинескопного телевизора: щелчок и разгорание | днём: экран разгорается после нажатия на пульт |
 | `c1s1_konan_tv.ogg` | 43 с | «Конан-варвар» из телевизора, петля | ночь у телевизора: с переключения канала до затемнения в конце сцены, панорама 0.1 вправо |
 | `c1s1_footbal_tv.ogg` | 55 с | трансляция футбола из телевизора, петля | ночь у телевизора: с перехода в ночь до переключения канала на «Конана», панорама 0.1 вправо |
+| `tv_sports_football.ogg` | 8.4 с | комментатор: штанга, конец надеждам | ночь у телевизора: бабл «КОММЕНТАТОР» у экрана, панорама 0.1 вправо |
 | `c1s1_cleanup_hover.ogg` | 0.10 с | тонкий металлический тап (Splice `ESM_FX_ui_metal_tap_hover_over_indicate_thin_metal_03.wav`) | уборка: наведение на предмет, громкость `C1S1_CLEANUP_HOVER_VOLUME` |
 | `c1s1_cleanup_blanket.ogg` | 0.42 с | ткань: плед сдёрнули с дивана (Splice `ESM_Explainer_Video_One_Shot_Foley_Cloth_Backpack_Gear_Bag_Grab_Pick_Up_3.wav`) | уборка: взят плед |
 | `c1s1_cleanup_back_clothes.ogg` | 1.07 с | ткань: ворох одежды (Splice `ESM_Battle_Game_Bag_Foley_Cloth_Grab_Body_Equipment_Satchel_Crafting_1_One_Shot.wav`) | уборка: одежда со спинки дивана |

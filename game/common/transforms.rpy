@@ -66,7 +66,7 @@ init -10 python:
         k = sm_motion_scale()
         trans.xoffset = k * _float_drift_axis(amp[0], side[0], 0.6 * math.sin(t * 0.997) + 0.4 * math.sin(t * 1.698 + 1.1))
         trans.yoffset = k * _float_drift_axis(amp[1], side[1], 0.6 * math.sin(t * 1.232 + 0.7) + 0.4 * math.sin(t * 2.167 + 2.3))
-        return 0
+        return fx_tick()
 
 ## Медленное плавание по кадру (рука с пультом и т. п.): amp — размах (x, y), px. Время —
 ## часы кадра, не st: при смене кадра с тем же трансформом плавание продолжается без рывка.
@@ -104,7 +104,7 @@ init -10 python:
         target = 1.0 if active == visible_when else 0.0
         key = "flagfade_" + "|".join(flags) + ("_on" if visible_when else "_off")
         trans.alpha = _fx_step(key, target, relax, start=target)
-        return 1.0 / 60.0
+        return fx_tick()
 
 transform flag_fade(pos_xy, flags, visible_when=True, relax=0.15):
     anchor (0.0, 0.0)
@@ -129,7 +129,7 @@ init -10 python:
                 bump = math.cos(0.5 * math.pi * (rush - pulse_in) / max(pulse_out, 0.001))
             alpha *= 1.0 + pulse * sm_motion_scale() * bump
         trans.alpha = min(1.0, alpha)
-        return 0 if alpha > 0.0 else 1.0 / 30.0
+        return fx_tick() if alpha > 0.0 else fx_tick(2)
 
 ## Угасание по флагу: пока store-флаг flag снят — картинка видна; с момента, как сцена его
 ## взвела, линейно гаснет за t секунд. Всё с одним флагом гаснет синхронно. Ставится в ATL
