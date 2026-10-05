@@ -53,6 +53,19 @@ transform glow_alarm():
         pause GLOW_ALARM_PAUSE
         repeat
 
+## Еле заметное белое мерцание за сценовой кнопкой: плавно разгорается до alpha и гаснет
+## до нуля, t секунд в каждую сторону.
+transform glow_blink(xz, yz, alpha_max, t):
+    subpixel True
+    align (0.5, 0.5)
+    xzoom xz
+    yzoom yz
+    alpha 0.0
+    block:
+        ease t alpha alpha_max
+        ease t alpha 0.0
+        repeat
+
 ## Состояние hover меняет плотность, не перезапуская внутренний цикл.
 transform glow_state(xz, yz, idle_a, hover_a):
     subpixel True
@@ -183,6 +196,10 @@ screen glow_button(label, action, bg="dark", pos=(0.5, 0.5), anchor=(0.5, 0.5), 
             xysize (_g_w, _g_h)
             if _g_rift:
                 add Null() at rift_beacon(_g_key, sm_rift_rect(pos, anchor, (_g_w, _g_h)), rift == "follow")
+            ## Белое мерцание — под тёмным свечением: тот проступает поверх, текст читается.
+            if _g_rift and fx_cfg("rift.blink") > 0.0 and not (sm_reduced_motion() or sm_flashes_disabled()):
+                add "glow_oval_on_dark" at glow_blink(_g_xz / fx_cfg("rift.glow_size") * fx_cfg("rift.blink_size") * fx_cfg("rift.blink_wide"),
+                    _g_yz / fx_cfg("rift.glow_size") * fx_cfg("rift.blink_size"), fx_cfg("rift.blink"), fx_cfg("rift.blink_t"))
             ## Отдельный add сохраняет ATL-состояние и не масштабирует текст.
             if _g_glow > 0.0:
                 if sm_reduced_motion() or sm_flashes_disabled():

@@ -241,13 +241,16 @@ init -10 python:
                 return None
         return t
 
-    def talk_open(who, rate=1.0, share=None, gap=0.0, trim=0.0):
+    def talk_open(who, rate=1.0, share=None, gap=0.0, trim=0.0, hold=None):
         """Раскрытие рта персонажа who сейчас, 0..1: дуга внутри открытой части движения,
         0 — между движениями; None — молчит. rate меньше 1 — движения реже: одно на
         несколько слогов. share — доля движения, пока рот открыт (по умолчанию
         mouth.open_share); gap — не меньше стольких секунд рот закрыт перед следующим
         движением, даже если share держал бы его открытым дольше; trim — столько секунд
-        срезается с конца каждого открытия. Знак препинания
+        срезается с конца каждого открытия; hold — каждое открытие ровно столько секунд,
+        независимо от длины слогов: движение, которое началось бы раньше, чем прошлое
+        открытие кончилось и рот простоял закрытым gap секунд, пропускается — все открытия
+        одинаковые. Знак препинания
         начинает новое движение. После обрыва реплики доигрывает только движение,
         начатое до него."""
         import math
@@ -275,11 +278,24 @@ init -10 python:
         drop = _fx_state.get(("talk_line_drop", who)) or 0
         if drop:
             moves = moves[:max(0, len(moves) - drop)]
+        if hold:
+            kept = []
+            free = -1e9
+            for move in moves:
+                if move[0] >= free - 1e-6:
+                    kept.append(move)
+                    free = move[0] + hold + gap
+            moves = kept
         for g0, g1, after in moves:
             if cut is not None and g0 >= cut:
                 return None
             if t < g0:
                 return 0.0
+            if hold:
+                g_open = g0 + hold
+                if t < g_open:
+                    return math.sin(math.pi * (t - g0) / hold)
+                continue
             g_open = g0 + share * (g1 - g0)
             if after is not None and gap > 0.0:
                 g_open = min(g_open, after - gap)
@@ -296,10 +312,11 @@ init -10 python:
         показывать opened: выше — рот открыт короче. fade — секунды растворения между
         кадрами в обе стороны (0 — смена встык); шейдер перехода Dissolve, поэтому
         полупрозрачные края не мигают. gap — минимум секунд закрытого рта между
-        движениями; trim — секунды, срезаемые с конца каждого открытия. При «меньше
+        движениями; trim — секунды, срезаемые с конца каждого открытия; hold — все
+        открытия одной длины, секунд, не по длине слогов. При «меньше
         движения» рот не мелькает."""
 
-        def __init__(self, closed, opened, who, rate=1.0, share=None, threshold=0.0, fade=0.0, gap=0.0, trim=0.0, **properties):
+        def __init__(self, closed, opened, who, rate=1.0, share=None, threshold=0.0, fade=0.0, gap=0.0, trim=0.0, hold=None, **properties):
             super(TalkFrames, self).__init__(**properties)
             self.closed = renpy.displayable(closed)
             self.opened = renpy.displayable(opened)
@@ -308,6 +325,7 @@ init -10 python:
             self.share = share
             self.gap = gap
             self.trim = trim
+            self.hold = hold
             self.threshold = threshold
             self.fade = fade
 
@@ -321,21 +339,26 @@ init -10 python:
             return rv
 
         def render(self, width, height, st, at):
-            opened = None if sm_reduced_motion() else talk_open(self.who, self.rate, self.share, self.gap, self.trim)
+            opened = None if sm_reduced_motion() else talk_open(self.who, self.rate, self.share, self.gap, self.trim, self.hold)
             target = 1.0 if opened is not None and opened > self.threshold else 0.0
             fade = _fx_state.get(("talk_line_fade", self.who))
             fade = self.fade if fade is None else fade
             if fade <= 0.0 or renpy.predicting():
                 k = target
             else:
-                ## Доля открытого кадра идёт к цели по часам кадра, ключ — сам объект.
+                ## Доля открытого кадра идёт к цели по часам кадра, ключ — сам объект. Отсчёт —
+                ## от смены цели: после простоя (перерисовка редкая) переход начинается с нуля,
+                ## без скачка, и каждое раскрытие проходит одинаково.
                 key = ("talk_fade", self.who, id(self))
-                level, seen = _fx_state.get(key, (target, None))
                 now = _fx_frame_time()
-                dt = 0.0 if seen is None else max(0.0, min(now - seen, 0.1))
-                step = dt / fade
-                k = min(target, level + step) if level < target else max(target, level - step)
-                _fx_state[key] = (k, now)
+                k0, goal, since = _fx_state.get(key, (target, target, now))
+                done = max(0.0, now - since) / fade
+                level = min(goal, k0 + done) if k0 < goal else max(goal, k0 - done)
+                if target != goal:
+                    k0, goal, since = level, target, now
+                    level = k0
+                _fx_state[key] = (k0, goal, since)
+                k = level
             renpy.redraw(self, 0 if opened is not None or k != target else 1.0 / 30.0)
             if k <= 0.0:
                 return self._full(self.closed, width, height, st, at)
