@@ -154,6 +154,7 @@ transform fade_out_on(flag, t=1.0, faster=None, k=2.0, pulse=0.0, pulse_in=0.2, 
 ## вместо равномерного шага. drop — сколько последних движений обычной слоговой реплики
 ## убрать: рот на них остаётся закрытым. fade — растворение кадров TalkFrames на
 ## эту реплику вместо их собственного: при hold = fade кадр проявляется и сразу гаснет.
+## rate — множитель частоты движений рта на эту реплику (меньше 1 — реже).
 init -10 python:
 
     _TALK_VOWELS = u"аеёиоуыэюяaeiouy"
@@ -198,10 +199,11 @@ init -10 python:
         step = length / moves if step is None else step
         return tuple((k * step, k * step + span, True) for k in range(moves))
 
-    def _talk_event(who, event, what=None, moves=None, hold=0.3, fade=None, step=None, drop=0, **kwargs):
+    def _talk_event(who, event, what=None, moves=None, hold=0.3, fade=None, step=None, drop=0, rate=1.0, **kwargs):
         if event == "show" and what:
             now = _fx_frame_time()
             _fx_state[("talk_line_fade", who)] = fade
+            _fx_state[("talk_line_rate", who)] = float(rate)
             _fx_state[("talk_line_drop", who)] = int(drop)
             ## Тире перед репликой (what_prefix) не произносится.
             text = renpy.filter_text_tags(what, allow=()).lstrip("—– ")
@@ -221,8 +223,8 @@ init -10 python:
             if state is not None and state[4] is None:
                 _fx_state[("talk", who)] = state[:4] + (_fx_frame_time() - state[0],)
 
-    def talk_callback(who, moves=None, hold=0.3, fade=None, step=None, drop=0):
-        return renpy.partial(_talk_event, who, moves=moves, hold=hold, fade=fade, step=step, drop=drop)
+    def talk_callback(who, moves=None, hold=0.3, fade=None, step=None, drop=0, rate=1.0):
+        return renpy.partial(_talk_event, who, moves=moves, hold=hold, fade=fade, step=step, drop=drop, rate=rate)
 
     def talk_time(who):
         """Секунды с начала текущей реплики персонажа who; None — молчит (реплики нет,
@@ -254,6 +256,7 @@ init -10 python:
             return None
         state = _fx_state[("talk", who)]
         cut = state[4]
+        rate *= _fx_state.get(("talk_line_rate", who), 1.0)
         per = max(1.0, float(fx_cfg("mouth.per_move"))) / max(rate, 0.05)
         share = float(fx_cfg("mouth.open_share")) if share is None else float(share)
         ## Движения: (начало, конец, начало следующего слога или None).

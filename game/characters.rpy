@@ -18,11 +18,11 @@ define vit = Character(_("Витя"), kind=speech, callback=talk_callback("vit")
 define vit_d = Character(_("Витенька"), kind=vit)
 
 ## Настя — дочь Марины и Вити.
-define nas = Character(_("Настя"), kind=speech)
+define nas = Character(_("Настя"), kind=speech, callback=talk_callback("nas"))
 define nas_d = Character(_("Настенька"), kind=nas)
 
 define pol = Character(_("Полли"), kind=speech)
 
-define sos = Character(_("Соседка"), kind=speech)
+define sos = Character(_("Соседка"), kind=speech, callback=talk_callback("sos"))
 
 define psi = Character(_("Психолог"), kind=speech)

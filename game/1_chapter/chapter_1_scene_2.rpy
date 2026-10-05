@@ -80,14 +80,21 @@ default c1s2_tear_2 = False
 ## Плач Марины в этом кадре; handle нужен, чтобы посреди звука включить фильтр.
 default c1s2_crying_audio = None
 
+## Параллакс вдвое слабее обычного (step=0.5).
+## Слой героини с момента, когда сцена взвела c1s2_vitya_hand, за 1.5 с растворяется в
+## слой с рукой Вити на плече (FlagDissolve); остальные слои кадра не трогаются.
+default c1s2_vitya_hand = False
+
 image chapter_1 scene_2_marina_close_face = depth_scene(
     "ch1_2_mc_close_3_bg",
-    (At(Fixed("ch1_2_mc_close_3_gg_2",
+    (At(Fixed(FlagDissolve("ch1_2_mc_close_3_gg_2",
+                "images/1_chapter/chapter_1 scene_2_parents_room/Ch1_2_MC_Close_3_gg withtitya_2.png",
+                "c1s2_vitya_hand", 0.0, fade=1.5),
             At("ch1_2_mc_close_3_gg_2_tears",
                 water(flow=(455, 602), start="c1s2_tear_2", run=15.0, hold=0.0, fade=6.0, fade_to=0.5)),
             xysize=(1920, 1080)),
         shake_grow(1.05, 20.0)),
-    At("ch1_2_mc_close_3_gg_2_hands", shake_grow(1.3, 20.0))))
+    At("ch1_2_mc_close_3_gg_2_hands", shake_grow(1.3, 20.0))), step=0.5)
 
 ## Темнота под ладонями — планы глубины: фон, дальняя ладонь, ближняя ладонь, каждая в
 ## своём плане. Ладони мелко дрожат, каждая сама по себе. У фона своя добавка яркости
@@ -123,19 +130,22 @@ image chapter_1 scene_2_parents_room_vitya_1 = depth_scene(
     TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit"),
     "c1s2_parents_bed", step=0)
 
-## Крик — только на начало реплики («Знаешь что?! Хватит!»): орущая поза говорит кадрами
-## (TalkFrames), и через 1.3 с от момента, когда сцена взвела c1s2_vitya_shout, ещё на этой
-## же реплике сама растворяется в спокойную позу 1, а та договаривает остаток
-## (FlagDissolve). В исходнике орущая поза нарисована рядом с позой 1 — offset ставит её на
-## то же место.
+## Крик («Знаешь что?! Хватит!»): кадр выглядит как поза 1, пока сцена не взвела
+## c1s2_vitya_shout. С этого момента — с первой буквы реплики — сразу орущая поза, и через
+## 1.5 с она сама растворяется обратно в позу 1, даже если реплика ещё идёт (FlagDissolve).
+## Обе позы говорят кадрами (TalkFrames). В исходнике орущая поза нарисована рядом с
+## позой 1 — offset ставит её на то же место.
 default c1s2_vitya_shout = False
 
 image chapter_1 scene_2_parents_room_vitya_2 = depth_scene(
     "ch1_2_parents_bg",
     FlagDissolve(
-        At(TalkFrames("ch1_2_parents_vitya_2", "ch1_2_parents_vitya_2_say", "vit"), offset(-139, 0)),
-        TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit", rate=0.7),
-        "c1s2_vitya_shout", 1.3, fade=0.6),
+        FlagDissolve(
+            TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit"),
+            At(TalkFrames("ch1_2_parents_vitya_2", "ch1_2_parents_vitya_2_say", "vit"), offset(-139, 0)),
+            "c1s2_vitya_shout", 0.0, fade=0.2),
+        TalkFrames("ch1_2_parents_vitya_1_say", "ch1_2_parents_vitya_1", "vit"),
+        "c1s2_vitya_shout", 1.5, fade=0.4),
     "c1s2_parents_bed", step=0)
 
 ## Позы у кровати говорят сменой кадров. Орущая — слои vitya_2 (рот приоткрыт) и vitya_2_say
@@ -289,27 +299,23 @@ label chapter_1_scene_2:
 
     mar "Это нелепо..."
 
-    ## Переход позы длиной в паузу: клик оборвал бы его, блок при любой настройке.
-    $ click_skip_block = "hard"
-    pause 0.5
+    $ click_skip_block = True
+    pause 1.0
 
-    ## ▶ Срывается на крик.
-    $ renpy.transition(Dissolve(0.3), layer="master")
+    ## ▶ Срывается на крик — орущая поза встаёт с первой буквой реплики и через 1.5 с
+    ## уходит сама. Кадр крика до флага выглядит как поза 1: подмена незаметна.
     show chapter_1 scene_2_parents_room_vitya_2
-
-    pause 0.5
-
     $ mplay("chapter_1/sora_suspense_chapter_1", fadein=18.0, volume=0.9, tag="chapter_1_music_2")
-
     $ c1s2_vitya_shout = True
     $ click_skip_block = False
-    vit "Знаешь что?! Хватит! Это невозможно."
+    vit "Знаешь что?! Хватит!"
 
-    ## ▶ Обратно в позу 1: кадр перетёк в неё сам ещё на реплике, здесь поза закрепляется
-    ## (и доигрывает переход, если кликнули раньше). Флаг не снимать: уходящий кадр на
-    ## растворении снова показал бы крик.
-    $ renpy.transition(Dissolve(0.2), layer="master")
+    ## ▶ Поза 1 закрепляется. Если реплику пролистнули раньше 1.5 с — доходит растворением.
+    $ renpy.transition(Dissolve(0.3), layer="master")
     show chapter_1 scene_2_parents_room_vitya_1
+
+    ## Медленнее обычного: говорит, остывая.
+    vit "Это невозможно." (callback=talk_callback("vit", rate=0.7))
 
     mar "О чём ты говоришь?!"
 
@@ -380,6 +386,14 @@ label chapter_1_scene_2:
     vit "Какой пример ты подаёшь Насте?"
     vit "Я тяну наше семейство, как могу. За всё плачу, всё покупаю, всё дома есть."
     vit "И прошу совсем немного! Здоровой атмосферы, счастливых лиц!"
+
+    pause 0.5
+
+    ## Рука Вити ложится на плечо — слой героини перетекает с первой буквой реплики.
+    $ c1s2_vitya_hand = True
+
+    pause 1.5
+
     vit "Ты же знаешь... Я очень вас люблю..."
 
     ## Плач уходит вглубь, как метроном перед стуком: за duration секунд глохнет (low-pass,

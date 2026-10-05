@@ -25,38 +25,57 @@ image chapter_1 scene_3_sofa_jump = sm_tv_scene("c1s3_sofa_jump_bg",
 
 ## Настя в детской — планы глубины: комната сзади, Настя спереди; три настроения на одном
 ## фоне. Имена прежних цельных кадров сохранены — слои путями к файлам.
+## Спокойная Настя говорит: кадры «молчит» и «говорит» меняются по слогам её реплик.
 image chapter_1 scene_3_children_room_girl_neutral = depth_scene(
     "images/1_chapter/child_room/chapter_1 scene_3_children_room_bg.png",
-    "images/1_chapter/child_room/chapter_1 scene_3_children_room nast.png")
-## Мрачнеет: слёзы стоят в глазах — слой поверх лица в той же группе, только блестят
-## (water без flow — не стекают).
+    TalkFrames("images/1_chapter/child_room/chapter_1 scene_3_children_room nast.png",
+        "images/1_chapter/child_room/chapter_1 scene_3_children_room nast_say.png", "nas", fade=0.1))
+## Мрачнеет: слёзы стоят в глазах — слой поверх лица, только блестят (water без flow —
+## не стекают). Настя со слезами в одной группе дрожит всё сильнее (shake_grow: размах,
+## px, и секунды до максимума), комната стоит. Часы дрожи — флаг c1s3_sad_shake, сцена
+## взводит его на этом кадре: кадр истерики продолжает дрожь с того же места, вдвое сильнее.
 image chapter_1 scene_3_children_room_girl_sad = depth_scene(
     "images/1_chapter/child_room/chapter_1 scene_3_children_room_bg.png",
-    ("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_sad.png",
-        At("images/1_chapter/chapter_1 scene_3_children_room_girl_sad tears.png", water())))
+    At(Fixed("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_sad.png",
+            At("images/1_chapter/chapter_1 scene_3_children_room_girl_sad tears.png", water()),
+            xysize=(1920, 1080)),
+        shake_grow(0.75, 4.0, start="c1s3_sad_shake")))
 ## Плачет: слёзы — слой поверх лица в той же группе, стекают по щекам (water: flow —
 ## участок слоя по вертикали, px), как у Марины в сцене 2; к показу уже стекли на 15 %,
 ## через 15 с начинают тускнеть. Крик «дышит»: рот (эллипс в px слоя) плавно раскрывается
 ## примерно на 5 % и смыкается обратно без пауз — сила отрицательная, вниз уходит только
 ## нижняя губа. Эффект на самом слое лица: эллипс едет вместе с планом при параллаксе.
+## Настя дрожит вдвое сильнее прошлого кадра по тем же часам c1s3_sad_shake (дрожь уже
+## набрана, на склейке удваивается) и со слезами отдельно от комнаты медленно наезжает
+## вокруг лица.
+transform c1s3_crying_push:
+    subpixel True
+    transform_anchor True
+    anchor (0.45, 0.3) pos (0.45, 0.3)
+    zoom (1.08 if sm_reduced_motion() else 1.0)
+    ease sm_motion_time(20.0) zoom 1.08
+
 image chapter_1 scene_3_children_room_girl_crying = depth_scene(
     "images/1_chapter/child_room/chapter_1 scene_3_children_room_bg.png",
-    (At("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_very_sad.png",
-            mouth_loop((857, 408), (120, 58), strength=-0.65, period=4.0, hold=0.0, ease=2.0)),
-        At("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_very_sad tears.png",
-            water(flow=(231, 453), run=15.0, hold=0.0, fade=6.0, fade_to=0.5, head=0.15))))
+    At(Fixed(At("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_very_sad.png",
+                mouth_loop((857, 408), (120, 58), strength=-0.65, period=4.0, hold=0.0, ease=2.0)),
+            At("images/1_chapter/child_room/chapter_1 scene_3_children_room nast_very_sad tears.png",
+                water(flow=(231, 453), run=15.0, hold=0.0, fade=6.0, fade_to=0.5, head=0.15)),
+            xysize=(1920, 1080)),
+        c1s3_crying_push, shake_grow(1.5, 4.0, start="c1s3_sad_shake")))
 
 ## Настя сверху, крупно — планы глубины: пол, Настя (со слезами и выбившимися прядями в
 ## одной группе), ближе всех — руки Вити. Пол и Настя весь кадр медленно наезжают вокруг
 ## лица, руки стоят на месте и только плавно плывут вверх-вниз — камера в сцене не зумит.
-## Слёзы стекают и рот «дышит», как в кадре истерики; пряди колышутся (wind_warp: эллипс
-## и корень в px слоя), лицо стоит. Параллакс между планами приглушён до пятой части (step).
+## Слёзы к показу стекли на треть, дотекают и не тускнеют; рот «дышит», как в кадре
+## истерики; пряди колышутся (wind_warp: эллипс и корень в px слоя), лицо стоит. Параллакс
+## между планами приглушён до пятой части (step).
 transform c1s3_top_close_push:
     subpixel True
     transform_anchor True
     anchor (0.5, 0.42) pos (0.5, 0.42)
-    zoom (1.1 if sm_reduced_motion() else 1.0)
-    ease sm_motion_time(40.0) zoom 1.1
+    zoom (1.16 if sm_reduced_motion() else 1.0)
+    ease sm_motion_time(40.0) zoom 1.16
 
 transform c1s3_top_close_wag:
     subpixel True
@@ -69,10 +88,10 @@ transform c1s3_top_close_wag:
 image chapter_1 scene_3_daughter_top_close = depth_scene(
     At("images/1_chapter/chapter_1 scene_3_daughter_top_close.png", c1s3_top_close_push),
     (At("images/1_chapter/chapter_1 scene_3_daughter_top_close_child.png",
-            mouth_loop((915, 510), (105, 75), strength=-0.65, period=4.0, hold=0.0, ease=2.0),
+            mouth_loop((915, 510), (105, 75), strength=-0.9, period=4.0, hold=0.0, ease=2.0),
             c1s3_top_close_push),
         At("images/1_chapter/chapter_1 scene_3_daughter_top_close_tears.png",
-            water(flow=(324, 528), run=15.0, hold=0.0, fade=6.0, fade_to=0.5, head=0.15),
+            water(flow=(324, 528), run=15.0, head=0.35, fade_to=1.0),
             c1s3_top_close_push),
         At("images/1_chapter/chapter_1 scene_3_daughter_top_close_volosy.png",
             wind_warp((920, 260), (700, 520), (920, 40), amp=2.0, speed=1.0),
@@ -80,7 +99,52 @@ image chapter_1 scene_3_daughter_top_close = depth_scene(
     At("images/1_chapter/chapter_1 scene_3_daughter_top_close_hands.png", c1s3_top_close_wag),
     step=0.2)
 
+## Вторая соседка — прозрачный спрайт своим тегом поверх кадра с первой: тихо выдвигается
+## из-за левого края на своё место (pos — место, px), проявляясь из прозрачности; сдвиг —
+## 15% ширины экрана, кончается вместе с проявлением. На ходу чуть притопывает: три
+## мелких шага (yoffset, px; перенос веса rotate, ° — вокруг ног). При «меньше движения» —
+## только проявление.
+## Говорит на репликах соседки (ключ "sos"): кадры «молчит» и «говорит» меняются по слогам,
+## каждое открытие рта — одной длины (hold) и одинаковое: между открытиями рот закрыт
+## не меньше gap секунд — дольше растворения кадров (fade), так что каждое раскрытие
+## проходит целиком.
+image c1s3_neighbor_2 = TalkFrames("images/1_chapter/chapter_1 scene_3_entrance_neighbors.png",
+    "images/1_chapter/chapter_1 scene_3_entrance_neighbors say.png", "sos", fade=0.1, hold=0.2, gap=0.15)
+transform c1s3_neighbor_2_enter:
+    subpixel True
+    transform_anchor True
+    anchor (0.245, 1.0)
+    pos (470, 1080)
+    alpha 0.0
+    rotate 0.0
+    xoffset (-288.0 * sm_motion_scale())
+    parallel:
+        easeout 1.5 alpha 1.0 xoffset 0.0
+    parallel:
+        easein 0.15 yoffset (6.0 * sm_motion_scale()) rotate (-0.6 * sm_motion_scale())
+        easeout 0.35 yoffset 0.0 rotate 0.0
+        easein 0.15 yoffset (5.0 * sm_motion_scale()) rotate (0.6 * sm_motion_scale())
+        easeout 0.35 yoffset 0.0 rotate 0.0
+        easein 0.15 yoffset (3.0 * sm_motion_scale()) rotate (-0.3 * sm_motion_scale())
+        easeout 0.35 yoffset 0.0 rotate 0.0
+
+## Пустая метка: её ATL запускает звук с задержкой от появления реплики, не дожидаясь клика.
+image c1s3_sfx_cue = Null()
+
 default c1s3_teaparty_choice = None
+default c1s3_sad_shake = False
+## Плач Насти (c1s1_nast_cry_step_2); handle нужен, чтобы глушить его за дверью подъезда.
+default c1s3_cry_audio = None
+
+init python:
+
+    def c1s3_cry_reverb():
+        """Плач в квартире: чистый, с лёгким эхом комнаты."""
+        return renpy.audio.filter.Reverb(resonance=0.6, dampening=2000.0, wet=0.3, dry=0.9, delay_multiplier=1.6)
+
+    def c1s3_cry_door_filter():
+        """Плач из-за двери: тот же, но глухой (low-pass, Гц)."""
+        return [renpy.audio.filter.Lowpass(900.0), c1s3_cry_reverb()]
 default c1s3_neighbor_choice = None
 
 ## Сцена
@@ -127,6 +191,8 @@ label chapter_1_scene_3:
 
     $ click_skip_block = True
     window auto hide
+    ## Шорох бумаги — новый рисунок прижимают к дверце.
+    $ sm_sfx("c1s3/c1s3_fridge_paper", volume=0.3)
     scene chapter_1 scene_3_fridge_new_drawing:
         parallel:
             fade_brightness(0.0, -0.09, 8.0)
@@ -153,9 +219,9 @@ label chapter_1_scene_3:
     with Dissolve(2.0)
     $ click_skip_block = False
 
-    nas "Спасибо, что побыла на нашем чаепитии!"
-    nas "А Полли не пришёл сегодня..."
-    nas "Как тебе профессор Косолап?"
+    nas "Спасибо, что побыла на нашем чаепитии!" (callback=talk_callback("nas", drop=1))
+    nas "А Полли не пришёл сегодня..." (callback=talk_callback("nas", drop=1))
+    nas "Как тебе профессор Косолап?" (callback=talk_callback("nas", drop=1))
 
     ## ══════════ КАДР 4 · ЧАЕПИТИЕ ══════════
     ## Наезд на профессора Косолапа.
@@ -221,23 +287,28 @@ label chapter_1_scene_3:
     ## ══════════ КАДР 5 · НАСТЯ МРАЧНЕЕТ ══════════
     $ click_skip_block = True
     window auto hide
-    camera at camera_push((0.42, 0.33), 1.03, 1.10, 16.0)
+    camera at camera_push((0.42, 0.33), 1.03, 1.15, 26.0)
+    $ c1s3_sad_shake = True
     scene chapter_1 scene_3_children_room_girl_sad:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(3.0)
     $ click_skip_block = False
 
+    pause 1.5
+
     ## ══════════ КАДР 6 · ИСТЕРИКА ══════════
     ## Склейка встык на крик, окно диалога остаётся (show, не scene). Камера продолжает
-    ## наезд прошлого кадра.
+    ## наезд прошлого кадра; Настя в образе наезжает ещё и сама, отдельно от комнаты.
     show chapter_1 scene_3_children_room_girl_crying:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(0.5)
 
+    $ sm_sfx("c1s1/c1s1_nast_cry_step_1", tag="c1s3_cry")
     nas "НЕТ!"
     nas "НЕ УХОДИ!"
     mar "Почему?.."
     nas "ПОЖАЛУЙСТА!"
+    $ c1s3_sad_shake = False
 
     # ## ══════════ КАДР 7 · ПРЫЖКИ НА ДИВАНЕ ══════════
     # ## Вход через чёрный. Кадр прыжков (c1s3_sofa_jump_bg) подставляется в тег первого
@@ -271,7 +342,6 @@ label chapter_1_scene_3:
     # with Dissolve(1.5)
     # $ click_skip_block = False
 
-
     ## ══════════ КАДР 8 · ПОДЪЕЗД ══════════
     ## Наезд вверх по лестнице, к двери.
     $ click_skip_block = True
@@ -282,16 +352,24 @@ label chapter_1_scene_3:
     with Dissolve(2.0)
     $ click_skip_block = False
 
+    ## Кипиш за дверью — через секунду после появления первой строки.
+    show c1s3_sfx_cue:
+        pause 1.0
+        function renpy.curry(sm_sfx_f)("c1s1/c1s1_nastya_solo_kipish", 1.5)
     "Стоило нам с Витей обоим ненадолго отлучиться, как наша принцесса начинала вопить, греметь кастрюлями, орать под телевизор на полную громкость, в общем, стоять на голове."
     "Мы пыталась с ней по-хорошему поговорить, объяснить, что взрослым девочкам так вести себя должно быть стыдно."
     "Потом просто ругались."
 
     ## ══════════ КАДР 9 · НАСТЯ СВЕРХУ ══════════
     ## Камера стоит: наезд на лицо идёт внутри кадра, планами пола и Насти, а руки должны
-    ## оставаться на месте.
+    ## оставаться на месте. Плач Насти идёт отсюда один раз до конца без фейда: здесь чисто,
+    ## с эхом комнаты; на кадрах из подъезда дальше — глухо, из-за двери
+    ## (c1s3_cry_door_filter), переключение — за время растворения кадра.
     $ click_skip_block = True
     window auto hide
     camera
+    $ c1s3_cry_audio = sm_sfx("c1s1/c1s1_nast_cry_step_2", tag="c1s3_cry")
+    $ sm_audio_set_filter(c1s3_cry_audio, c1s3_cry_reverb(), duration=0)
     scene chapter_1 scene_3_daughter_top_close:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(3.0)
@@ -323,44 +401,52 @@ label chapter_1_scene_3:
 
     "Один раз мне пришлось выйти из дома, потому что закончились лекарства."
     "Я оставила её одну всего на жалкие десять минут."
-    "А по возвращению у двери меня уже встречали соседи..."
 
     ## ══════════ КАДР 10 · СОСЕДКА ══════════
     ## Наезд на фигуру наверху лестницы.
     $ click_skip_block = True
     window auto hide
     camera at camera_push((0.50, 0.35), 1.03, 1.10, 14.0)
+    $ sm_audio_set_filter(c1s3_cry_audio, c1s3_cry_door_filter(), duration=1.0)
     scene chapter_1 scene_3_entrance_neighbor:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(1.0)
     $ click_skip_block = False
 
-    sos "Ну наконец-то явились! И что это за дела?"
-    sos "Вам самим нормально жить с таким воем?"
-    sos "Вы пробовали воспитывать ребёнка?"
+    "А по возвращению у двери меня уже встречали соседи..."
 
-    ## ══════════ КАДР 11 · ВТОРАЯ СОСЕДКА ══════════
-    ## Склейка встык: лицо вырастает перед камерой, камера отшатывается.
-    camera at camera_settle((0.26, 0.55), 1.12, 1.04, 0.6)
-    show chapter_1 scene_3_entrance_neighbors:
-        breath_brightness(-0.04, -0.09, 6.0)
+    ## Вторая соседка выдвигается слева в тишине (1.5 с); три шага в звуке совпадают с тремя
+    ## притопами (c1s3_neighbor_2_enter). Встала — ещё 0.5 с, и заговорила.
+    $ click_skip_block = True
+    window auto hide
+    $ sm_sfx("c1s1/2_netrence_sosedka_footsteps", volume=0.8)
+    show c1s3_neighbor_2 at c1s3_neighbor_2_enter, breath_brightness(-0.04, -0.09, 6.0)
+    pause 2.0
+    $ click_skip_block = False
+
+    sos "Ну наконец-то явилась! И что это за дела?" (callback=talk_callback("sos", moves=4, hold=0.2, step=0.35))
+    sos "Вам самим нормально жить с таким воем?" (callback=talk_callback("sos", drop=3))
+    sos "Вы пробовали воспитывать ребёнка?" (callback=talk_callback("sos", drop=3))
+
+    ## ══════════ КАДР 11 · ОТВЕТ СОСЕДКАМ ══════════
+    ## Обе соседки в кадре; камера продолжает наезд.
 
     ## Выбор влияет на дальнейшее — меню ждёт игрока и при пропуске; двигать — F7.
     menu(screen="scene_choice", follow=follow_camera()):
-        "Простите..." (pos=(608, 746), size=(330, 165)):
+        "Простите..." (pos=(962, 538), size=(330, 165)):
             $ click_skip_block = True
             pause 0.5
             $ click_skip_block = False
             $ c1s3_neighbor_choice = "apologize"
             ## Извинилась: камера медленно уходит мимо соседки к двери наверху.
-            camera at camera_push((0.50, 0.30), 1.04, 1.16, 20.0)
+            # camera at camera_push((0.50, 0.30), 1.04, 1.16, 20.0)
             mar "У неё просто тяжёлый возраст. Извините, пожалуйста."
 
             $ click_skip_block = True
             pause 0.5
             $ click_skip_block = False
 
-            sos "Ну Мариш, это несерьёзно. Ребёнка надо воспитывать!"
+            sos "Ну Мариш, это несерьёзно. Ребёнка надо воспитывать!" (callback=talk_callback("sos", moves=4, step=0.42))
 
             $ click_skip_block = True
             pause 1.0
@@ -368,20 +454,20 @@ label chapter_1_scene_3:
 
             "Я знала. Просто не понимала, как. Мы пытались разобраться..."
 
-        "Заткнитесь!" (pos=(963, 542), size=(330, 165)):
+        "Заткнитесь!" (pos=(619, 772), size=(330, 165)):
             $ click_skip_block = True
             pause 0.5
             $ click_skip_block = False
             $ c1s3_neighbor_choice = "confront"
             ## Сорвалась: удар камерой в лицо соседке.
-            camera at camera_settle((0.26, 0.55), 1.14, 1.07, 0.4)
+            # camera at camera_settle((0.26, 0.55), 1.14, 1.07, 0.4)
             mar "И вы тоже разораться решили?! Закройте рты и идите домой!"
 
             $ click_skip_block = True
             pause 0.5
             $ click_skip_block = False
 
-            sos "О, психованная семейка! Ничего-ничего, потом вызовем милицию..."
+            sos "О, психованная семейка! Ничего-ничего, потом вызовем милицию..." (callback=talk_callback("sos", moves=5, step=0.42))
 
             $ click_skip_block = True
             pause 0.5
