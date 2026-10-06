@@ -774,9 +774,6 @@ label .piano:
     if c1s1_metronome_audio is None:
         $ c1s1_metronome_start()
 
-    ## Заглушка сборки для команды: дальше пропуск не идёт.
-    $ skip_stop()
-
     # "start"
 
     $ quick_menu = False
@@ -1070,7 +1067,7 @@ label .after_locks:
     $ click_skip_block = False
 
     "Часто Витя бывал просто невыносим."
-    "Ничего серьёзного: какие-то банальности, быт...  "
+    "Ничего серьёзного: какие-то банальности, быт..."
     
     # "Раньше мне хватало сил их не замечать. Терпеть."
     # "Существующий только в своём темпе, со своими ценностями."
@@ -1336,9 +1333,11 @@ label .cleanup:
     show c1s1_tv_hand_night at c1s1_tv_hand_motion, float_drift((5.0, 4.0), speed=1.0, side=(-1, 1)), parallax_plane(1.0), breath_brightness(-0.05, -0.09, 6.0)
     
     pause 1.0
+    $ click_skip_block = False
 
     vit "Не могу дальше на это смотреть..."
 
+    $ click_skip_block = True
     pause 0.3
 
     $ sm_sfx("c1s1/c1s1_tv_remote_click", volume=0.6)
@@ -1479,7 +1478,8 @@ label .cleanup:
     # $ click_skip_block = True
     # pause 1.0
     # $ click_skip_block = False
-    
+
+    $ click_skip_block = False
     "Кто-то из мудрых сказал, что залог счастливого супружества — взаимные компромиссы."
     "Но, боюсь... за все восемь лет брака, я поняла, что одних компромиссов мало."
 

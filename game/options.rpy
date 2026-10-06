@@ -36,9 +36,10 @@ define config.fast_redraw_frames = 0
 
 define config.has_sound = True
 define config.has_music = True
-## Озвучка выключена на демо: строки voice в сценах и файлы остаются, True — включить.
+## Озвучки в демо нет: операторы voice убраны из сцен, файлы game/audio/voice/ удалены (бэкап
+## у автора); пул реплик (common/voice.rpy) остался. True — включить, когда появятся записи.
 define config.has_voice = False
-## voice "prologue/work/prologue_01" → game/audio/voice/prologue/work/prologue_01.ogg, как у vplay.
+## voice "prologue/prologue_01" → game/audio/voice/prologue/prologue_01.ogg, как у vplay.
 define config.voice_filename_format = "audio/voice/{filename}.ogg"
 
 define config.default_music_volume = 0.85
@@ -140,16 +141,21 @@ init python:
     build.classify('files.txt', None)
     build.classify('image_cache.txt', None)
     build.classify('lint.txt', None)
-    build.classify('log.txt', None)
+    build.classify('**/log.txt', None)
     build.classify('memory.txt', None)
     build.classify('profile_screen.txt', None)
     build.classify('save_dump.txt', None)
     build.classify('text_overflow.txt', None)
     build.classify('trace.txt', None)
-    build.classify('traceback.txt', None)
+    build.classify('**/traceback.txt', None)
+    ## Исходники сценария и производственные заметки — только .rpyc и ассеты.
+    build.classify('game/**.rpy', None)
+    build.classify('game/**.md', None)
 
-    ## Локальные данные исключаются независимо от .gitignore.
-    build.classify('game/cache/**', None)
+    ## Локальные данные исключаются независимо от .gitignore; game/cache/shaders.txt остаётся:
+    ## по нему шейдеры компилируются при старте, а не на первом показе.
+    build.classify('game/cache/**.rpyb', None)
+    build.classify('game/cache/build_*', None)
     build.classify('game/saves/**', None)
     build.classify('tools/**', None)
 

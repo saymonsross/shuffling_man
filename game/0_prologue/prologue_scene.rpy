@@ -105,7 +105,6 @@ label prologue_scene:
     $ click_skip_block = False
     $ quick_menu = True
 
-    voice "prologue/work/prologue_01"
     "Чтобы заговорить о чём-то тяжёлом, лучше всего для начала представиться."
 
     ## Голова — ближний план. Картинка упирается в края кадра: стартовый зум 1.05
@@ -130,13 +129,13 @@ label prologue_scene:
         parallel:
             brightness_to(-0.07, 7.0)
 
-    voice "prologue/work/prologue_02"
     "Так сказать..."
     show prologue head_blink
-    voice "prologue/work/prologue_03"
     "...вспомнить, кто ты есть."
 
+    $ click_skip_block = True
     pause 1.0
+    $ click_skip_block = False
 
     show prologue_head_bg behind prologue:
         zoom 1.0 alpha 0.0
@@ -147,19 +146,17 @@ label prologue_scene:
         parallel:
             breath_brightness(-0.01, -0.04, 6.0)
 
-    voice "prologue/work/prologue_04"
     "Меня зовут Марина Александровна Шрайбер."
 
     show prologue head_blink
 
-    voice "prologue/work/prologue_05"
     "Я пишу эти строки не в первый раз."
 
+    $ click_skip_block = True
     pause 1.0
+    $ click_skip_block = False
 
-    voice "prologue/work/prologue_06"
     "Сейчас я довольно далеко от места, что называла домом."
-    voice "prologue/work/prologue_07"
     "Кажется, позади осталось всё, что когда-то было мне ценно."
 
     $ click_skip_block = True
@@ -184,16 +181,15 @@ label prologue_scene:
         parallel:
             linear 22.0 alpha 0.0
 
-    voice "prologue/work/prologue_08"
     "Я нахожусь здесь после нервного срыва, что разрушил мои и без того распадавшуюся на части жизнь и подорванное здоровье."
     # 
 
-    voice "prologue/work/prologue_09"
     "Это был не первый мой срыв, и не второй, если говорить начистоту."
 
+    $ click_skip_block = True
     pause 1.0
+    $ click_skip_block = False
 
-    voice "prologue/work/prologue_10"
     "Но прошлые разы не шли с этим ни в какое сравнение."
 
     $ click_skip_block = True
@@ -209,7 +205,6 @@ label prologue_scene:
     with Dissolve(3.0)
 
     $ click_skip_block = False
-    # sdkjfbsokdfg[r]
     "Это письмо..."
     "...должно помочь мне пережить произошедшее."
 
@@ -231,24 +226,19 @@ label .letter:
     # "Долго я не находила в себе сил, чтобы записать случившееся."
     # "Ушло много попыток."
 
-    voice "prologue/work/prologue_11"
     "Долго я не находила в себе сил, чтобы записать случившееся."
-    voice "prologue/work/prologue_12"
     "Ушло много попыток."
     
-    # "Даже чтобы просто вспоминать призошедшее:"
+    # "Даже чтобы просто вспоминать произошедшее:"
 
+    $ click_skip_block = True
     pause 1.0
+    $ click_skip_block = False
 
-    voice "prologue/work/prologue_13"
     "{sc=1.3:2.5}Меня трясло.{/sc}"
-    voice "prologue/work/prologue_14"
     "{sc=1.3:2.5}Рвало.{/sc}"
-    voice "prologue/work/prologue_15"
     "{sc=1.3:2.5}Руки непроизвольно тянулись закрыть лицо.{/sc}"
-    voice "prologue/work/prologue_16"
     "{sc=1.3:2.5}Хотелось спрятаться в ладонях от страшного мира, прямо как в детстве...{/sc}"
-    voice "prologue/work/prologue_17"
     "Лишь бы не вспоминать."
 
     # "{sc=0.3:2}Не было сил вспоминать: меня трясло, рвало, руки непроизвольно тянулись закрыть лицо.{/sc}"
@@ -382,7 +372,9 @@ label .letter:
     "Я не уверена, что осмелюсь вернуться к карандашу и бумаге снова."
     # ", так что это будет спринтерский забег."
 
+    $ click_skip_block = True
     pause 1.0
+    $ click_skip_block = False
 
     "Это будет моя последняя попытка. Так сказать... спринтерский забег."
     "Я расскажу всё на одном дыхании. Здесь и сейчас."

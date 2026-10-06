@@ -116,6 +116,10 @@ translate english strings:
     old "Сергей Паршин"
     new "Sergey Parshin"
 
+    # game/screens.rpy:840
+    old "Руслан Бикмурзин"
+    new "Ruslan Bikmurzin"
+
     # game/screens.rpy:735
     old "{#file_time}%A, %d %B %Y, %H:%M"
     new "{#file_time}%A, %B %d, %Y, %H:%M"

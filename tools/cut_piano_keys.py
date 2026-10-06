@@ -1,9 +1,9 @@
-## Нарезка сэмплов клавиш пианино из записи game/audio/keys/keys_set_c3-b5.ogg
+## Нарезка сэмплов клавиш пианино из записи ../shuffling_man_assets/audio_unused/keys/keys_set_c3-b5.ogg
 ## (см. game/audio/chapter_1_piano_minigame/README.md). Запуск из корня проекта: python tools/cut_piano_keys.py
 import struct, math, subprocess, os, re, glob, tempfile
 S = tempfile.gettempdir()
 P = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = P + "/game/audio/keys/keys_set_c3-b5.ogg"
+SRC = os.path.dirname(P) + "/shuffling_man_assets/audio_unused/keys/keys_set_c3-b5.ogg"
 OUT = P + "/game/audio/keys"
 ## Пик каждой ноты после нормализации, dBFS.
 TARGET_DB = -4.0

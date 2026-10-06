@@ -42,7 +42,8 @@ default persistent.sm_author_pacing = True
 init -20 python:
 
     def sm_click_blocked():
-        block = store.click_skip_block
+        ## statement_callbacks бегут и на init-операторах, до default.
+        block = getattr(store, "click_skip_block", False)
         return block == "hard" or bool(block and persistent.sm_author_pacing)
 
 screen sm_click_skip_block():
@@ -60,6 +61,11 @@ init python:
         store._dismiss_pause = not sm_click_blocked()
 
     config.interact_callbacks.append(_sm_click_skip_block_sync)
+    ## pause читает _dismiss_pause до начала интеракции, а interact_callbacks бегут уже внутри
+    ## неё: без синхронизации перед оператором голый pause после заблокированной паузы стал бы
+    ## hard-паузой без таймера — клик его не снимает. Поэтому флаг обновляется и перед каждым
+    ## оператором.
+    config.statement_callbacks.append(lambda statement: _sm_click_skip_block_sync())
 
     ## auto_hide() из 7dots прячет окно на "call", а вход в меню Ren'Py сам делает
     ## call _enter_game_menu: первое открытие меню растворяло окно диалога отдельно.

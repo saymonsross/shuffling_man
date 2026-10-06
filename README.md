@@ -52,7 +52,7 @@ game/
 ├── 3_chapter/       — сцены главы 3
 ├── 4_endings/       — концовки и эпилоги
 ├── common/          — переиспользуемый код: шейдеры, трансформы, утилиты
-├── audio/           — music/, sfx/, voice/
+├── audio/           — music/, sfx/ (озвучки в демо нет, см. docs/03_audio_system.md)
 ├── images/          — 0_prologue/ … 4_endings/, common/
 ├── gui/             — графика интерфейса
 ├── fonts/           — шрифты
@@ -225,6 +225,7 @@ game/
 - На Linux/macOS выполнить последовательно `renpy-8.5.3-sdk/renpy.sh shuffling_man compile --compile-python`, затем `renpy-8.5.3-sdk/renpy.sh shuffling_man lint --error-code --reserved-parameters --check-unclosed-tags --all-problems` и `renpy-8.5.3-sdk/renpy.sh shuffling_man test global`.
 - Линт проверяет операторы Ren'Py, но не их Python-эквиваленты — предпочитать операторы (`show`, `play`) функциям (`renpy.show()`).
 - Запуск из CLI: `renpy-8.5.3-sdk\renpy.exe shuffling_man run`.
+- TODO (после демо, 2026-10): сюжетные тесты в `game/dev/` отстали от текста сцен и падают на устаревших строках — `story_full_route`, `c1s1_story_*` (testcases.rpy), `prologue_regression_tests.rpy`, `sandwich_regression_tests.rpy`, `tv_noise_regression_tests.rpy`; ветки сцены 3 и мини-игры актуальны. Также `c1s1_piano_screen_collapse` падает на 12-м шаге.
 - Коммиты — осмысленные, по одной сцене/фиче; в репозиторий не коммитим сейвы, кэш, `persistent`.
 
 #### Перед публичной сборкой

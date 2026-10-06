@@ -365,7 +365,7 @@ init python:
                 rv.blit(mark, (int(x + (SM_TV_TICKER_GAP - SM_TV_TICKER_MARK) // 2), (h - SM_TV_TICKER_MARK) // 2))
                 x += SM_TV_TICKER_GAP
                 i += 1
-            renpy.redraw(self, 0)
+            renpy.redraw(self, fx_tick())
             return rv
 
         def visit(self):

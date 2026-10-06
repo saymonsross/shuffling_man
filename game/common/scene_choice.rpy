@@ -41,7 +41,7 @@ init -5 python:
         trans.xoffset = px + dx
         trans.yoffset = py + dy
         _fx_state[("choice_shift", key)] = (px + dx, py + dy)
-        return 1.0 / 60.0
+        return fx_tick()
 
     def sm_choice_kwargs(where, item):
         pos = _sm_choice_moved.get((where, item.caption))

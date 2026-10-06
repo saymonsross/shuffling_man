@@ -12,7 +12,7 @@
 ## break_before_end > 0: столько последних шагов не доигрывается — сбор шага перед ними
 ## не звучит, игра возвращается в момент обрушения, а падение осколков сцена показывает сама:
 ## show screen minigame_piano_screen → свои show/camera/pause → hide screen + piano_collapse_end().
-## Сэмплы клавиш — PIANO_KEYS_DIR/<нота><октава>.mp3: c4, c#4, d4 …; щелчок — PIANO_DEAD_SOUND.
+## Сэмплы клавиш — PIANO_KEYS_DIR/<нота><октава>.ogg: c4, c#4, d4 …; щелчок — PIANO_DEAD_SOUND.
 
 define PIANO_ZORDER = 110
 define PIANO_SUBDIV = 4
@@ -343,9 +343,14 @@ init python:
             piano_metro.bind(s["metronome"], s["beat"], s["metro_phase"])
 
     def piano_after_load():
-        if store.piano_state.get("phase") == "play":
+        phase = store.piano_state.get("phase")
+        if phase == "play":
             piano_bind_metronome()
             piano_clock.due = piano_clock.due_for = None
+        ## Сейв в окне обрушения: часы не сохраняются, без момента старта слой и осколки
+        ## делили бы None. Обрушение считается уже завершённым.
+        elif phase == "collapse" and piano_clock.collapse_t is None:
+            piano_clock.collapse_t = piano_now() - PIANO_COLLAPSE_T
 
     config.after_load_callbacks.append(piano_after_load)
 

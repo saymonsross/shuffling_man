@@ -15,13 +15,13 @@ image main_menu_logo = At(gui.main_menu_logo, scratch("main_menu_logo", tint=0.0
 
 label main_menu:
     $ quick_menu = False
-    $ parallax_off = True
+    $ sm_parallax_off = True
 
     ## Штатный канал music вне пула 7dots; label start гасит его при старте игры.
     $ renpy.music.play("audio/main_menu.ogg", channel="music", if_changed=True, fadein=2.0)
 
     ## Возврат из подменю через _return снова входит сюда: постановку не повторяем.
-    if not renpy.showing("prologue_head_bgR"):
+    if not renpy.showing("prologue_head_bg"):
         scene prologue_head_bg:
             zoom 1.0
             rotate 0.0
