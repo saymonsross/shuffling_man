@@ -140,13 +140,20 @@ image c1s3_sfx_cue = Null()
 ## едет за мышью только целиком, общим параллаксом слоя.
 default c1s3_marina_turned = False
 default c1s3_nast_sees = False
-image c1s3_sofa_bg = ConditionSwitch(
-    "c1s3_marina_turned", "images/1_chapter/chapter_1 scene_3_sofa_marina bg_2.png",
-    "True", "images/1_chapter/chapter_1 scene_3_sofa_marina bg.png")
-image c1s3_sofa_nast = ConditionSwitch(
-    "c1s3_nast_sees", "images/1_chapter/chapter_1 scene_3_sofa_close nast_see.png",
-    "True", "images/1_chapter/chapter_1 scene_3_sofa_close nast.png")
+## Марина оборачивается растворением за 0.5 с с момента, как сцена взвела флаг.
+image c1s3_sofa_bg = FlagDissolve("images/1_chapter/chapter_1 scene_3_sofa_marina bg.png",
+    "images/1_chapter/chapter_1 scene_3_sofa_marina bg_2.png", "c1s3_marina_turned", 0.0, fade=0.5)
+## Настя поднимает взгляд растворением за 0.5 с с момента, как сцена взвела флаг.
+image c1s3_sofa_nast = FlagDissolve("images/1_chapter/chapter_1 scene_3_sofa_close nast.png",
+    "images/1_chapter/chapter_1 scene_3_sofa_close nast_see.png", "c1s3_nast_sees", 0.0, fade=0.5)
 image chapter_1 scene_3_sofa_marina = depth_scene("c1s3_sofa_bg", "c1s3_sofa_nast", step=0.0)
+
+## Возвращение к подъезду: на пустой лестнице за 0.5 с проявляется соседка наверху, когда
+## сцена взводит c1s3_neighbor_in, — без нового scene: камера, дыхание и параллакс кадра
+## продолжаются.
+default c1s3_neighbor_in = False
+image c1s3_entrance_return = FlagDissolve("chapter_1 scene_3_entrance", "chapter_1 scene_3_entrance_neighbor",
+    "c1s3_neighbor_in", 0.0, fade=0.5)
 
 default c1s3_teaparty_choice = None
 default c1s3_sad_shake = False
@@ -179,7 +186,9 @@ label chapter_1_scene_3:
     ## следующего кадра он возвращается сам.
     $ click_skip_block = True
     window auto hide
+    $ mplay("chapter_1/c1_last_scene_thene", volume=0.9, fadein=3.0, tag="chapter_1_music_3")
     camera at camera_push((0.5, 0.5), 1.00, 1.09, 30.0)
+    scene black with Dissolve(1.0)
     scene chapter_1 scene_3_children_room_floor:
         parallel:
             breath_brightness(-0.03, -0.08, 6.0)
@@ -324,6 +333,8 @@ label chapter_1_scene_3:
     with Dissolve(3.0)
     $ click_skip_block = False
 
+    $ mplay("chapter_1/sora_suspense_chapter_1_2.ogg", volume=0.9, fadein=47.0, tag="chapter_1_music_3_suspence")
+
     pause 1.5
 
     ## ══════════ КАДР 6 · ИСТЕРИКА ══════════
@@ -334,11 +345,19 @@ label chapter_1_scene_3:
     with Dissolve(0.5)
 
     $ sm_sfx("c1s1/c1s1_nast_cry_step_1", tag="c1s3_cry")
-    nas "НЕТ!"
-    nas "НЕ УХОДИ!"
+    nas "{sc=1.5:3.6}НЕТ!{/sc}"
+    nas "{sc=1.5:3.6}НЕ УХОДИ!{/sc}"
+
+    pause 0.5
+
     mar "Почему?.."
-    nas "ПОЖАЛУЙСТА!"
+
+    pause 0.6
+
+    nas "{cps=15}{sc=1.5:3.6}ПОЖАЛУЙСТА-А-А!{/sc}{/cps}"
     $ c1s3_sad_shake = False
+
+    pause 0.5
 
     # ## ══════════ КАДР 7 · ПРЫЖКИ НА ДИВАНЕ ══════════
     # ## Вход через чёрный. Кадр прыжков (c1s3_sofa_jump_bg) подставляется в тег первого
@@ -385,10 +404,12 @@ label chapter_1_scene_3:
     ## Кипиш за дверью — через секунду после появления первой строки.
     show c1s3_sfx_cue:
         pause 1.0
-        function renpy.curry(sm_sfx_f)("c1s1/c1s1_nastya_solo_kipish", 1.5)
+        function renpy.curry(sm_sfx_f)("c1s1/c1s1_nastya_solo_kipish", 2.5)
     "Стоило нам с Витей обоим ненадолго отлучиться, как наша принцесса начинала вопить, греметь кастрюлями, орать под телевизор на полную громкость, в общем, стоять на голове."
     "Мы пыталась с ней по-хорошему поговорить, объяснить, что взрослым девочкам так вести себя должно быть стыдно."
     "Потом просто ругались."
+
+
 
     ## ══════════ КАДР 9 · НАСТЯ СВЕРХУ ══════════
     ## Камера стоит: наезд на лицо идёт внутри кадра, планами пола и Насти, а руки должны
@@ -398,11 +419,14 @@ label chapter_1_scene_3:
     $ click_skip_block = True
     window auto hide
     camera
-    $ c1s3_cry_audio = sm_sfx("c1s1/c1s1_nast_cry_step_2", tag="c1s3_cry")
+    $ c1s3_cry_audio = sm_sfx("c1s1/c1s1_nast_cry_step_2", tag="c1s3_cry", loop=True)
     $ sm_audio_set_filter(c1s3_cry_audio, c1s3_cry_reverb(), duration=0)
     scene chapter_1 scene_3_daughter_top_close:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(3.0)
+
+    $ mstop(tag="chapter_1_music_3", fadeout=150.0)
+
     $ click_skip_block = False
 
     vit "Это ни в какие рамки. Ну что это за поведение, а?"
@@ -432,18 +456,36 @@ label chapter_1_scene_3:
     "Один раз мне пришлось выйти из дома, потому что закончились лекарства."
     "Я оставила её одну всего на жалкие десять минут."
 
-    ## ══════════ КАДР 10 · СОСЕДКА ══════════
-    ## Наезд на фигуру наверху лестницы.
+    $ sm_audio_stop(handle=c1s3_cry_audio, fadeout=5.5)
+
+    
+    ## ══════════ КАДР 8 · ПОДЪЕЗД ══════════
+    ## Наезд вверх по лестнице, к двери.
     $ click_skip_block = True
     window auto hide
-    camera at camera_push((0.50, 0.35), 1.03, 1.10, 14.0)
-    $ sm_audio_set_filter(c1s3_cry_audio, c1s3_cry_door_filter(), duration=1.0)
-    scene chapter_1 scene_3_entrance_neighbor:
+    camera at camera_push((0.54, 0.40), 1.02, 1.10, 26.0)
+    $ c1s3_neighbor_in = False
+    scene c1s3_entrance_return:
         breath_brightness(-0.04, -0.09, 6.0)
-    with Dissolve(1.0)
+    show c1s3_sfx_cue:
+        pause 1.4
+        function renpy.curry(sm_sfx_f)("c1s1/c1s1_kipish_2", 1.5)
+    with Dissolve(2.0)
     $ click_skip_block = False
 
+    ## Кипиш за дверью — через секунду после появления первой строки.
+    
+
     "А по возвращению у двери меня уже встречали соседи..."
+
+    ## ══════════ КАДР 10 · СОСЕДКА ══════════
+    ## На той же лестнице наверху за 0.5 с проявляется соседка; камера продолжает наезд.
+    $ click_skip_block = True
+    window auto hide
+    $ sm_audio_set_filter(c1s3_cry_audio, c1s3_cry_door_filter(), duration=1.0)
+    $ c1s3_neighbor_in = True
+    pause 0.5
+    $ click_skip_block = False
 
     ## Вторая соседка выдвигается слева в тишине (1.5 с); три шага в звуке совпадают с тремя
     ## притопами (c1s3_neighbor_2_enter). Встала — ещё 0.5 с, и заговорила.
@@ -526,10 +568,10 @@ label chapter_1_scene_3:
     $ click_skip_block = True
     window auto hide
     $ c1s3_marina_turned = True
-    camera at camera_retarget((0.33, 0.36), 1.1, 40.0, sm_camera_snapshot(), blend=3.0)
+    camera at camera_retarget((0.33, 0.36), 1.25, 40.0, sm_camera_snapshot(), blend=3.0)
     $ click_skip_block = False
 
-    nas "{sc}Он{/sc} приходит, когда дома становится слишком тихо..."
+    nas "{sc=1.5:1.7}Он{/sc} приходит, когда дома становится слишком тихо..."
 
     $ click_skip_block = True
     pause 0.5
@@ -543,7 +585,7 @@ label chapter_1_scene_3:
 
     ## Витя за кадром — баблом слева; двигать — Choice Placer (F7).
     window auto hide
-    show screen c1s1_vitya_bark(_("Кто-кто?.. Это Полли? Или как там его..."), side="left", pos=(48, 120), width=820)
+    show screen c1s1_vitya_bark(_("Кто-кто?.. Это Полли? Или как там его..."), side="left", pos=(48, 120), width=820, jitter=0.0)
     pause
     hide screen c1s1_vitya_bark
 
@@ -551,14 +593,14 @@ label chapter_1_scene_3:
     pause 0.5
     $ click_skip_block = False
 
-    nas "Нет. Полли сбежал... {sc}Он{/sc}, как я, испугался..."
+    nas "Нет. Полли сбежал... Он, как я, испугался..."
 
     $ click_skip_block = True
     pause 0.5
     $ click_skip_block = False
 
     window auto hide
-    show screen c1s1_vitya_bark(_("Твоего нового воображаемого друга?"), side="left", pos=(48, 120), width=820)
+    show screen c1s1_vitya_bark(_("Твоего нового воображаемого друга?"), side="left", pos=(48, 120), width=820, jitter=0.0)
     pause
     hide screen c1s1_vitya_bark
 
@@ -567,7 +609,7 @@ label chapter_1_scene_3:
     $ click_skip_block = False
 
     # nas "Мы с ним не друзья..."
-    nas "{sc}Он{/sc} мне не друг..."
+    nas "{sc=1.5:1.7}Он{/sc} мне не друг..."
 
     ## Кадр темнеет до нижней границы и замирает перед именем.
     show chapter_1 scene_3_sofa_marina:
@@ -578,7 +620,7 @@ label chapter_1_scene_3:
     $ click_skip_block = False
 
     window auto hide
-    show screen c1s1_vitya_bark(_("А кто же \"он\" тогда?"), side="left", pos=(48, 120), width=820)
+    show screen c1s1_vitya_bark(_("А кто же \"он\" тогда?"), side="left", pos=(48, 120), width=820, jitter=0.0)
     pause
     hide screen c1s1_vitya_bark
 
@@ -595,8 +637,33 @@ label chapter_1_scene_3:
     $ click_skip_block = True
     window auto hide
     pause 1.0
-    scene black with Dissolve(0.3)
-    pause 2.0
+    $ mstop(fadeout=0.2)
+    scene black with Dissolve(0.1)
+    # pause 2.0
+
+    show black behind c1s2_whisper_1
+    show prologue_head_bg behind c1s2_whisper_1:
+        truecenter
+        zoom 1.0
+        xpos 0.44 ypos 0.45
+        parallel:
+            breath_brightness(-0.17, -0.19, 1.0)
+        parallel:
+            shake_grow(3, 4.0)
+        parallel:
+            linear 26 zoom 1.43 rotate -25.0
+    with Dissolve(1.5)
+
+    $ mstop(fadeout=0.2)
+    $ c1s2_whisper_rush = True
+
+    $ sm_sfx("c1s2/c1s2_shakr_shark_shark", volume=1.7)
+
+    # pause 0.5
+
+    pause 4.5
+    # camera
+    scene black with Dissolve(2.0)
 
     camera
     $ click_skip_block = False

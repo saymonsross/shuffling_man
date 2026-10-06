@@ -207,7 +207,8 @@ image c1s1_gg_frame_2 = Fixed("chapter_1_piano", "chapter_1_piano_gg 2", xysize=
 ## текущего замка), последняя держится. pos: side "left" — левый край и центр по вертикали;
 ## "right" — правый край (кончик хвостика) и центр; "top"/"up" — центр по горизонтали и верх. При включённом Choice Placer (F7) бабл
 ## перетаскивается, pos пишется в вызов.
-screen c1s1_vitya_bark(line, side="top", pos=None, index=None, name=_("ВИТЯ"), width=1500):
+## jitter — размах дрожи бабла, px; 0 — бабл стоит.
+screen c1s1_vitya_bark(line, side="top", pos=None, index=None, name=_("ВИТЯ"), width=1500, jitter=1.0):
     zorder 60
     $ _b_key = line if isinstance(line, str) else line[0]
     $ _b_pos = _cp_bark_moved.get((side, _b_key)) or pos or {"left": (48, 300), "right": (1200, 300)}.get(side, (960, 44))
@@ -230,7 +231,7 @@ screen c1s1_vitya_bark(line, side="top", pos=None, index=None, name=_("ВИТЯ"
             ## Дрожь — на вложенном контейнере: выезд пишет те же offset снаружи.
             fixed:
                 fit_first True
-                at shake(1.0)
+                at shake(jitter)
                 use c1s1_vitya_bark_body(line, side, index, name, width)
 
 ## Реплика баблом вместо окна диалога — экран say для Character(screen="c1s1_bark_say"):
@@ -353,30 +354,30 @@ image c1s1_bark_tail_right = At(Transform(Fixed(
 
 transform c1s1_bark_in():
     on show:
-        alpha 0.0 yoffset -14
+        alpha 0.0 yoffset -7
         easeout 0.3 alpha 1.0 yoffset 0
     on hide:
-        easein 0.3 alpha 0.0 yoffset -10
+        easein 0.3 alpha 0.0 yoffset -5
 
 transform c1s1_bark_in_left():
     on show:
-        alpha 0.0 xoffset -160
+        alpha 0.0 xoffset -80
         parallel:
             linear 0.06 alpha 1.0
         parallel:
             easeout 0.5 xoffset 0
     on hide:
-        easein 0.3 alpha 0.0 xoffset -10
+        easein 0.3 alpha 0.0 xoffset -5
 
 transform c1s1_bark_in_right():
     on show:
-        alpha 0.0 xoffset 160
+        alpha 0.0 xoffset 80
         parallel:
             linear 0.2 alpha 1.0
         parallel:
             easeout 0.5 xoffset 0
     on hide:
-        easein 0.3 alpha 0.0 xoffset 10
+        easein 0.3 alpha 0.0 xoffset 5
 
 style c1s1_vitya_bark_name is default:
     font gui.dialogue_text_font

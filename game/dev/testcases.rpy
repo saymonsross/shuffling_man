@@ -405,7 +405,7 @@ testcase story_full_route:
     advance until "Вот она: охрипшая от крика" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_daughter_top_close'))
     advance until "Ну наконец-то явились! И что за дела?" timeout 10.0
-    assert eval (sprite_showed('chapter_1 scene_3_entrance_neighbor'))
+    assert eval (sprite_showed('c1s3_entrance_return') and c1s3_neighbor_in)
     advance until screen "scene_choice" timeout 10.0
     assert eval (sprite_showed('c1s3_neighbor_2'))
     click "Простите..."
