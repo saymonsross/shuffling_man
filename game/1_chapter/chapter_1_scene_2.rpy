@@ -86,7 +86,8 @@ default c1s2_crying_audio = None
 
 ## Параллакс вдвое слабее обычного (step=0.5).
 ## Слой героини с момента, когда сцена взвела c1s2_vitya_hand, за 1.5 с растворяется в
-## слой с рукой Вити на плече (FlagDissolve); остальные слои кадра не трогаются.
+## слой с рукой Вити на плече (FlagDissolve) и за те же 1.5 с перестаёт дрожать; остальные
+## слои кадра не трогаются.
 default c1s2_vitya_hand = False
 
 image chapter_1 scene_2_marina_close_face = depth_scene(
@@ -97,7 +98,7 @@ image chapter_1 scene_2_marina_close_face = depth_scene(
             At("ch1_2_mc_close_3_gg_2_tears",
                 water(flow=(455, 602), start="c1s2_tear_2", run=15.0, hold=0.0, fade=6.0, fade_to=0.5)),
             xysize=(1920, 1080)),
-        shake_grow(1.05, 20.0)),
+        shake_grow(1.05, 20.0, stop="c1s2_vitya_hand", stop_fade=1.5)),
     At("ch1_2_mc_close_3_gg_2_hands", shake_grow(1.3, 20.0))), step=0.5)
 
 ## Темнота под ладонями — планы глубины: фон, дальняя ладонь, ближняя ладонь, каждая в
@@ -109,6 +110,8 @@ default c1s2_dark_shake = False
 ## с c1s2_whisper_rush один раз еле заметно вспыхивают и гаснут вдвое быстрее.
 default c1s2_whisper_out = False
 default c1s2_whisper_rush = False
+## Тема сцены: handle нужен, чтобы увести громкость в ноль (трек крутится беззвучно) и вернуть на кухне.
+default c1s2_music_1 = None
 
 image chapter_1 scene_2_dark = depth_scene(
     At("prologue_head_bg", breath_brightness(0.02, 0.07, 8.0)),
@@ -215,7 +218,7 @@ label chapter_1_scene_2:
     $ click_skip_block = True
     camera at camera_push((0.72, 0.52), 1.0, 1.15, 25.0)
 
-    $ mplay("chapter_1/sora_chapter_start", fadein=0.0, volume=1.3, tag="chapter_1_music_1", loop=True)
+    $ c1s2_music_1 = mplay("chapter_1/sora_chapter_start", fadein=0.0, volume=1.3, tag="chapter_1_music_1", loop=True)
 
     pause 1.5
 
@@ -237,7 +240,7 @@ label chapter_1_scene_2:
     $ sm_sfx("c1s2/c1s2_footsteps")
     $ click_skip_block = True
     window auto hide
-    pause 1.5
+    pause 1.3
     $ click_skip_block = False
 
     vit "Доброе утро... А, ой, сейчас уже три часа дня!"
@@ -260,7 +263,7 @@ label chapter_1_scene_2:
     vit "Просто бери пример с меня. Сделай над собой усилие..."
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
     $ click_skip_block = False
 
     "Я много раз предлагала мужу сходить к семейному психологу, но он, как типичный мужик, боялся терапии, словно огня. Смешно!"
@@ -305,7 +308,7 @@ label chapter_1_scene_2:
     mar "Это нелепо..."
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
 
     ## ▶ Срывается на крик — орущая поза встаёт с первой буквой реплики и через 1.5 с
     ## уходит сама. Кадр крика до флага выглядит как поза 1: подмена незаметна.
@@ -364,7 +367,7 @@ label chapter_1_scene_2:
     $ renpy.transition(Dissolve(0.3), layer="master")
     show chapter_1 scene_2_parents_room_vitya_5
 
-    $ mstop(tag="chapter_1_music_1", fadeout=120.2)
+    $ sm_audio_set_volume(c1s2_music_1, 0.0, delay=120.2)
 
     $ click_skip_block = False
     vit "Какой?!"
@@ -492,7 +495,7 @@ label chapter_1_scene_2:
             linear 26 zoom 1.43 rotate -25.0
     with Dissolve(1.5)
 
-    $ mstop(fadeout=0.2)
+    $ mstop(tag="chapter_1_music_2", fadeout=0.2)
     $ c1s2_whisper_rush = True
 
     pause 0.5
@@ -513,6 +516,7 @@ label chapter_1_scene_2:
 
     $ click_skip_block = False
     vit "Ладно, пойдём поедим. Я состряпаю чего-нибудь."
+    $ sm_audio_set_volume(c1s2_music_1, 1.3, delay=10.0)
     mar "Л-ладно..."
 
     # ## ══════════ КАДР 8 · КУХНЯ ══════════
@@ -578,6 +582,8 @@ label .sandwiches:
     $ click_skip_block = True
     pause 0.8
     $ click_skip_block = False
+
+    $ mstop(fadeout=7.2)
 
     $ c1s2_bite_delay = renpy.random.uniform(0.6, 2.4)
     $ c1s2_bite += 1

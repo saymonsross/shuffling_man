@@ -1016,7 +1016,16 @@ label .after_locks:
     if c1s1_locks_outcome == "timeout":
         $ c1s1_locks_outcome = "normal"
 
-    $ mplay("chapter_1/after_lock_game", fadein=0.5, fadeout=5.5, loop=True)
+    $ mplay("chapter_1/after_lock_game", fadein=1.0, fadeout=5.5, loop=True)
+
+    scene black with Dissolve(3.0)
+
+    pause 0.3
+
+    $ quick_menu = True
+    "Часто Витя бывал просто невыносим."
+
+    pause 0.5
 
     ## ══════════ КАДР 6 · ВИТЯ В ДВЕРЯХ ══════════
     ## Открыла быстро — мягкое растворение и медленный наезд на лицо. Возилась — склейка
@@ -1029,13 +1038,13 @@ label .after_locks:
         camera at camera_push((0.47, 0.30), 1.00, 1.05, 26.0)
         scene chapter_1 scene_1_vitya_door:
             breath_brightness(-0.02, -0.06, 6.0)
-        with Dissolve(1.5)
+        with Dissolve(2.5)
     else:
         camera at camera_settle((0.47, 0.30), 1.00, 1.05, 21.2)
         scene chapter_1 scene_1_vitya_door:
             breath_brightness(-0.02, -0.06, 6.0)
-        with Dissolve(0.3)
-    $ quick_menu = True
+        with Dissolve(2.5)
+    
     $ click_skip_block = False
 
     if c1s1_locks_outcome == "fast":
@@ -1068,7 +1077,7 @@ label .after_locks:
     pause 0.5
     $ click_skip_block = False
 
-    "Часто Витя бывал просто невыносим."
+    
     "Ничего серьёзного: какие-то банальности, быт..."
     
     # "Раньше мне хватало сил их не замечать. Терпеть."
@@ -1131,7 +1140,7 @@ label .tv:
     # ты в магазин зашёл?"
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.6
     $ click_skip_block = False
 
     vit "Всё потом, Марин!"
@@ -1176,14 +1185,14 @@ label .tv_dialogue:
     # "...пока не стало слишком поздно."
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
     $ click_skip_block = False
 
     vit "Кошмар какой... слышала?"
     vit "Как хорошо, что у нас всё в порядке."
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
 
 ## Уборка; отдельный вход каталога сцен.
 
@@ -1269,7 +1278,7 @@ label .cleanup:
     ## ветки сходятся на штанге, пропуск проходит меню насквозь. Кнопки разбросаны по
     ## тёмным местам кадра; двигать — Choice Placer (F7).
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
     $ click_skip_block = False
     if not renpy.is_skipping():
         menu(screen="scene_choice", follow=follow_camera(), drift=True, skippable=True):
@@ -1277,26 +1286,26 @@ label .cleanup:
                 pause 0.5
                 mar "Я хотела обсудить кое-что..."
                 $ click_skip_block = True
-                pause 1.0
+                pause 0.8
                 $ click_skip_block = False
                 vit "Да погоди, Марин! Если наши сейчас не забьют, то..."
             "Как игра?" (pos=(1045, 378), size=(330, 165)):
                 pause 0.5
                 mar "Наши выигрывают?"
                 $ click_skip_block = True
-                pause 1.0
+                pause 0.8
                 $ click_skip_block = False
                 vit "Да какой там! Если сейчас не забьют, то всё!.."
             "Скоро закончишь?" (pos=(781, 624), size=(330, 165)):
                 pause 0.5
                 mar "Долго до конца матча?"
                 $ click_skip_block = True
-                pause 1.0
+                pause 0.8
                 $ click_skip_block = False
                 vit "Сейчас уже всё решится. Пан или пропал. Гол или..."
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
     $ click_skip_block = False
 
     ## Голос из телевизора — баблом у экрана, хвостиком к нему; ждёт клика.
@@ -1307,7 +1316,7 @@ label .cleanup:
     window auto
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
     $ click_skip_block = False
 
     vit "Вершинин, ну какой же ты кривоногий! Нет слов! Марин, ты это видела?"
@@ -1322,7 +1331,7 @@ label .cleanup:
     # mar "Но мы договаривались!"
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
 
     ## ══════════ КАДР 13 · ЭКРАН ══════════
     ## Наезд на экран: Витя смотрит в него, не на Марину. Идёт тот же футбол; рука с пультом
@@ -1334,7 +1343,7 @@ label .cleanup:
     with Dissolve(1.5)
     show c1s1_tv_hand_night at c1s1_tv_hand_motion, float_drift((5.0, 4.0), speed=1.0, side=(-1, 1)), parallax_plane(1.0), breath_brightness(-0.05, -0.09, 6.0)
     
-    pause 1.0
+    pause 0.8
     $ click_skip_block = False
 
     vit "Не могу дальше на это смотреть..."
@@ -1352,9 +1361,9 @@ label .cleanup:
     ## громкость выше на столько же; затихает вместе с затемнением в конце сцены.
     $ sfxstop(tag="c1s1_football", fadeout=0.15)
     $ sm_audio_set_pan(sfxplay("c1s1/c1s1_konan_tv", fadein=0.3, tag="c1s1_konan", volume=0.16), 0.1)
-    pause 1.0
+    pause 0.8
     hide c1s1_tv_hand_night
-    pause 1.0
+    pause 0.8
     $ click_skip_block = False
 
     ## Второй заход Марины — три темы, и все сводятся к его «завтра». Затем — запись к
@@ -1366,7 +1375,7 @@ label .cleanup:
                 pause 0.5
                 mar "Почему так сложно не разбрасывать грязные вонючие носки по всей квартире?"
                 $ click_skip_block = True
-                pause 1.0
+                pause 0.8
                 $ click_skip_block = False
                 vit "Опять ты про эти мелочи. Ну, не мешают же эти носки. Дорогу не перегораживают."
                 vit "Мне после работы иногда ложку до рта нормально не донести."
@@ -1375,7 +1384,7 @@ label .cleanup:
                 pause 0.5
                 mar "Как у тебя на работе дела? Ничего не рассказываешь..."
                 $ click_skip_block = True
-                pause 1.0
+                pause 0.8
                 $ click_skip_block = False
                 vit "Да завал полный. В отпуск не отпускают, угрожают сокращениями."
                 vit "Но ты не переживай, у нас всё нормально будет."
@@ -1383,19 +1392,19 @@ label .cleanup:
                 pause 0.5
                 mar "Ты помнишь? Тамара Виталиевна ждёт нас троих завтра..."
                 $ click_skip_block = True
-                pause 1.0
+                pause 0.8
                 $ click_skip_block = False
                 vit "Завтра не получится. Прости."
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
     $ click_skip_block = False
 
     vit "Завтра мне надо с коллегами встретиться."
     vit "Так что с Тамарой как-нибудь в следующий раз..."
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
     $ click_skip_block = False
 
     if not renpy.is_skipping():
@@ -1404,14 +1413,14 @@ label .cleanup:
                 pause 0.5
                 mar "Это уже четвёртая отмена! Тамара Виталиевна..."
                 $ click_skip_block = True
-                pause 1.0
+                pause 0.8
                 $ click_skip_block = False
                 vit "Тамара Виталиевна потерпит! Она очень хорошо получает за каждый приём."
             "Понятно" (pos=(442, 478), size=(330, 165)):
                 pause 0.5
                 mar "Понятно..."
                 $ click_skip_block = True
-                pause 1.0
+                pause 0.8
                 $ click_skip_block = False
                 vit "Что тебе понятно?! Ну не могу я шляться с тобой по твоим подружкам."
             "Достал!" (pos=(541, 662), size=(330, 165)):
@@ -1420,7 +1429,7 @@ label .cleanup:
                 mar "Что ты скажешь теперь? \"Это мелочь, Марин, просто запишемся ещё раз\"?!"
 
     $ click_skip_block = True
-    pause 1.0
+    pause 0.8
     $ click_skip_block = False
 
     vit "У меня есть и другие дела, понятно?! Помимо собственной работы и этих твоих \"терапий\"!"
@@ -1431,57 +1440,10 @@ label .cleanup:
     vit "Возьми себя уже в руки!"
 
     $ click_skip_block = True
-    pause 1.0
-
-    ## ══════════ КАДР 14 · ССОРА ══════════
-    ## Кадр растворяется под окном диалога (show, не scene; переход — renpy.transition по
-    ## слою master: оператор with спрятал бы окно). Камера входит крупно и плавно оседает;
-    ## каждый следующий наезд начинается с зума, на котором кончился предыдущий, — без
-    ## рывков.
-    # $ renpy.transition(Dissolve(0.6), layer="master")
-    # camera at camera_settle((0.40, 0.38), 1.0, 1.08, 31.2)
-    # show chapter_1 scene_1_vitya_sofa:
-    #     breath_brightness(-0.05, -0.09, 6.0)
-    # ## Пауза не короче перехода: иначе он оборвётся.
-
-    # $ click_skip_block = False
-
-    # vit "Не ори!"
-
-    # $ click_skip_block = True
-    # pause 0.7
-    # $ click_skip_block = False
-
-    # mar "Сам не ори!"
-
-    # # $ click_skip_block = True
-    # # pause 0.5
-    # # $ click_skip_block = False
-
-    # # "Скандалишь, наконец. Но тебя не слышат."
-    # # "Как жэ это выводило меня из себя."
-
-    # $ click_skip_block = True
-    # pause 1.0
-    # $ click_skip_block = False
-
-    # vit "Марин, ну ты опять начинаешь?!"
-
-    # $ click_skip_block = True
-    # pause 1.0
-    # $ click_skip_block = False
-
-    # ## Кадр темнеет до нижней границы и замирает.
-    # show chapter_1 scene_1_tv_close_night:
-    #     brightness_to(-0.09, 4.0)
-
-    # "И так по кругу. Снова и снова..."
-
-    # $ click_skip_block = True
-    # pause 1.0
-    # $ click_skip_block = False
+    pause 0.8
 
     $ click_skip_block = False
+    "{cps=5}...{/cps}"
     "Кто-то из мудрых сказал, что залог счастливого супружества — взаимные компромиссы."
     "Но, боюсь... за все восемь лет брака, я поняла, что одних компромиссов мало."
 

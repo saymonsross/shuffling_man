@@ -313,7 +313,7 @@ label .letter:
                     hovered=SetVariable("note_hover_pencil", True),
                     unhovered=SetVariable("note_hover_pencil", False)):
                 ## Тишина в очереди канала отодвигает звук от клика, не задерживая сцену.
-                $ sm_audio_play(("<silence 0.5>", "audio/sfx/prologue/pencil_grab.ogg"), overlap=True)
+                $ sm_audio_play(("<silence 0.5>", "audio/sfx/prologue/pencil_grab.ogg"), volume=0.7, overlap=True)
             with Dissolve(0.2)
 
     ## После закрытия экрана unhovered не вызывается.

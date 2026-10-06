@@ -39,21 +39,26 @@ transform shake(power=1.5):
 
 init -10 python:
 
-    def _shake_grow_f(power, t, start, delay, trans, st, at):
+    def _shake_grow_f(power, t, start, delay, stop, stop_fade, trans, st, at):
         since = st if start is None else fx_flag_time("shake_grow", start)
         if since is not None:
             since -= delay
         k = 0.0 if since is None or since <= 0.0 else (1.0 if t <= 0.0 else min(1.0, since / t))
+        if stop is not None:
+            gone = fx_flag_time("shake_grow_stop", stop)
+            if gone is not None:
+                k *= 0.0 if stop_fade <= 0.0 else max(0.0, 1.0 - gone / stop_fade)
         return _shake_f(power * k, trans, st, at)
 
 ## Нарастающая дрожь: размах растёт от нуля до power px за t секунд и дальше держится.
 ## Отсчёт — с момента показа; start — имя store-флага: дрожи нет, пока сцена его не взвела.
 ## С флагом трансформ ставится в ATL кадра заранее отдельным parallel: новый show … с ATL
 ## посреди кадра оборвал бы его остальные анимации. delay — секунды покоя перед ростом.
-transform shake_grow(power=1.5, t=10.0, start=None, delay=0.0):
+## stop — имя store-флага: как только сцена его взвела, дрожь сходит на нет за stop_fade секунд.
+transform shake_grow(power=1.5, t=10.0, start=None, delay=0.0, stop=None, stop_fade=0.0):
     subpixel True
     xoffset 0.0 yoffset 0.0
-    function renpy.curry(_shake_grow_f)(power, t, start, delay)
+    function renpy.curry(_shake_grow_f)(power, t, start, delay, stop, stop_fade)
 
 init -10 python:
 
