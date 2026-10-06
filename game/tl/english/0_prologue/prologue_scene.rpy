@@ -98,7 +98,7 @@ translate english prologue_scene_letter_90227cc0:
 translate english prologue_scene_letter_45761eda:
 
     # "{sc=1.3:2.5}Рвало.{/sc}"
-    "{sc=1.3:2.5}Vomiting.{/sc}"
+    "{sc=1.3:2.5}I was throwing up.{/sc}"
 
 # game/0_prologue/prologue_scene.rpy:228
 translate english prologue_scene_letter_f829124d:

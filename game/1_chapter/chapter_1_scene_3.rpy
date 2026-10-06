@@ -168,7 +168,9 @@ default c1s3_neighbor_in = False
 image c1s3_entrance_return = FlagDissolve("chapter_1 scene_3_entrance", "chapter_1 scene_3_entrance_neighbor",
     "c1s3_neighbor_in", 0.0, fade=0.5)
 
+## Что Марина сказала про мишку (None — сразу спросила про Полли); вопрос про Полли задан.
 default c1s3_teaparty_choice = None
+default c1s3_polly_asked = False
 default c1s3_sad_shake = False
 ## Плач Насти (c1s1_nast_cry_step_2); handle нужен, чтобы остановить его на возвращении.
 default c1s3_cry_audio = None
@@ -198,7 +200,7 @@ label chapter_1_scene_3:
     camera at camera_push((0.5, 0.5), 1.00, 1.13, 30.0)
     scene black with Dissolve(3.0)
 
-    $ mplay("chapter_1/c1_last_scene_thene", volume=0.9, fadein=0.0, tag="chapter_1_music_3")
+    $ mplay("chapter_1/c1_last_scene_thene", volume=1.05, fadein=0.0, tag="chapter_1_music_3")
     scene chapter_1 scene_3_children_room_floor:
         parallel:
             breath_brightness(-0.03, -0.08, 6.0)
@@ -239,7 +241,7 @@ label chapter_1_scene_3:
     $ click_skip_block = True
     window auto hide
     ## Шорох бумаги — новый рисунок прижимают к дверце.
-    $ sm_sfx("c1s3/c1s3_fridge_paper", volume=0.3)
+    $ sm_sfx("c1s3/c1s3_fridge_paper", volume=0.4)
     scene chapter_1 scene_3_fridge_new_drawing:
         parallel:
             fade_brightness(0.0, -0.09, 8.0)
@@ -283,36 +285,38 @@ label chapter_1_scene_3:
     with Dissolve(1.0)
     $ click_skip_block = False
 
-    ## Выбор влияет на дальнейшее — меню ждёт игрока и при пропуске. Кнопки разбросаны по
-    ## кадру; двигать — Choice Placer (F7).
-    menu(screen="scene_choice", follow=follow_camera(), drift=True):
-        "Очаровашка!" (pos=(309, 160), size=(330, 165)):
-            pause 0.5
-            $ c1s3_teaparty_choice = "charming"
-            mar "Очень милый медведь! А какие манеры!"
-            pause 0.5
-            nas "А то! Выпускник Лесной академии!"
+    ## Выбор влияет на дальнейшее — меню ждёт игрока и при пропуске. Три пункта — про мишку:
+    ## после любого из них выбор возвращается с одним «А где Полли?»; он ведёт дальше.
+    ## Кнопки разбросаны по кадру; двигать — Choice Placer (F7).
+    while not c1s3_polly_asked:
+        menu(screen="scene_choice", follow=follow_camera(), drift=True):
+            "Очаровашка!" (pos=(309, 160), size=(330, 165)) if c1s3_teaparty_choice is None:
+                pause 0.5
+                $ c1s3_teaparty_choice = "charming"
+                mar "Очень милый медведь! А какие манеры!"
+                pause 0.5
+                nas "А то! Выпускник Лесной академии!"
 
-        "Зануда!" (pos=(608, 382), size=(330, 165)):
-            pause 0.5
-            $ c1s3_teaparty_choice = "boring"
-            mar "Его лекция о мёдоведении была совершенно ни к месту!"
-            pause 0.5
-            nas "Он очень гордится своей научной... Штукой!"
+            "Зануда!" (pos=(608, 382), size=(330, 165)) if c1s3_teaparty_choice is None:
+                pause 0.5
+                $ c1s3_teaparty_choice = "boring"
+                mar "Его лекция о мёдоведении была совершенно ни к месту!"
+                pause 0.5
+                nas "Он очень гордится своей научной... Штукой!"
 
-        "Странный!" (pos=(328, 580), size=(330, 165)):
-            pause 0.5
-            $ c1s3_teaparty_choice = "strange"
-            mar "Кажется, он помешан на еловых шишках..."
-            pause 0.5
-            nas "В лесу нет конфеток! Вот и приходится шишками чай закусывать..."
+            "Странный!" (pos=(328, 580), size=(330, 165)) if c1s3_teaparty_choice is None:
+                pause 0.5
+                $ c1s3_teaparty_choice = "strange"
+                mar "Кажется, он помешан на еловых шишках..."
+                pause 0.5
+                nas "В лесу нет конфеток! Вот и приходится шишками чай закусывать..."
 
-        "А где Полли?" (pos=(1052, 478), size=(330, 165)):
-            pause 0.5
-            $ c1s3_teaparty_choice = "where_is_polly"
-            mar "Я стеснялась спросить! А где Полли?"
-            pause 0.5
-            nas "Он испугался и сбежал... Трусишка!"
+            "А где Полли?" (pos=(1052, 478), size=(330, 165)):
+                pause 0.5
+                $ c1s3_polly_asked = True
+                mar "Я стеснялась спросить! А где Полли?"
+                pause 0.5
+                nas "Он испугался и сбежал... Трусишка!"
 
     pause 1.0
 
@@ -327,20 +331,20 @@ label chapter_1_scene_3:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(3.0)
 
-    $ mplay("chapter_1/sora_suspense_chapter_1_2.ogg", volume=0.9, fadein=47.0, tag="chapter_1_music_3_suspence")
+    $ mplay("chapter_1/sora_suspense_chapter_1_2.ogg", volume=1.05, fadein=47.0, tag="chapter_1_music_3_suspence")
 
     ## Настя мрачнеет: лицо перетекает в грустное, слеза пошла.
     $ c1s3_nast_saddens = True
-    pause 3.0
+    pause 3.5
 
     ## ══════════ КАДР 6 · ИСТЕРИКА ══════════
     ## Крик — show тем же тегом, не scene: слой не очищается. Камера продолжает наезд
     ## прошлого кадра; Настя в образе наезжает ещё и сама, отдельно от комнаты.
     show chapter_1 scene_3_children_room_girl_crying:
         breath_brightness(-0.04, -0.09, 6.0)
-    with Dissolve(0.5)
+    with Dissolve(0.3)
     $ click_skip_block = False
-    $ sm_sfx("c1s1/c1s1_nast_cry_step_1", tag="c1s3_cry")
+    $ sm_sfx("c1s1/c1s1_nast_cry_step_1", volume=1.1, tag="c1s3_cry")
     nas "{sc=1.5:3.6}НЕТ!{/sc}"
     nas "{sc=1.5:3.6}НЕ УХОДИ!{/sc}"
 
@@ -354,7 +358,7 @@ label chapter_1_scene_3:
     pause 0.6
     $ click_skip_block = False
 
-    $ sm_sfx("c1s1/c1s1_nast_cry_step_1", tag="c1s3_cry_2")
+    $ sm_sfx("c1s1/c1s1_nast_cry_step_1", volume=1.1, tag="c1s3_cry_2")
     nas "{cps=15}{sc=1.5:3.6}ПОЖАЛУЙСТА-А-А!{/sc}{/cps}"
     $ c1s3_sad_shake = False
 
@@ -424,7 +428,7 @@ label chapter_1_scene_3:
     $ click_skip_block = True
     window auto hide
     camera
-    $ c1s3_cry_audio = sm_sfx("c1s1/c1s1_nast_cry_step_2", tag="c1s3_cry", loop=True)
+    $ c1s3_cry_audio = sm_sfx("c1s1/c1s1_nast_cry_step_2", volume=1.1, tag="c1s3_cry", loop=True)
     $ sm_audio_set_filter(c1s3_cry_audio, c1s3_cry_reverb(), duration=0)
     scene chapter_1 scene_3_daughter_top_close:
         breath_brightness(-0.04, -0.09, 6.0)
@@ -466,7 +470,7 @@ label chapter_1_scene_3:
     show glow_oval_on_dark as c1s3_lamp_glow zorder 5 at lamp_glow((990, 80), (560, 260), lo=0.22, hi=0.45, t=3.0, flick=0.4)
     show c1s3_sfx_cue:
         pause 1.4
-        function renpy.curry(sm_sfx_f)("c1s1/c1s1_kipish_2", 1.5)
+        function renpy.curry(sm_sfx_f)("c1s1/c1s1_kipish_2", 1.6)
     with Dissolve(2.0)
     $ click_skip_block = False
 
@@ -484,7 +488,7 @@ label chapter_1_scene_3:
     ## притопами (c1s3_neighbor_2_enter). Встала — ещё 0.5 с, и заговорила.
     $ click_skip_block = True
     window auto hide
-    $ sm_sfx("c1s1/2_netrence_sosedka_footsteps", volume=0.8)
+    $ sm_sfx("c1s1/2_netrence_sosedka_footsteps", volume=0.9)
     show c1s3_neighbor_2 at c1s3_neighbor_2_enter, breath_brightness(-0.04, -0.09, 6.0)
     pause 2.0
     $ click_skip_block = False
@@ -549,10 +553,10 @@ label chapter_1_scene_3:
     $ click_skip_block = True
     window auto hide
     $ c1s3_marina_turned = True
-    camera at camera_retarget((0.33, 0.36), 1.25, 40.0, sm_camera_snapshot(), blend=3.0)
+    camera at camera_retarget((0.33, 0.36), 1.29, 40.0, sm_camera_snapshot(), blend=3.0)
     $ click_skip_block = False
 
-    $ mplay("chapter_1/sora_suspense_chapter_1_last_suspence.ogg", volume=0.25, fadein=25.0, loop=False, tag="chapter_1_music_4_suspence")
+    $ mplay("chapter_1/sora_suspense_chapter_1_last_suspence.ogg", volume=0.4, fadein=25.0, loop=False, tag="chapter_1_music_4_suspence")
     nas "{sc=1.5:1.7}Он{/sc} приходит, когда дома становится слишком тихо..." (callback=talk_callback("nas", drop=2))
 
     pause 0.5
@@ -586,8 +590,11 @@ label chapter_1_scene_3:
     vit "А кто же \"он\" тогда?"
 
     $ click_skip_block = True
-    pause 1.0
+    pause 2.0
     ## Настя поднимает взгляд на нас — только здесь.
+    $ mstop(fadeout=0.2)
+    ## Скрежет струны — на взгляде Насти.
+    $ sm_sfx("c1s1/c1s2_string_screech", volume=0.2)
     $ c1s3_nast_sees = True
     pause 1.0
     $ click_skip_block = False
@@ -598,10 +605,10 @@ label chapter_1_scene_3:
     $ click_skip_block = True
     window auto hide
     pause 1.0
-    $ mstop(fadeout=0.2)
+    
     scene black with Dissolve(0.1)
     # pause 2.0
-
+    $ sm_sfx("c1s2/c1s2_shakr_shark_shark", volume=1.7)
     show black behind c1s2_whisper_1
     show prologue_head_bg behind c1s2_whisper_1:
         truecenter
@@ -618,7 +625,7 @@ label chapter_1_scene_3:
     $ mstop(fadeout=0.2)
     $ c1s2_whisper_rush = True
 
-    $ sm_sfx("c1s2/c1s2_shakr_shark_shark", volume=1.7)
+    
 
     # pause 0.5
 

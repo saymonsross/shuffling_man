@@ -293,6 +293,9 @@ testcase c1s3_apologize_branch:
     assert "А где Полли?"
     click "Очаровашка!"
     advance until screen "scene_choice" timeout 30.0
+    assert "А где Полли?"
+    click "А где Полли?"
+    advance until screen "scene_choice" timeout 30.0
     assert "Простите..."
     assert "Заткнитесь!"
     assert eval (sprite_showed('c1s3_neighbor_2'))
@@ -317,7 +320,7 @@ testcase c1s3_confront_branch:
     click "Заткнитесь!"
     advance until "Какое право они имели нравоучать нас?!" timeout 10.0
     advance until "Пусть лучше приглядывают за своими детьми, болтающимися без дела по двору, как оборванцы." timeout 5.0
-    assert eval (c1s3_teaparty_choice == 'where_is_polly')
+    assert eval (c1s3_teaparty_choice is None and c1s3_polly_asked)
     assert eval (c1s3_neighbor_choice == 'confront')
     advance until "Шаркающий человек." timeout 30.0
 
@@ -392,6 +395,8 @@ testcase story_full_route:
     assert "Его лекция о мёдоведении была совершенно ни к месту!" timeout 10.0
     assert eval (c1s3_teaparty_choice == 'boring')
     advance until "Он очень гордится своей научной... Штукой!" timeout 10.0
+    advance until screen "scene_choice" timeout 10.0
+    click "А где Полли?"
     advance until "Я пойду встречу папу с работы. Посиди, пока..." timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_children_room_girl_sad'))
     advance until "НЕТ!" timeout 10.0

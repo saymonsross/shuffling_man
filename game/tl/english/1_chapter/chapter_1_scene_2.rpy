@@ -8,7 +8,7 @@ translate english chapter_1_scene_2_d51e1152:
 translate english chapter_1_scene_2_ee399c51:
 
     # "Циклические депрессии, стоившие мне столько нервов и седых волос, он вообще не признавал настоящей болезнью."
-    "The recurring depressions, which had cost me so many nerves and gray hairs, he did not even recognize as a real illness."
+    "The recurring depressions, which had cost me so much grief and so many gray hairs, he did not even recognize as a real illness."
 
 # game/1_chapter/chapter_1_scene_2.rpy:242
 translate english chapter_1_scene_2_47a86c4d:
@@ -134,7 +134,7 @@ translate english chapter_1_scene_2_d46af8f8:
 translate english chapter_1_scene_2_ef0104e7:
 
     # vit "Я тяну наше семейство, как могу. За всё плачу, всё покупаю, всё дома есть."
-    vit "I carry this family as best I can. I pay for everything, I buy everything, the house has everything."
+    vit "I carry this family as best I can. I pay for everything, I buy everything, we have everything at home."
 
 # game/1_chapter/chapter_1_scene_2.rpy:395
 translate english chapter_1_scene_2_a9a8618c:
@@ -224,7 +224,7 @@ translate english chapter_1_scene_2_sandwiches_1e75172c:
 translate english chapter_1_scene_2_sandwiches_cf5ae7f6:
 
     # "Все ведь притворяются. Почему мы не могли?.."
-    "Everyone pretends, after all. Why couldn't we?.."
+    "Everyone pretends, after all. Why could we not...?"
 
 translate english strings:
 

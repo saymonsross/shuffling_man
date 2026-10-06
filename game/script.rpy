@@ -35,7 +35,7 @@ label start:
     scene black
     with Dissolve(0.6)
 
-    ## Dev-старт (dev/scene_navigation/dev_start.rpy): кнопка ▶ плашки главного меню.
+    ## Dev-старт (dev/scene_navigation/dev_start.rpy): кнопка ▶ блока в Dev Hub (F12) из главного меню.
     ## В дистрибутиве config.developer выключен, persistent-полей нет.
     if config.developer and renpy.game.args.command != "test" and persistent.sm_dev_start_once:
         ## Флаг гасится до проверки лейбла: иначе он пережил бы сбой и увёл «Новую игру».

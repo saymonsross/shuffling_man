@@ -460,6 +460,9 @@ init -5 python:
             return rv
 
         def render(self, width, height, st, at):
+            ## Размер — по первому кадру, не по слою: кадр шире экрана (проводка камеры)
+            ## иначе обрезался бы до 1920 и открывал край на сдвиге.
+            width, height = renpy.render(self.frames[0], width, height, st, at).get_size()
             n = max(0, min(len(self.frames) - 1, int(getattr(store, self.counter, 0) or 0)))
             if n == 0:
                 renpy.redraw(self, 1.0 / 30.0)

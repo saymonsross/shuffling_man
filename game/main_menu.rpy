@@ -18,7 +18,7 @@ label main_menu:
     $ sm_parallax_off = True
 
     ## Штатный канал music вне пула 7dots; label start гасит его при старте игры.
-    $ renpy.music.play("audio/main_menu.ogg", channel="music", if_changed=True, fadein=2.0)
+    $ renpy.music.play("audio/main_menu.ogg", channel="music", if_changed=True, fadein=2.0, relative_volume=0.8)
 
     ## Возврат из подменю через _return снова входит сюда: постановку не повторяем.
     if not renpy.showing("prologue_head_bg"):

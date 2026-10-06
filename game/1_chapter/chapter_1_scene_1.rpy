@@ -1028,7 +1028,7 @@ label .after_locks:
     if c1s1_locks_outcome == "timeout":
         $ c1s1_locks_outcome = "normal"
 
-    $ mplay("chapter_1/after_lock_game", fadein=1.0, fadeout=5.5, loop=True)
+    $ mplay("chapter_1/after_lock_game", fadein=1.0, fadeout=5.5, volume=1.1, loop=True)
 
     scene black with Dissolve(3.0)
 
@@ -1170,7 +1170,7 @@ label .tv:
     ## Шипение кинескопа — один раз, при первом включении; 0.026 — уровень исходника.
     $ sm_sfx("c1s1/c1s1_tv_hiss", volume=0.026)
     ## Сводка о пропавшем мальчике — один раз, с экрана: чуть справа, как телевизор в кадре.
-    $ sm_audio_set_pan(sm_sfx("c1s1/tv_news_malchik_lost", volume=0.65, tag="c1s1_news"), 0.1)
+    $ sm_audio_set_pan(sm_sfx("c1s1/tv_news_malchik_lost", volume=1.0, tag="c1s1_news"), 0.1)
     show chapter_1 scene_1_tv_close
     pause 0.9
     hide c1s1_tv_hand
@@ -1266,7 +1266,7 @@ label .cleanup:
     scene black with Dissolve(3.0)
     camera at camera_push((0.60, 0.38), 1.02, 1.12, 40.0)
     ## Футбол слышен чуть справа, со стороны телевизора, — пока он на экране.
-    $ sm_audio_set_pan(sfxplay("c1s1/c1s1_footbal_tv", fadein=3.0, tag="c1s1_football", volume=0.0875), 0.1)
+    $ sm_audio_set_pan(sfxplay("c1s1/c1s1_footbal_tv", fadein=3.0, tag="c1s1_football", volume=0.1), 0.1)
     show chapter_1 scene_1_sofa_tv_night:
         alpha 0.0
         parallel:
@@ -1305,7 +1305,7 @@ label .cleanup:
     ## Голос из телевизора — баблом у экрана, хвостиком к нему; ждёт клика.
     window hide
     ## Звук комментатора — с бабла, из той же точки, что трансляция (панорама).
-    $ sm_audio_set_pan(sm_sfx("c1s1/tv_sports_football", volume=0.7), 0.1)
+    $ sm_audio_set_pan(sm_sfx("c1s1/tv_sports_football", volume=0.8), 0.1)
     tvv "И!.. Это штанга! Всё! Похоже, сегодня уже не отыграться! Конец надеждам!"
     window auto
 
@@ -1352,7 +1352,7 @@ label .cleanup:
     ## Звук канала меняется вместе с картинкой. «Конан» в файле на 5 дБ тише футбола —
     ## громкость выше на столько же; затихает вместе с затемнением в конце сцены.
     $ sfxstop(tag="c1s1_football", fadeout=0.15)
-    $ sm_audio_set_pan(sfxplay("c1s1/c1s1_konan_tv", fadein=0.3, tag="c1s1_konan", volume=0.16), 0.1)
+    $ sm_audio_set_pan(sfxplay("c1s1/c1s1_konan_tv", fadein=0.3, tag="c1s1_konan", volume=0.19), 0.1)
     pause 0.8
     hide c1s1_tv_hand_night
     pause 0.8

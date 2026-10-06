@@ -20,7 +20,7 @@ translate english chapter_1_scene_1_after_locks_2ed7ee87:
 translate english chapter_1_scene_1_after_locks_b9306f19:
 
     # vit "Не прошло и полгода!.."
-    vit "Took you long enough!.."
+    vit "Took you long enough!"
 
 # game/1_chapter/chapter_1_scene_1.rpy:1075
 translate english chapter_1_scene_1_after_locks_4e094c73:
@@ -32,7 +32,7 @@ translate english chapter_1_scene_1_after_locks_4e094c73:
 translate english chapter_1_scene_1_after_locks_ab2d7b11:
 
     # "Ничего серьёзного: какие-то банальности, быт..."
-    "Nothing serious: some banalities, everyday life..."
+    "Nothing serious: trivial things, everyday life..."
 
 # game/1_chapter/chapter_1_scene_1.rpy:1112
 translate english chapter_1_scene_1_after_locks_9775261f:
@@ -170,7 +170,7 @@ translate english chapter_1_scene_1_cleanup_d4ff92f2:
 translate english chapter_1_scene_1_cleanup_6a8ed444:
 
     # vit "Да какой там! Если сейчас не забьют, то всё!.."
-    vit "Fat chance! If they don't score now, it's over!.."
+    vit "Fat chance! If they don't score now, it's over!"
 
 # game/1_chapter/chapter_1_scene_1.rpy:1299
 translate english chapter_1_scene_1_cleanup_c97a377d:
@@ -188,7 +188,7 @@ translate english chapter_1_scene_1_cleanup_947f8cc2:
 translate english chapter_1_scene_1_cleanup_e01f20f9:
 
     # tvv "И!.. Это штанга! Всё! Похоже, сегодня уже не отыграться! Конец надеждам!"
-    tvv "And!.. It's the post! That's it! Looks like there's no coming back tonight! Hopes dashed!"
+    tvv "And... It's the post! That's it! Looks like there's no coming back tonight! Hopes dashed!"
 
 # game/1_chapter/chapter_1_scene_1.rpy:1314
 translate english chapter_1_scene_1_cleanup_9510c7da:
@@ -218,7 +218,7 @@ translate english chapter_1_scene_1_cleanup_b04060a7:
 translate english chapter_1_scene_1_cleanup_8c9016b8:
 
     # vit "Опять ты про эти мелочи. Ну, не мешают же эти носки. Дорогу не перегораживают."
-    vit "There you go about the small stuff again. The socks aren't bothering anyone. They're not blocking the way."
+    vit "There you go again with the small stuff. The socks aren't bothering anyone. They're not blocking the way."
 
 # game/1_chapter/chapter_1_scene_1.rpy:1371
 translate english chapter_1_scene_1_cleanup_a3cd4ea2:

@@ -213,6 +213,11 @@ screen dev_hub():
                 style "dev_hub_card"
                 add DynamicDisplayable(dev_hub_status_dd)
 
+            ## Из главного меню: старт с выбранной сцены (dev/scene_navigation/dev_start.rpy).
+            if main_menu and renpy.has_screen("dev_start_panel"):
+                use dev_start_panel
+                null height 4
+
             text "ИНСТРУМЕНТЫ ПРОЕКТА" style "dev_hub_caption"
             for entry in DEV_HUB_TOOLS:
                 if not entry.get("group"):

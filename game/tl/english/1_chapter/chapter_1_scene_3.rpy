@@ -116,7 +116,7 @@ translate english chapter_1_scene_3_b0e07dcc:
 translate english chapter_1_scene_3_f6f56590:
 
     # mar "Я стеснялась спросить! А где Полли?"
-    mar "I was too shy to ask! Where is Polly?"
+    mar "I was too shy to ask! Where's Polly?"
 
 # game/1_chapter/chapter_1_scene_3.rpy:315
 translate english chapter_1_scene_3_3cd3241a:
@@ -146,7 +146,7 @@ translate english chapter_1_scene_3_ce1da431:
 translate english chapter_1_scene_3_3fd591cc:
 
     # mar "Почему?.."
-    mar "Why?.."
+    mar "Why...?"
 
 # game/1_chapter/chapter_1_scene_3.rpy:358
 translate english chapter_1_scene_3_c7d86b45:
@@ -176,7 +176,7 @@ translate english chapter_1_scene_3_0f5d0d8e:
 translate english chapter_1_scene_3_ef66ff56:
 
     # vit "Это ни в какие рамки. Ну что это за поведение, а?"
-    vit "This is beyond the pale. What kind of behavior is this, huh?"
+    vit "This is way out of line. What kind of behavior is this, huh?"
 
 # game/1_chapter/chapter_1_scene_3.rpy:441
 translate english chapter_1_scene_3_0b8156a7:
@@ -278,7 +278,7 @@ translate english chapter_1_scene_3_0904c185:
 translate english chapter_1_scene_3_8d1323f0:
 
     # "Конечно, мы ходили с дочкой к психологу."
-    "Of course, I took my daughter to a psychologist."
+    "Of course, we took our daughter to a psychologist."
 
 # game/1_chapter/chapter_1_scene_3.rpy:543
 translate english chapter_1_scene_3_db790417:
@@ -302,7 +302,7 @@ translate english chapter_1_scene_3_5d2119ee:
 translate english chapter_1_scene_3_0f96746c:
 
     # vit "Кто-кто?.. Это Полли? Или как там его..."
-    vit "Who?.. You mean Polly? Or whatever his name is..."
+    vit "Who...? You mean Polly? Or whatever his name is..."
 
 # game/1_chapter/chapter_1_scene_3.rpy:569
 translate english chapter_1_scene_3_49145ffc:
@@ -314,7 +314,7 @@ translate english chapter_1_scene_3_49145ffc:
 translate english chapter_1_scene_3_a6c842e0:
 
     # vit "Твоего нового воображаемого друга?"
-    vit "Your new imaginary friend?"
+    vit "Scared of your new imaginary friend?"
 
 # game/1_chapter/chapter_1_scene_3.rpy:578
 translate english chapter_1_scene_3_ba80c4ed:

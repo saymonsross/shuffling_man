@@ -543,7 +543,7 @@ label .sandwiches:
     window auto hide
     camera:
         parallel:
-            camera_travel((0.465, 0.50), (0.57, 0.50), 1.08, 1.12, 40.0)
+            camera_travel((0.465, 0.50), (0.62, 0.50), 1.08, 1.12, 50.0)
         parallel:
             linear 140.0 zoom 1.2
     scene chapter_1 scene_2_sandwiches:
@@ -582,7 +582,9 @@ label .sandwiches:
     pause 0.8
 
     window auto hide
-    scene black with Dissolve(2.0)
+    scene black:
+        zoom 2.0        
+    with Dissolve(2.0)
     $ fx_bloom_strength = FX_BLOOM_DEFAULT
 
     pause 0.6
