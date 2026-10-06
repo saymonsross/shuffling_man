@@ -42,8 +42,8 @@ define config.has_voice = False
 ## voice "prologue/prologue_01" → game/audio/voice/prologue/prologue_01.ogg, как у vplay.
 define config.voice_filename_format = "audio/voice/{filename}.ogg"
 
-define config.default_music_volume = 0.85
-define config.default_sfx_volume = 0.85
+define config.default_music_volume = 0.9
+define config.default_sfx_volume = 0.9
 define config.default_voice_volume = 0.85
 
 ## Трек главного меню запускает label main_menu (main_menu.rpy), а не config.main_menu_music:
