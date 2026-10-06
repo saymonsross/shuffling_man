@@ -133,9 +133,7 @@ label prologue_scene:
     show prologue head_blink
     "...вспомнить, кто ты есть."
 
-    $ click_skip_block = True
     pause 1.0
-    $ click_skip_block = False
 
     show prologue_head_bg behind prologue:
         zoom 1.0 alpha 0.0
@@ -152,19 +150,15 @@ label prologue_scene:
 
     "Я пишу эти строки не в первый раз."
 
-    $ click_skip_block = True
     pause 1.0
-    $ click_skip_block = False
 
     "Сейчас я довольно далеко от места, что называла домом."
     "Кажется, позади осталось всё, что когда-то было мне ценно."
 
-    $ click_skip_block = True
     window auto hide
 
     pause 1.0
 
-    $ click_skip_block = False
     "{cps=5}...{/cps}"
 
     # "Сейчас у меня нет дома."
@@ -186,9 +180,7 @@ label prologue_scene:
 
     "Это был не первый мой срыв, и не второй, если говорить начистоту."
 
-    $ click_skip_block = True
     pause 1.0
-    $ click_skip_block = False
 
     "Но прошлые разы не шли с этим ни в какое сравнение."
 
@@ -231,9 +223,7 @@ label .letter:
     
     # "Даже чтобы просто вспоминать произошедшее:"
 
-    $ click_skip_block = True
     pause 1.0
-    $ click_skip_block = False
 
     "{sc=1.3:2.5}Меня трясло.{/sc}"
     "{sc=1.3:2.5}Рвало.{/sc}"
@@ -292,19 +282,15 @@ label .letter:
                     "Это добрый знак."
                 with Dissolve(0.2)
 
-    $ click_skip_block = True
     window auto hide
 
     pause 0.7
 
-    $ click_skip_block = False
 
     "Обо всём случившемся невыносимо думать."
     "Но я должна излить наружу то, что пожирает меня изнутри."
 
-    $ click_skip_block = True
     pause 0.4
-    $ click_skip_block = False
 
     ## Координаты — карандаш в кадре без зума; follow_camera переносит их за камерой.
     if not renpy.is_skipping():
@@ -372,9 +358,7 @@ label .letter:
     "Я не уверена, что осмелюсь вернуться к карандашу и бумаге снова."
     # ", так что это будет спринтерский забег."
 
-    $ click_skip_block = True
     pause 1.0
-    $ click_skip_block = False
 
     "Это будет моя последняя попытка. Так сказать... спринтерский забег."
     "Я расскажу всё на одном дыхании. Здесь и сейчас."

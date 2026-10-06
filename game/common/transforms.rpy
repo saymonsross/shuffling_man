@@ -257,12 +257,17 @@ init -10 python:
         открытие кончилось и рот простоял закрытым gap секунд, пропускается — все открытия
         одинаковые. Знак препинания
         начинает новое движение. После обрыва реплики доигрывает только движение,
-        начатое до него."""
+        начатое до него. Паузы на знаках препинания и конец реплики открытие не режут:
+        движение, которое началось бы в паузе, сдвигается к её концу, а начатое —
+        доигрывает целиком."""
         import math
-        t = talk_time(who)
-        if t is None:
+        state = _fx_state.get(("talk", who))
+        if state is None or renpy.predicting():
             return None
-        state = _fx_state[("talk", who)]
+        now = _fx_frame_time()
+        t = max(0.0, now - state[0])
+        line_end = state[1] - state[0]
+        pauses = state[2]
         cut = state[4]
         rate *= _fx_state.get(("talk_line_rate", who), 1.0)
         per = max(1.0, float(fx_cfg("mouth.per_move"))) / max(rate, 0.05)
@@ -283,6 +288,14 @@ init -10 python:
         drop = _fx_state.get(("talk_line_drop", who)) or 0
         if drop:
             moves = moves[:max(0, len(moves) - drop)]
+        shifted = []
+        for g0, g1, after in moves:
+            for p0, p1 in pauses:
+                if p0 <= g0 < p1:
+                    g1 += p1 - g0
+                    g0 = p1
+            shifted.append((g0, g1, after))
+        moves = shifted
         if hold:
             kept = []
             free = -1e9
@@ -291,11 +304,12 @@ init -10 python:
                     kept.append(move)
                     free = move[0] + hold + gap
             moves = kept
+        silent = t >= line_end or any(p0 <= t < p1 for p0, p1 in pauses)
         for g0, g1, after in moves:
             if cut is not None and g0 >= cut:
-                return None
+                break
             if t < g0:
-                return 0.0
+                return None if silent else 0.0
             if hold:
                 g_open = g0 + hold
                 if t < g_open:
@@ -307,7 +321,7 @@ init -10 python:
             g_open = max(g0 + 0.05, g_open - trim)
             if t < g_open:
                 return math.sin(math.pi * (t - g0) / max(g_open - g0, 1e-3))
-        return 0.0 if cut is None else None
+        return None if (silent or cut is not None) else 0.0
 
     class TalkFrames(renpy.Displayable):
         """Покадровая речь: пока персонаж who говорит, кадры closed и opened меняются по

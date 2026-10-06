@@ -110,8 +110,6 @@ default c1s2_dark_shake = False
 ## с c1s2_whisper_rush один раз еле заметно вспыхивают и гаснут вдвое быстрее.
 default c1s2_whisper_out = False
 default c1s2_whisper_rush = False
-## Тема сцены: handle нужен, чтобы увести громкость в ноль (трек крутится беззвучно) и вернуть на кухне.
-default c1s2_music_1 = None
 
 image chapter_1 scene_2_dark = depth_scene(
     At("prologue_head_bg", breath_brightness(0.02, 0.07, 8.0)),
@@ -218,7 +216,7 @@ label chapter_1_scene_2:
     $ click_skip_block = True
     camera at camera_push((0.72, 0.52), 1.0, 1.15, 25.0)
 
-    $ c1s2_music_1 = mplay("chapter_1/sora_chapter_start", fadein=0.0, volume=1.3, tag="chapter_1_music_1", loop=True)
+    $ mplay("chapter_1/sora_chapter_start", fadein=0.0, volume=1.3, tag="chapter_1_music_1", loop=True)
 
     pause 1.5
 
@@ -238,10 +236,8 @@ label chapter_1_scene_2:
 
     ## Шаги Вити по коридору — на паузе перед его репликой.
     $ sm_sfx("c1s2/c1s2_footsteps")
-    $ click_skip_block = True
     window auto hide
     pause 1.3
-    $ click_skip_block = False
 
     vit "Доброе утро... А, ой, сейчас уже три часа дня!"
 
@@ -262,9 +258,7 @@ label chapter_1_scene_2:
     mar "Я не могу подняться. Извини." (callback=talk_callback("mar", drop=1))
     vit "Просто бери пример с меня. Сделай над собой усилие..."
 
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
 
     "Я много раз предлагала мужу сходить к семейному психологу, но он, как типичный мужик, боялся терапии, словно огня. Смешно!"
 
@@ -301,9 +295,7 @@ label chapter_1_scene_2:
     mar "Тамара Виталиевна говорит, что ты тоже должен прийти. Семейная терапия..."
     vit "Мне-то оно зачем? У меня-то с головой всё в порядке."
 
-    $ click_skip_block = True
     pause 0.5
-    $ click_skip_block = False
 
     mar "Это нелепо..."
 
@@ -355,9 +347,7 @@ label chapter_1_scene_2:
     $ click_skip_block = False
     vit "Тамара не помогает! Не знал, что на болтовню с подружкой можно сжечь столько денег..."
 
-    $ click_skip_block = True
     pause 0.5
-    $ click_skip_block = False
 
     mar "Витя, это терапия... У меня есть диагноз."
 
@@ -367,7 +357,7 @@ label chapter_1_scene_2:
     $ renpy.transition(Dissolve(0.3), layer="master")
     show chapter_1 scene_2_parents_room_vitya_5
 
-    $ sm_audio_set_volume(c1s2_music_1, 0.0, delay=120.2)
+    $ mstop(tag="chapter_1_music_1", fadeout=120.2)
 
     $ click_skip_block = False
     vit "Какой?!"
@@ -398,9 +388,7 @@ label chapter_1_scene_2:
     $ c1s2_tear_2 = True
     "Трещина между нами росла, дна не видно..."
 
-    $ click_skip_block = True
     pause 0.5
-    $ click_skip_block = False
 
     vit "Какой пример ты подаёшь Насте?"
     vit "Я тяну наше семейство, как могу. За всё плачу, всё покупаю, всё дома есть."
@@ -495,7 +483,7 @@ label chapter_1_scene_2:
             linear 26 zoom 1.43 rotate -25.0
     with Dissolve(1.5)
 
-    $ mstop(tag="chapter_1_music_2", fadeout=0.2)
+    $ mstop(fadeout=0.2)
     $ c1s2_whisper_rush = True
 
     pause 0.5
@@ -516,7 +504,12 @@ label chapter_1_scene_2:
 
     $ click_skip_block = False
     vit "Ладно, пойдём поедим. Я состряпаю чего-нибудь."
-    $ sm_audio_set_volume(c1s2_music_1, 1.3, delay=10.0)
+
+    ## Тема финала сцены — без fadein; гасит её общий mstop перед последней репликой бутербродов.
+    $ mplay("chapter_1/after_sora_sound", fadein=0.0, tag="chapter_1_music_after_sora", loop=True)
+
+    pause 0.5
+
     mar "Л-ладно..."
 
     # ## ══════════ КАДР 8 · КУХНЯ ══════════
@@ -561,27 +554,21 @@ label .sandwiches:
     "Наш брак давно был не идеален, понимала ли я это? Не совсем."
     "После каждого такого скандала я старалась притворяться, подыгрывать."
 
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
 
     $ c1s2_bite_delay = renpy.random.uniform(0.6, 2.4)
     $ c1s2_bite += 1
     "Для него, для Настеньки..."
     "...для себя."
 
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
 
     $ c1s2_bite_delay = renpy.random.uniform(0.6, 2.4)
     $ c1s2_bite += 1
     "Трещины можно спрятать. Сделать вид, что их нет."
     "Представить, что процесс разрушения остановлен."
 
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
 
     $ mstop(fadeout=7.2)
 

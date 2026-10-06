@@ -32,11 +32,21 @@ image c1s1_tv_news = Fixed(
         # _("СБОРНАЯ РОССИИ ПО ФУТБОЛУ ПРОВЕДЁТ ТОВАРИЩЕСКИЙ МАТЧ"),
         ], (0, 354, 572, 34), first=2, lead=1.5, speed=50.0),
     xysize=(591, 416))
-## У Конана рот по кругу плавно приоткрывается на 2 с и смыкается, волосы за головой
-## развеваются — эллипсы и корень волос в px картинки.
-image c1s1_tv_konan = At("images/1_chapter/tv/tv_konan.png",
-    mouth_loop((315, 147), (8, 7), strength=-2.0, period=4.0, hold=2.0, ease=0.6, dark=0.5),
-    wind_warp((250, 150), (60, 62), (300, 108), amp=1.6, speed=1.0))
+## Кадры ТВ-передач идут пинг-понгом 1 2 3 2 1 2 3 2 …: после первого кадра крутится блок
+## 2 3 2 1, так что каждый кадр держится одинаково и возвращается растворением.
+image c1s1_tv_konan:
+    "images/1_chapter/tv/tv_konan 1.png"
+    pause 0.5
+    block:
+        "images/1_chapter/tv/tv_konan 2.png" with Dissolve(0.5)
+        pause 0.5
+        "images/1_chapter/tv/tv_konan 3.png" with Dissolve(0.5)
+        pause 0.5
+        "images/1_chapter/tv/tv_konan 2.png" with Dissolve(0.5)
+        pause 0.5
+        "images/1_chapter/tv/tv_konan 1.png" with Dissolve(0.5)
+        pause 0.5
+        repeat
 ## Днём телевизор сначала выключен (кадр _off: чёрная картинка в том же стекле). Рука с
 ## пультом — отдельный тег c1s1_tv_hand поверх кадра, на плане глубины 1, как в
 ## depth_scene: выползает снизу вдоль предплечья посреди разговора, жмёт кнопку и на hide
@@ -85,14 +95,16 @@ image c1s1_tv_hand click = At("images/1_chapter/chapter_1 scene_1_tv_close_hand.
 image c1s1_tv_football_frames:
     "images/1_chapter/tv/tv_football 1.png"
     pause 0.5
-    "images/1_chapter/tv/tv_football 2.png" with Dissolve(0.7)
-    pause 0.5
-    "images/1_chapter/tv/tv_football 3.png" with Dissolve(0.7)
-    pause 0.5
-    "images/1_chapter/tv/tv_football 2.png" with Dissolve(0.7)
-    pause 0.5
-    "images/1_chapter/tv/tv_football 1.png" with Dissolve(0.7)
-    repeat
+    block:
+        "images/1_chapter/tv/tv_football 2.png" with Dissolve(0.7)
+        pause 0.5
+        "images/1_chapter/tv/tv_football 3.png" with Dissolve(0.7)
+        pause 0.5
+        "images/1_chapter/tv/tv_football 2.png" with Dissolve(0.7)
+        pause 0.5
+        "images/1_chapter/tv/tv_football 1.png" with Dissolve(0.7)
+        pause 0.5
+        repeat
 image c1s1_tv_football = At("c1s1_tv_football_frames", sm_tv_players(top=0.36, amp=1.5, pan=10.0, pan_t=26.0))
 ## Ночью крупно сначала идёт тот же футбол, что на общем плане. Витя переключает канал той
 ## же рукой с пультом, что днём (тег c1s1_tv_hand_night, свет экрана мерцает и на ней):
@@ -108,7 +120,7 @@ transform c1s1_tv_switch_blank:
     pause 0.08
     easeout 0.25 alpha 0.0
 image c1s1_tv_konan_switch = Fixed("c1s1_tv_konan",
-    At(Solid("#050505"), c1s1_tv_switch_blank), xysize=(591, 416))
+    At(Solid("#050505"), c1s1_tv_switch_blank), xysize=(577, 416))
 image chapter_1 scene_1_tv_close_night_switch = depth_scene(
     sm_tv_set("images/1_chapter/chapter_1 scene_1_tv_close_night.png", "c1s1_tv_konan_switch",
         (831, 111), (579, 420), ((1, 1), (577, 17), (576, 418), (1, 417)), turn=(0.2, 0.04)))
@@ -1050,9 +1062,7 @@ label .after_locks:
     if c1s1_locks_outcome == "fast":
         vit "Привет."
 
-        $ click_skip_block = True
         pause 0.5
-        $ click_skip_block = False
 
         ## Цедит сквозь зубы: рот открывается всего дважды — кадр проявляется за 0.2 с и
         ## сразу гаснет за 0.2.
@@ -1060,9 +1070,7 @@ label .after_locks:
     else:
         vit "Не прошло и полгода!.."
 
-        $ click_skip_block = True
         pause 0.5
-        $ click_skip_block = False
 
         vit "Я уже думал, снова выбивать дверь придётся."
 
@@ -1139,9 +1147,7 @@ label .tv:
 
     # ты в магазин зашёл?"
 
-    $ click_skip_block = True
     pause 0.6
-    $ click_skip_block = False
 
     vit "Всё потом, Марин!"
 
@@ -1184,9 +1190,7 @@ label .tv_dialogue:
     # "По привычке притворялась даже перед собой..."
     # "...пока не стало слишком поздно."
 
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
 
     vit "Кошмар какой... слышала?"
     vit "Как хорошо, что у нас всё в порядке."
@@ -1277,36 +1281,26 @@ label .cleanup:
     ## Марина заговаривает с Витей — три подхода, ответ один: ему не до неё. Развилки нет:
     ## ветки сходятся на штанге, пропуск проходит меню насквозь. Кнопки разбросаны по
     ## тёмным местам кадра; двигать — Choice Placer (F7).
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
     if not renpy.is_skipping():
         menu(screen="scene_choice", follow=follow_camera(), drift=True, skippable=True):
             "Нужно поговорить" (pos=(540, 332), size=(330, 165)):
                 pause 0.5
                 mar "Я хотела обсудить кое-что..."
-                $ click_skip_block = True
                 pause 0.8
-                $ click_skip_block = False
                 vit "Да погоди, Марин! Если наши сейчас не забьют, то..."
             "Как игра?" (pos=(1045, 378), size=(330, 165)):
                 pause 0.5
                 mar "Наши выигрывают?"
-                $ click_skip_block = True
                 pause 0.8
-                $ click_skip_block = False
                 vit "Да какой там! Если сейчас не забьют, то всё!.."
             "Скоро закончишь?" (pos=(781, 624), size=(330, 165)):
                 pause 0.5
                 mar "Долго до конца матча?"
-                $ click_skip_block = True
                 pause 0.8
-                $ click_skip_block = False
                 vit "Сейчас уже всё решится. Пан или пропал. Гол или..."
 
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
 
     ## Голос из телевизора — баблом у экрана, хвостиком к нему; ждёт клика.
     window hide
@@ -1315,9 +1309,7 @@ label .cleanup:
     tvv "И!.. Это штанга! Всё! Похоже, сегодня уже не отыграться! Конец надеждам!"
     window auto
 
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
 
     vit "Вершинин, ну какой же ты кривоногий! Нет слов! Марин, ты это видела?"
     vit "Кто так играет?!"
@@ -1374,63 +1366,47 @@ label .cleanup:
             "Почему ты мне не помогаешь?" (pos=(521, 254), size=(330, 165)):
                 pause 0.5
                 mar "Почему так сложно не разбрасывать грязные вонючие носки по всей квартире?"
-                $ click_skip_block = True
                 pause 0.8
-                $ click_skip_block = False
                 vit "Опять ты про эти мелочи. Ну, не мешают же эти носки. Дорогу не перегораживают."
                 vit "Мне после работы иногда ложку до рта нормально не донести."
                 vit "Вот ты сидишь весь день дома. Я зарабатываю — ты убираешься."
             "Как дела на работе?" (pos=(417, 460), size=(330, 165)):
                 pause 0.5
                 mar "Как у тебя на работе дела? Ничего не рассказываешь..."
-                $ click_skip_block = True
                 pause 0.8
-                $ click_skip_block = False
                 vit "Да завал полный. В отпуск не отпускают, угрожают сокращениями."
                 vit "Но ты не переживай, у нас всё нормально будет."
             "По поводу завтра..." (pos=(515, 728), size=(330, 165)):
                 pause 0.5
                 mar "Ты помнишь? Тамара Виталиевна ждёт нас троих завтра..."
-                $ click_skip_block = True
                 pause 0.8
-                $ click_skip_block = False
                 vit "Завтра не получится. Прости."
 
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
 
     vit "Завтра мне надо с коллегами встретиться."
     vit "Так что с Тамарой как-нибудь в следующий раз..."
 
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
 
     if not renpy.is_skipping():
         menu(screen="scene_choice", follow=follow_camera(), drift=True, skippable=True):
             "Опять отменяем запись?!" (pos=(464, 294), size=(330, 165)):
                 pause 0.5
                 mar "Это уже четвёртая отмена! Тамара Виталиевна..."
-                $ click_skip_block = True
                 pause 0.8
-                $ click_skip_block = False
                 vit "Тамара Виталиевна потерпит! Она очень хорошо получает за каждый приём."
             "Понятно" (pos=(442, 478), size=(330, 165)):
                 pause 0.5
                 mar "Понятно..."
-                $ click_skip_block = True
                 pause 0.8
-                $ click_skip_block = False
                 vit "Что тебе понятно?! Ну не могу я шляться с тобой по твоим подружкам."
             "Достал!" (pos=(541, 662), size=(330, 165)):
                 pause 0.5
                 mar "Тебе ещё самому не надоело?! Каждый раз одно и то же!"
                 mar "Что ты скажешь теперь? \"Это мелочь, Марин, просто запишемся ещё раз\"?!"
 
-    $ click_skip_block = True
     pause 0.8
-    $ click_skip_block = False
 
     vit "У меня есть и другие дела, понятно?! Помимо собственной работы и этих твоих \"терапий\"!"
     vit "Я не могу весь день валяться дома, а потом ныть какой-то старой мымре о том, как в жизни всё хреново!"
@@ -1439,10 +1415,8 @@ label .cleanup:
     vit "Вставать по утрам, а не к обеду. А потом пахать весь день."
     vit "Возьми себя уже в руки!"
 
-    $ click_skip_block = True
     pause 0.8
 
-    $ click_skip_block = False
     "{cps=5}...{/cps}"
     "Кто-то из мудрых сказал, что залог счастливого супружества — взаимные компромиссы."
     "Но, боюсь... за все восемь лет брака, я поняла, что одних компромиссов мало."

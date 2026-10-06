@@ -694,6 +694,36 @@ transform breath_brightness_clock(lo=-0.01, hi=-0.04, t=6.0):
     shader "sm.breath"
     function renpy.curry(_breath_clock_f)(lo, hi, t)
 
+init -10 python:
+
+    def _lamp_glow_f(lo, hi, t, flick, trans, st, at):
+        import math
+        k = 1.0
+        if flick > 0.0 and not (sm_reduced_motion() or sm_flashes_disabled()):
+            now = _fx_frame_time()
+            ## Провал — в случайных шестых долях секунды (хэш слота), с рябью внутри.
+            slot = math.floor(now * 6.0)
+            r = math.sin(slot * 12.9898) * 43758.5453 % 1.0
+            dip = max(0.0, (r - 0.78) / 0.22)
+            k = (1.0 - flick * dip * (0.6 + 0.4 * math.sin(now * 37.0))) * (1.0 + 0.04 * math.sin(now * 9.1) * math.sin(now * 3.3))
+        trans.alpha = max(0.0, fx_track(st, float(lo), (("ease", t, float(hi)), ("ease", t, float(lo)))) * k)
+        return fx_tick()
+
+## Свечение лампы в кадре: пятно glow_oval_on_dark сложением цвета над источником света —
+## `show glow_oval_on_dark as … at lamp_glow(center, size)`. center — центр, px; size — размер
+## пятна, px; альфа дышит lo → hi → lo по t секунд; flick — глубина редких провалов
+## люминесцентной лампы (0 — ровный свет). При «меньше движения»/«без вспышек» — только дыхание.
+transform lamp_glow(center, size=(600, 300), lo=0.25, hi=0.5, t=3.0, flick=0.35):
+    subpixel True
+    transform_anchor True
+    anchor (0.5, 0.5)
+    pos center
+    xzoom float(size[0]) / GLOW_BASE_SIZE[0]
+    yzoom float(size[1]) / GLOW_BASE_SIZE[1]
+    blend "add"
+    alpha float(lo)
+    function renpy.curry(_lamp_glow_f)(lo, hi, t, flick)
+
 ## Яркость в один конец: → end за t секунд, дальше держится. Старт — текущая яркость
 ## картинки (например, с breath_brightness в момент смены ATL): uniform наследуется.
 transform brightness_to(end=-0.04, t=6.0):

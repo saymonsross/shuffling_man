@@ -315,7 +315,7 @@ testcase c1s3_confront_branch:
     click "А где Полли?"
     advance until screen "scene_choice" timeout 30.0
     click "Заткнитесь!"
-    advance until "Какое право они не имели нравоучать нас?!" timeout 10.0
+    advance until "Какое право они имели нравоучать нас?!" timeout 10.0
     advance until "Пусть лучше приглядывают за своими детьми, болтающимися без дела по двору, как оборванцы." timeout 5.0
     assert eval (c1s3_teaparty_choice == 'where_is_polly')
     assert eval (c1s3_neighbor_choice == 'confront')
@@ -328,7 +328,7 @@ testcase c1s3_strange_branch:
     click "Странный!"
     assert "Кажется, он помешан на еловых шишках..." timeout 10.0
     assert eval (c1s3_teaparty_choice == 'strange')
-    advance until "В лесу нет конфеток! Вот и приходится шишами чай закусывать..." timeout 10.0
+    advance until "В лесу нет конфеток! Вот и приходится шишками чай закусывать..." timeout 10.0
 
 testcase story_full_route:
     parameter reduce_motion = [False, True]
@@ -398,7 +398,7 @@ testcase story_full_route:
     assert eval (sprite_showed('chapter_1 scene_3_children_room_girl_crying'))
     advance until "Стоило нам с Витей обоим ненадолго отлучиться" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_sofa_tv_1'))
-    advance until "Мы пыталась с ней по-хорошему поговорить" timeout 10.0
+    advance until "Мы пытались с ней по-хорошему поговорить" timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_entrance'))
     advance until "Это ни в какие рамки." timeout 10.0
     assert eval (sprite_showed('chapter_1 scene_3_daughter_top'))

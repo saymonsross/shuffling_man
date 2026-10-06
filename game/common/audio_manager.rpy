@@ -347,7 +347,7 @@ init -190 python:
             return sfxplay(names, loop=True, fadein=fadein, fadeout=fadeout, ext=ext, tag=tag, overlap=True, volume=volume)
         return splay(names, fadein=fadein, fadeout=fadeout, ext=ext, tag=tag, overlap=True, volume=volume)
 
-    def sm_sfx_f(names, volume, trans, st, at):
-        """ATL-колбек: `function renpy.curry(sm_sfx_f)(names, volume)` — один вызов."""
-        sm_sfx(names, volume=volume)
+    def sm_sfx_f(names, volume, trans, st, at, tag=None, loop=False):
+        """ATL-колбек: `function renpy.curry(sm_sfx_f)(names, volume, tag=…, loop=…)` — один вызов."""
+        sm_sfx(names, volume=volume, tag=tag, loop=loop)
         return None
