@@ -1009,7 +1009,7 @@ label .piano:
 
     ## ══════════ ЗАМКИ ══════════
     ## Саспенс замков наплывает на предыдущий: старый гаснет 18 с, новый входит 10 с.
-    $ fnplay("audio/chapter_1/chapter_1_suspense_locker_game.ogg", fadein=10.0, fadeout=18.0)
+    $ fnplay("audio/chapter_1/chapter_1_suspense_locker_game.ogg", fadein=10.0, fadeout=18.0, volume=0.75)
     ## Блокировщик выше кнопок мини-игры и съел бы клик по «Открывай дверь».
     $ click_skip_block = False
     ## Переход к мини-игре с замками.
@@ -1028,7 +1028,7 @@ label .after_locks:
     if c1s1_locks_outcome == "timeout":
         $ c1s1_locks_outcome = "normal"
 
-    $ mplay("chapter_1/after_lock_game", fadein=1.0, fadeout=5.5, volume=1.1, loop=True)
+    $ mplay("chapter_1/after_lock_game", fadein=1.0, fadeout=5.5, loop=True)
 
     scene black with Dissolve(3.0)
 

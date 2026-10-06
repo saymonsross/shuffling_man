@@ -200,7 +200,7 @@ label chapter_1_scene_3:
     camera at camera_push((0.5, 0.5), 1.00, 1.13, 30.0)
     scene black with Dissolve(3.0)
 
-    $ mplay("chapter_1/c1_last_scene_thene", volume=1.05, fadein=0.0, tag="chapter_1_music_3")
+    $ mplay("chapter_1/c1_last_scene_thene", fadein=0.0, tag="chapter_1_music_3")
     scene chapter_1 scene_3_children_room_floor:
         parallel:
             breath_brightness(-0.03, -0.08, 6.0)
