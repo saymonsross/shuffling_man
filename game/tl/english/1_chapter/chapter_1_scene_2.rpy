@@ -179,42 +179,48 @@ translate english chapter_1_scene_2_075f9686:
     mar "O-okay..."
 
 # game/1_chapter/chapter_1_scene_2.rpy:555
-translate english chapter_1_scene_2_sandwiches_b37cf3d0:
+translate english chapter_1_scene_2_sandwiches_838c3908:
 
-    # "Наш брак давно был не идеален, понимала ли я это? Не совсем."
-    "Our marriage had long been less than perfect. Did I understand that? Not quite."
+    # "Наш брак давно был не идеален."
+    "Our marriage had long been less than perfect."
 
 # game/1_chapter/chapter_1_scene_2.rpy:556
+translate english chapter_1_scene_2_sandwiches_f4409ae0:
+
+    # "Понимала ли я это? Не совсем."
+    "Did I understand that? Not quite."
+
+# game/1_chapter/chapter_1_scene_2.rpy:557
 translate english chapter_1_scene_2_sandwiches_1a5b4e14:
 
     # "После каждого такого скандала я старалась притворяться, подыгрывать."
     "After every fight like that, I tried to pretend, to play along."
 
-# game/1_chapter/chapter_1_scene_2.rpy:562
+# game/1_chapter/chapter_1_scene_2.rpy:563
 translate english chapter_1_scene_2_sandwiches_c9ba9a8d:
 
     # "Для него, для Настеньки..."
     "For him, for Nastenka..."
 
-# game/1_chapter/chapter_1_scene_2.rpy:563
+# game/1_chapter/chapter_1_scene_2.rpy:564
 translate english chapter_1_scene_2_sandwiches_4b674393:
 
     # "...для себя."
     "...for myself."
 
-# game/1_chapter/chapter_1_scene_2.rpy:569
+# game/1_chapter/chapter_1_scene_2.rpy:570
 translate english chapter_1_scene_2_sandwiches_0779ac7a:
 
     # "Трещины можно спрятать. Сделать вид, что их нет."
     "Cracks can be hidden. You can pretend they are not there."
 
-# game/1_chapter/chapter_1_scene_2.rpy:570
+# game/1_chapter/chapter_1_scene_2.rpy:571
 translate english chapter_1_scene_2_sandwiches_1e75172c:
 
     # "Представить, что процесс разрушения остановлен."
     "Imagine that the crumbling has stopped."
 
-# game/1_chapter/chapter_1_scene_2.rpy:578
+# game/1_chapter/chapter_1_scene_2.rpy:579
 translate english chapter_1_scene_2_sandwiches_cf5ae7f6:
 
     # "Все ведь притворяются. Почему мы не могли?.."

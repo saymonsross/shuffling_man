@@ -50,13 +50,13 @@ translate english chapter_1_scene_3_6ae04e21:
 translate english chapter_1_scene_3_44287d12:
 
     # "Или отказывалась идти на прогулку, пока не дорисует."
-    "Or refuse to go out for a walk until she had finished her drawing."
+    "Or she would refuse to go for a walk until she had finished her drawing."
 
 # game/1_chapter/chapter_1_scene_3.rpy:253
 translate english chapter_1_scene_3_9b786d01:
 
     # "Последней её потрясающей выдумкой был панический страх оставаться дома одной."
-    "Her latest astonishing invention was a panicked fear of being left home alone."
+    "Her latest astonishing invention was a mortal terror of being left home alone."
 
 # game/1_chapter/chapter_1_scene_3.rpy:272
 translate english chapter_1_scene_3_18ceff12:
@@ -188,7 +188,7 @@ translate english chapter_1_scene_3_0b8156a7:
 translate english chapter_1_scene_3_43113265:
 
     # vit "Мама и так почти целыми днями дома торчит. Тебя нельзя оставить на час?"
-    vit "Mom is stuck at home nearly all day as it is. We can't leave you alone for an hour?"
+    vit "Mom's stuck at home practically all day as it is. We can't leave you alone for an hour?"
 
 # game/1_chapter/chapter_1_scene_3.rpy:449
 translate english chapter_1_scene_3_80459606:
@@ -239,9 +239,9 @@ translate english chapter_1_scene_3_24b814a5:
     mar "She's just at a difficult age. I'm so sorry."
 
 # game/1_chapter/chapter_1_scene_3.rpy:510
-translate english chapter_1_scene_3_276d2d24:
+translate english chapter_1_scene_3_6d6496e0:
 
-    # sos "Ну Мариш, это несерьёзно. Ребёнка надо воспитывать!" (callback=talk_callback("sos", moves=4, step=0.42))
+    # sos "Ну, Мариш, это несерьёзно. Ребёнка надо воспитывать!" (callback=talk_callback("sos", moves=4, step=0.42))
     sos "Come on, Marina, that's no excuse. A child needs discipline!" (callback=talk_callback("sos", moves=4, step=0.42))
 
 # game/1_chapter/chapter_1_scene_3.rpy:514

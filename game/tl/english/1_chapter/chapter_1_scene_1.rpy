@@ -92,7 +92,7 @@ translate english chapter_1_scene_1_tv_dialogue_a435b571:
 translate english chapter_1_scene_1_tv_dialogue_94e23acd:
 
     # vit "Как хорошо, что у нас всё в порядке."
-    vit "Good thing everything's fine with us."
+    vit "Good thing we're doing fine."
 
 # game/1_chapter/chapter_1_scene_1.rpy:1216
 translate english chapter_1_scene_1_cleanup_4c2f800d:
@@ -353,9 +353,9 @@ translate english chapter_1_scene_1_cleanup_015a7ec4:
     "Some wise person once said that the key to a happy marriage is mutual compromise."
 
 # game/1_chapter/chapter_1_scene_1.rpy:1422
-translate english chapter_1_scene_1_cleanup_5983a41e:
+translate english chapter_1_scene_1_cleanup_1beff4d9:
 
-    # "Но, боюсь... за все восемь лет брака, я поняла, что одних компромиссов мало."
+    # "Но, боюсь... за все восемь лет брака я поняла, что одних компромиссов мало."
     "But I am afraid... in all eight years of marriage, I learned that compromise alone is not enough."
 
 translate english strings:

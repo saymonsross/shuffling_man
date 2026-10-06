@@ -507,7 +507,7 @@ label chapter_1_scene_3:
 
             pause 0.5
 
-            sos "Ну Мариш, это несерьёзно. Ребёнка надо воспитывать!" (callback=talk_callback("sos", moves=4, step=0.42))
+            sos "Ну, Мариш, это несерьёзно. Ребёнка надо воспитывать!" (callback=talk_callback("sos", moves=4, step=0.42))
 
             pause 1.0
 
