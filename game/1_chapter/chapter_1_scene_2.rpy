@@ -47,6 +47,10 @@ screen c1s2_door_hover_zone():
     modal True
     if renpy.is_skipping():
         timer 0.01 action Return()
+    ## Пробел и Enter — как клик по проёму; клик мышью мимо проёма ничего не делает.
+    key "K_SPACE" action Return()
+    key "K_RETURN" action Return()
+    key "K_KP_ENTER" action Return()
     fixed:
         at follow_camera()
         button:
@@ -160,12 +164,12 @@ image chapter_1 scene_2_parents_room_vitya_3 = depth_scene(
 image chapter_1 scene_2_parents_room_vitya_4 = depth_scene(
     "ch1_2_parents_bg",
     At(TalkFrames(At("ch1_2_parents_vitya_3", offset(223, 0)), "ch1_2_parents_vitya_4", "vit"),
-        hflip, offset(-35, 30)),
+        hflip, offset(-35, 13)),
     "c1s2_parents_bed", step=0)
 image chapter_1 scene_2_parents_room_vitya_4_1 = depth_scene(
     "ch1_2_parents_bg",
     At(TalkFrames(At("ch1_2_parents_vitya_3", offset(223, 0)), "ch1_2_parents_vitya_4", "vit"),
-        hflip, offset(15, 00), rotate(-2), zoom(1.02)),
+        hflip, offset(15, 5), rotate(-2), zoom(1.02)),
     "c1s2_parents_bed", step=0)
 image chapter_1 scene_2_parents_room_vitya_5 = depth_scene(
     "ch1_2_parents_bg",

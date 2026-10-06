@@ -89,6 +89,8 @@ image c1s1_tv_football_frames:
     pause 0.5
     "images/1_chapter/tv/tv_football 3.png" with Dissolve(0.7)
     pause 0.5
+    "images/1_chapter/tv/tv_football 2.png" with Dissolve(0.7)
+    pause 0.5
     "images/1_chapter/tv/tv_football 1.png" with Dissolve(0.7)
     repeat
 image c1s1_tv_football = At("c1s1_tv_football_frames", sm_tv_players(top=0.36, amp=1.5, pan=10.0, pan_t=26.0))
@@ -1300,7 +1302,7 @@ label .cleanup:
     ## Голос из телевизора — баблом у экрана, хвостиком к нему; ждёт клика.
     window hide
     ## Звук комментатора — с бабла, из той же точки, что трансляция (панорама).
-    $ sm_audio_set_pan(sm_sfx("c1s1/tv_sports_football", volume=0.4), 0.1)
+    $ sm_audio_set_pan(sm_sfx("c1s1/tv_sports_football", volume=0.7), 0.1)
     tvv "И!.. Это штанга! Всё! Похоже, сегодня уже не отыграться! Конец надеждам!"
     window auto
 
