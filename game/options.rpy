@@ -11,7 +11,7 @@ define config.name = _("Шаркающий человек")
 define gui.show_name = True
 
 
-define config.version = "0.1.6-demo"
+define config.version = "0.1.7-demo"
 
 
 define gui.about = _p("""
