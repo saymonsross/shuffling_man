@@ -1266,7 +1266,7 @@ label .cleanup:
     scene black with Dissolve(3.0)
     camera at camera_push((0.60, 0.38), 1.02, 1.12, 40.0)
     ## Футбол слышен чуть справа, со стороны телевизора, — пока он на экране.
-    $ sm_audio_set_pan(sfxplay("c1s1/c1s1_footbal_tv", fadein=3.0, tag="c1s1_football", volume=0.107), 0.1)
+    $ sm_audio_set_pan(sfxplay("c1s1/c1s1_footbal_tv", fadein=3.0, tag="c1s1_football", volume=0.25), 0.1)
     show chapter_1 scene_1_sofa_tv_night:
         alpha 0.0
         parallel:
@@ -1352,7 +1352,7 @@ label .cleanup:
     ## Звук канала меняется вместе с картинкой. «Конан» в файле на 5 дБ тише футбола —
     ## громкость выше на столько же; затихает вместе с затемнением в конце сцены.
     $ sfxstop(tag="c1s1_football", fadeout=0.15)
-    $ sm_audio_set_pan(sfxplay("c1s1/c1s1_konan_tv", fadein=0.3, tag="c1s1_konan", volume=0.203), 0.1)
+    $ sm_audio_set_pan(sfxplay("c1s1/c1s1_konan_tv", fadein=0.3, tag="c1s1_konan", volume=0.48), 0.1)
     pause 0.8
     hide c1s1_tv_hand_night
     pause 0.8

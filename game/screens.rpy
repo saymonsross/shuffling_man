@@ -1011,13 +1011,13 @@ screen preferences():
 
     tag menu
 
-    ## Категории с заголовками; настройка — строка «название | варианты». Скорости текста
-    ## и автопрочтения задаются в options.rpy, игроку не показываются.
+    ## Категории с заголовками; настройка — строка «название | варианты». Скорость текста
+    ## задаётся в options.rpy, игроку не показывается.
     use game_menu(_("НАСТРОЙКИ")):
 
         vbox:
             xalign 0.5
-            yoffset -32
+            yoffset -52
             spacing 32
 
             if renpy.variant("pc") or renpy.variant("web"):
@@ -1062,6 +1062,15 @@ screen preferences():
                         textbutton _("ПО КЛИКУ") action SetField(persistent, "sm_author_pacing", False)
                 use pref_row(""):
                     text _("Авторский: паузы и переходы воспроизводятся в задуманном темпе.\nПо клику: паузы и переходы можно пропускать кликом.\nCtrl и «Пропуск» работают в любом режиме."):
+                        style "pref_tip"
+                        yalign 0.5
+                ## Штатный afm_time (секунды на 250 знаков, по умолчанию 15 в options.rpy):
+                ## у правого края ползунка — 0, то есть «Авто» ждёт клика.
+                use pref_group_divider
+                use pref_row(_("АВТОЧТЕНИЕ")):
+                    bar style "slider_slider" value Preference("auto-forward time")
+                use pref_row(""):
+                    text _("Скорость пролистывания строк в режиме «АВТО»."):
                         style "pref_tip"
                         yalign 0.5
 

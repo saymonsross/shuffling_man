@@ -323,3 +323,10 @@ translate english strings:
     # game/screens.rpy:1551
     old "Пропускаю"
     new "Skipping"
+
+    # game/screens.rpy (АВТОЧТЕНИЕ)
+    old "АВТОЧТЕНИЕ"
+    new "AUTO-READ"
+
+    old "Скорость пролистывания строк в режиме «АВТО»."
+    new "How fast lines advance in AUTO mode."
