@@ -50,7 +50,7 @@ label prologue_titles:
     $ quick_menu = False
     $ sm_parallax_off = True
 
-    $ mplay("opening/opening_titles", fadein=4.0)
+    $ mplay("opening/opening_titles", volume=0.4, fadein=4.0)
 
     $ click_skip_block = True
 
@@ -100,7 +100,7 @@ label prologue_scene:
         parallel:
             breath_brightness(-0.01, -0.04, 6.0)
 
-    $ mplay("opening/prologue_1", fadein=10.0, fadeout=18.0, volume=1.3)
+    $ mplay("opening/prologue_1", fadein=15.0, fadeout=28.0, volume=1.3)
 
     $ click_skip_block = False
     $ quick_menu = True

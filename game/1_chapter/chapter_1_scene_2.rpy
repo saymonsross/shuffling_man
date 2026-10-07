@@ -216,7 +216,7 @@ label chapter_1_scene_2:
     $ click_skip_block = True
     camera at camera_push((0.72, 0.52), 1.0, 1.15, 25.0)
 
-    $ mplay("chapter_1/sora_chapter_start", fadein=0.0, tag="chapter_1_music_1", loop=True)
+    $ mplay("chapter_1/sora_chapter_start", fadein=0.0, volume=0.9, tag="chapter_1_music_1", loop=True)
 
     pause 1.5
 
@@ -489,7 +489,7 @@ label chapter_1_scene_2:
 
     pause 0.5
 
-    $ sm_sfx("c1s2/c1s2_shakr_shark_shark", volume=1.7)
+    $ sm_sfx("c1s2/c1s2_shakr_shark_shark", volume=1.0)
 
     pause 6.0
 

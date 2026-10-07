@@ -344,7 +344,7 @@ label chapter_1_scene_3:
         breath_brightness(-0.04, -0.09, 6.0)
     with Dissolve(0.3)
     $ click_skip_block = False
-    $ sm_sfx("c1s1/c1s1_nast_cry_step_1", volume=1.1, tag="c1s3_cry")
+    $ sm_sfx("c1s1/c1s1_nast_cry_step_1", volume=2.4, tag="c1s3_cry")
     nas "{sc=1.5:3.6}НЕТ!{/sc}"
     nas "{sc=1.5:3.6}НЕ УХОДИ!{/sc}"
 
@@ -358,7 +358,7 @@ label chapter_1_scene_3:
     pause 0.6
     $ click_skip_block = False
 
-    $ sm_sfx("c1s1/c1s1_nast_cry_step_1", volume=1.1, tag="c1s3_cry_2")
+    $ sm_sfx("c1s1/c1s1_nast_cry_step_1", volume=2.4, tag="c1s3_cry_2")
     nas "{cps=15}{sc=1.5:3.6}ПОЖАЛУЙСТА-А-А!{/sc}{/cps}"
     $ c1s3_sad_shake = False
 
@@ -428,7 +428,7 @@ label chapter_1_scene_3:
     $ click_skip_block = True
     window auto hide
     camera
-    $ c1s3_cry_audio = sm_sfx("c1s1/c1s1_nast_cry_step_2", volume=1.1, tag="c1s3_cry", loop=True)
+    $ c1s3_cry_audio = sm_sfx("c1s1/c1s1_nast_cry_step_2", volume=0.75, tag="c1s3_cry", loop=True)
     $ sm_audio_set_filter(c1s3_cry_audio, c1s3_cry_reverb(), duration=0)
     scene chapter_1 scene_3_daughter_top_close:
         breath_brightness(-0.04, -0.09, 6.0)
@@ -608,7 +608,7 @@ label chapter_1_scene_3:
     
     scene black with Dissolve(0.1)
     # pause 2.0
-    $ sm_sfx("c1s2/c1s2_shakr_shark_shark", volume=1.7)
+    $ sm_sfx("c1s2/c1s2_shakr_shark_shark", volume=1.0)
     show black behind c1s2_whisper_1
     show prologue_head_bg behind c1s2_whisper_1:
         truecenter

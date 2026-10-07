@@ -19,6 +19,8 @@ define PIANO_SUBDIV = 4
 define PIANO_KEYS_DIR = "audio/keys/"
 define PIANO_KEYS_EXT = ".ogg"
 define PIANO_DEAD_SOUND = "audio/keys/key_dead.ogg"
+## Громкость сэмплов клавиш; промашки и обрушение — на своей.
+define PIANO_KEY_VOLUME = 0.9
 ## Под холостым щелчком — тихий короткий призвук нажатой клавиши: PIANO_SOFT_DIR/<нота>.ogg
 ## (громкость и затухание запечены в файл, tools/cut_piano_keys.py).
 define PIANO_SOFT_DIR = "audio/keys/soft/"
@@ -404,7 +406,7 @@ init python:
 
     def piano_play_file(filename):
         if renpy.loadable(filename):
-            sm_audio_play(filename, overlap=True)
+            sm_audio_play(filename, overlap=True, volume=PIANO_KEY_VOLUME)
         else:
             piano_log_missing(filename)
 

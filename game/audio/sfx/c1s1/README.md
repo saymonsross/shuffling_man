@@ -86,3 +86,5 @@ ffmpeg -y -i click1.wav -i click2.wav -filter_complex "[0:a]adelay=352.941:all=1
 полторы доли в миллисекундах) и длину WAV (две доли в секундах).
 
 Файлы, которые игра не использует (исходники и прежние варианты), вынесены из дистрибутива в `../shuffling_man_assets/audio_unused/` с теми же подпапками: `../metronome_1.ogg`, `../metronome_2.ogg`, `metronome_tick.ogg`, `lock_grab.ogg`, `2_lock_step_1_open.ogg`, `ESM_Empire_…Lever_4….wav`, `../../chapter_1/ESM_HG_…truck_engine….wav`.
+
+Аудиоревью 2026-10-07 (уровни файлов): `knock_door_1/2` пропущены через лимитер до −1.7 dBTP (были за нулём, хрустели); `handle_open` −2 дБ; `tv_turn_on` +9.5 дБ; `2_netrence_sosedka_footsteps` +8 дБ; в `c1s2/`: `c1s2_shakr_shark_shark` +12 дБ, `c1s2_footsteps` +6 дБ. Оригиналы — у автора в git.
